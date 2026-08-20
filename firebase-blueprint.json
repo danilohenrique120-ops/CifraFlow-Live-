@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "Bioreactor": {
+      "title": "Bioreactor Status",
+      "description": "Estações de Biorreatores de produção biológica",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identificador do biorreator (Ex: BR-01)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Nome visível do reator"
+        },
+        "capacity": {
+          "type": "integer",
+          "description": "Capacidade nominal em Litros (100, 500, 3000, 5000)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Etapa ou descrição do processo atual"
+        },
+        "productName": {
+          "type": "string",
+          "description": "Nome do produto/cultura biológica"
+        },
+        "inoculationTime": {
+          "type": "string",
+          "description": "Horário previsto de inoculação"
+        },
+        "transferTime": {
+          "type": "string",
+          "description": "Horário previsto de transferência"
+        },
+        "releaseTime": {
+          "type": "string",
+          "description": "Horário previsto de liberação"
+        },
+        "operator": {
+          "type": "string",
+          "description": "Operador responsável pelo turno"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["vazio", "aguardando", "andamento", "concluido"],
+          "description": "Situação operacional atual do reator"
+        },
+        "fillLevel": {
+          "type": "integer",
+          "description": "Nível de volume atual (0-100)"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp de última atualização ISO"
+        }
+      },
+      "required": ["id", "name", "capacity", "status", "fillLevel"]
+    },
+    "WhiteboardNote": {
+      "title": "Quadro de Avisos",
+      "description": "Mensagens e anotações rápidas do chão de fábrica",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID padrão do quadro de avisos (geralmente 'global')"
+        },
+        "content": {
+          "type": "string",
+          "description": "Conteúdo de anotações e passagem de turno"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Nome do operador ou supervisor que efetuou a alteração"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp de última alteração"
+        }
+      },
+      "required": ["id", "content"]
+    }
+  },
+  "firestore": {
+    "bioreactors": {
+      "schema": "Bioreactor",
+      "description": "Coleção contendo o status em tempo real dos 16 biorreatores"
+    },
+    "whiteboard": {
+      "schema": "WhiteboardNote",
+      "description": "Documentos do quadro de avisos digital compartilhado"
+    }
+  }
+}

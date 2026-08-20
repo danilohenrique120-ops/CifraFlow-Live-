@@ -1,0 +1,6 @@
+{
+  "name": "Formulação Biológica - Dashboard de Biorreatores",
+  "description": "Painel dinâmico em aço inox para gerenciamento da programação diária de um time de produção em uma planta de formulação biológica.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
