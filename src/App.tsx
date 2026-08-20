@@ -546,18 +546,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Side: Shift Info + Digital System Hour Clock */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="font-mono text-xs text-zinc-300 bg-zinc-950/80 px-3.5 py-2 rounded-lg border border-zinc-800 shadow-inner flex flex-col justify-center">
-            <div className="text-[9px] uppercase font-bold text-zinc-500 flex items-center gap-1">
-              <User className="w-3 h-3 text-zinc-400" />
-              Turno & Supervisor
-            </div>
-            <div className="text-xs font-bold text-zinc-200 mt-0.5 truncate max-w-[240px]">
-              {shift.split('(')[0].trim() || 'Turno A'} • <span className="text-cyan-400">{supervisor || 'Não atribuído'}</span>
-            </div>
-          </div>
-
+        {/* Right Side: Digital System Hour Clock */}
+        <div className="text-right flex items-center space-x-3">
           <div className="font-mono text-xs text-zinc-400 bg-zinc-950/80 p-2.5 rounded-lg border border-zinc-800 text-center shadow-inner">
             <div className="text-[9px] uppercase font-bold text-zinc-550 flex items-center justify-center gap-1">
               <Clock className="w-3 h-3" />
