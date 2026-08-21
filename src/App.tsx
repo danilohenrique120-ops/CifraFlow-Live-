@@ -29,7 +29,9 @@ import {
   Cpu,
   ShieldAlert,
   Wifi,
-  User
+  User,
+  Monitor,
+  Grid3X3
 } from 'lucide-react';
 
 export default function App() {
@@ -51,6 +53,7 @@ export default function App() {
   const [selectedBioreactor, setSelectedBioreactor] = useState<Bioreactor | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [systemTime, setSystemTime] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'panorama' | 'expanded'>('panorama');
 
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -497,7 +500,7 @@ export default function App() {
   const bioreactorCount = bioreactors.length;
   const inProcessCount = bioreactors.filter((r) => r.status === 'andamento').length;
   const completedCount = bioreactors.filter((r) => r.status === 'concluido').length;
-  const standbyCount = bioreactors.filter((r) => r.status === 'vazio' || r.status === 'aguardando').length;
+  const standbyCount = bioreactors.filter((r) => r.status === 'vazio' || r.status === 'aguardando' || r.status === 'aguardando_inoculo').length;
   
   const totalVolumeInProcess = bioreactors.reduce((acc, r) => {
     if (r.status === 'andamento' || r.status === 'concluido') {
@@ -507,11 +510,11 @@ export default function App() {
   }, 0);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-150 font-sans p-4 md:p-8 flex flex-col justify-between selection:bg-zinc-700 selection:text-white selection:bg-opacity-50">
+    <div className="min-h-screen bg-slate-900 text-slate-150 font-sans p-3 md:p-5 lg:p-6 flex flex-col justify-between selection:bg-zinc-700 selection:text-white selection:bg-opacity-50">
       
       {/* 1. TOP HEADER PANEL / CONSOLE PANEL */}
       <header 
-        className="w-full rounded-xl border border-zinc-700 p-4 mb-6 flex flex-col lg:flex-row items-center justify-between gap-4"
+        className="w-full rounded-xl border border-zinc-700 p-3 px-4 mb-3.5 flex flex-col lg:flex-row items-center justify-between gap-3"
         style={{
           boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.05)',
           backgroundImage: 'radial-gradient(circle at 50% 120%, #1e293b 0%, #0f172a 100%)'
@@ -519,17 +522,17 @@ export default function App() {
       >
         
         {/* Left Side: Brand label, real-time sync status and title */}
-        <div className="flex items-center space-x-4">
-          <div className="p-3 bg-gradient-to-br from-zinc-200 to-zinc-400 border border-zinc-500 rounded-lg shadow-md flex items-center justify-center">
-            <Cpu className="w-6 h-6 text-slate-900 animate-pulse" />
+        <div className="flex items-center space-x-3.5">
+          <div className="p-2.5 bg-gradient-to-br from-zinc-200 to-zinc-400 border border-zinc-500 rounded-lg shadow-md flex items-center justify-center">
+            <Cpu className="w-5 h-5 text-slate-900 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 border border-cyan-800 rounded-sm">
+              <span className="text-[9px] uppercase font-bold tracking-[0.2em] text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 border border-cyan-800 rounded-sm">
                 Planta Líder
               </span>
               <span 
-                className={`inline-flex items-center gap-1.5 text-[10px] font-mono font-black px-2.5 py-0.5 rounded-full border tracking-wider uppercase ${
+                className={`inline-flex items-center gap-1.5 text-[9.5px] font-mono font-black px-2 py-0.5 rounded-full border tracking-wider uppercase ${
                   dbState === 'connected'
                     ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
                     : 'bg-amber-950/90 text-amber-300 border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.3)]'
@@ -540,7 +543,7 @@ export default function App() {
                 {dbState === 'connected' ? 'TEMPO REAL ONLINE' : 'MODO LOCAL'}
               </span>
             </div>
-            <h1 className="text-xl md:text-2xl font-extrabold text-zinc-100 tracking-tight">
+            <h1 className="text-lg md:text-xl font-extrabold text-zinc-100 tracking-tight">
               Programação Diária de Biorreatores
             </h1>
           </div>
@@ -548,12 +551,12 @@ export default function App() {
 
         {/* Right Side: Digital System Hour Clock */}
         <div className="text-right flex items-center space-x-3">
-          <div className="font-mono text-xs text-zinc-400 bg-zinc-950/80 p-2.5 rounded-lg border border-zinc-800 text-center shadow-inner">
-            <div className="text-[9px] uppercase font-bold text-zinc-550 flex items-center justify-center gap-1">
+          <div className="font-mono text-xs text-zinc-400 bg-zinc-950/80 px-3 py-2 rounded-lg border border-zinc-800 text-center shadow-inner">
+            <div className="text-[8.5px] uppercase font-bold text-zinc-550 flex items-center justify-center gap-1">
               <Clock className="w-3 h-3" />
               Relógio do Sistema
             </div>
-            <div className="text-sm font-bold tracking-wider text-lime-400 mt-1">
+            <div className="text-xs sm:text-sm font-bold tracking-wider text-lime-400 mt-0.5">
               {systemTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </div>
           </div>
@@ -562,23 +565,23 @@ export default function App() {
       </header>
 
       {/* NAV TABS SELECTOR */}
-      <nav className="w-full flex items-center gap-3 mb-6 border-b border-zinc-800 pb-3 overflow-x-auto">
+      <nav className="w-full flex items-center gap-2 mb-3.5 border-b border-zinc-800 pb-2.5 overflow-x-auto">
         <button
           onClick={() => setActiveTab('bioreactors')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-extrabold text-sm uppercase tracking-wider transition cursor-pointer shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-extrabold text-xs uppercase tracking-wider transition cursor-pointer shrink-0 ${
             activeTab === 'bioreactors'
               ? 'bg-zinc-800 text-lime-400 border border-zinc-700 shadow-md'
               : 'bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800'
           }`}
         >
-          <LayoutDashboard className="w-5 h-5" />
+          <LayoutDashboard className="w-4 h-4" />
           <span>Matriz de Biorreatores ({bioreactorCount})</span>
         </button>
 
         {/* Quadro de Avisos (Turno) */}
         <button
           onClick={() => setActiveTab('whiteboard')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-extrabold text-sm uppercase tracking-wider transition cursor-pointer relative shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-extrabold text-xs uppercase tracking-wider transition cursor-pointer relative shrink-0 ${
             whiteboardText && whiteboardText.trim().length > 0
               ? activeTab === 'whiteboard'
                 ? 'bg-amber-400 text-zinc-950 border border-amber-300 shadow-lg shadow-amber-500/20 ring-2 ring-amber-400/30'
@@ -588,23 +591,23 @@ export default function App() {
                 : 'bg-zinc-950/60 text-zinc-600 border border-zinc-850 hover:text-zinc-400 hover:bg-zinc-900 opacity-60'
           }`}
         >
-          <FileText className={`w-5 h-5 ${whiteboardText && whiteboardText.trim().length > 0 ? (activeTab === 'whiteboard' ? 'text-zinc-950' : 'text-amber-400') : 'text-zinc-500'}`} />
+          <FileText className={`w-4 h-4 ${whiteboardText && whiteboardText.trim().length > 0 ? (activeTab === 'whiteboard' ? 'text-zinc-950' : 'text-amber-400') : 'text-zinc-500'}`} />
           <span>Quadro de Avisos</span>
           {whiteboardText && whiteboardText.trim().length > 0 ? (
-            <span className={`px-2 py-0.5 text-xs font-mono font-black rounded-full ${
+            <span className={`px-1.5 py-0.2 text-[9px] font-mono font-black rounded-full ${
               activeTab === 'whiteboard' ? 'bg-zinc-950 text-amber-400' : 'bg-amber-400 text-zinc-950 animate-pulse'
             }`}>
               COM ANOTAÇÃO
             </span>
           ) : (
-            <span className="text-xs font-mono text-zinc-600 font-normal ml-1">(Vazio)</span>
+            <span className="text-[10px] font-mono text-zinc-600 font-normal ml-0.5">(Vazio)</span>
           )}
         </button>
 
         {/* Avisos do Gestor */}
         <button
           onClick={() => setActiveTab('manager_notes')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-extrabold text-sm uppercase tracking-wider transition cursor-pointer relative shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-extrabold text-xs uppercase tracking-wider transition cursor-pointer relative shrink-0 ${
             managerNotesText && managerNotesText.trim().length > 0
               ? activeTab === 'manager_notes'
                 ? 'bg-indigo-500 text-white border border-indigo-400 shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-400/30'
@@ -614,16 +617,16 @@ export default function App() {
                 : 'bg-zinc-950/60 text-zinc-600 border border-zinc-850 hover:text-zinc-400 hover:bg-zinc-900 opacity-60'
           }`}
         >
-          <ShieldAlert className={`w-5 h-5 ${managerNotesText && managerNotesText.trim().length > 0 ? (activeTab === 'manager_notes' ? 'text-white' : 'text-indigo-400') : 'text-zinc-500'}`} />
+          <ShieldAlert className={`w-4 h-4 ${managerNotesText && managerNotesText.trim().length > 0 ? (activeTab === 'manager_notes' ? 'text-white' : 'text-indigo-400') : 'text-zinc-500'}`} />
           <span>Avisos do Gestor</span>
           {managerNotesText && managerNotesText.trim().length > 0 ? (
-            <span className={`px-2 py-0.5 text-xs font-mono font-black rounded-full ${
+            <span className={`px-1.5 py-0.2 text-[9px] font-mono font-black rounded-full ${
               activeTab === 'manager_notes' ? 'bg-zinc-950 text-indigo-300' : 'bg-indigo-400 text-zinc-950 animate-pulse'
             }`}>
               COM DIRETRIZ
             </span>
           ) : (
-            <span className="text-xs font-mono text-zinc-600 font-normal ml-1">(Vazio)</span>
+            <span className="text-[10px] font-mono text-zinc-600 font-normal ml-0.5">(Vazio)</span>
           )}
         </button>
       </nav>
@@ -644,7 +647,7 @@ export default function App() {
           />
 
           {/* 3. SHIELD CONTROL: SEARCH BAR, CAPACITIES AND STATUS FILTERING */}
-          <section className="w-full rounded-xl bg-zinc-950/80 p-4 mb-6 border border-zinc-800 flex flex-col md:flex-row gap-4 items-center justify-between shadow-inner">
+          <section className="w-full rounded-xl bg-zinc-950/80 p-2.5 px-3.5 mb-3.5 border border-zinc-800 flex flex-col md:flex-row gap-3 items-center justify-between shadow-inner">
             
             {/* Left: Input Text Search */}
             <div className="relative w-full md:max-w-md">
@@ -656,19 +659,19 @@ export default function App() {
                 placeholder="Filtrar por produto, operador, número ou mnemônico..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 font-sans text-sm bg-zinc-900 border border-zinc-750 rounded-xl text-white focus:outline-none focus:border-zinc-500 placeholder:text-zinc-500"
+                className="w-full pl-10 pr-4 py-2 font-sans text-xs sm:text-sm bg-zinc-900 border border-zinc-750 rounded-xl text-white focus:outline-none focus:border-zinc-500 placeholder:text-zinc-500"
               />
             </div>
 
             {/* Right: Select Matrix Category Filters */}
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
               {/* Capacity Filter */}
-              <div className="flex items-center space-x-2 bg-zinc-900 px-3.5 py-2 rounded-xl border border-zinc-750">
-                <Filter className="w-4 h-4 text-zinc-400" />
+              <div className="flex items-center space-x-2 bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-750">
+                <Filter className="w-3.5 h-3.5 text-zinc-400" />
                 <select
                   value={filterCapacity}
                   onChange={(e) => setFilterCapacity(e.target.value)}
-                  className="bg-transparent border-none text-sm font-medium text-white focus:outline-none cursor-pointer"
+                  className="bg-transparent border-none text-xs sm:text-sm font-medium text-white focus:outline-none cursor-pointer"
                 >
                   <option value="all" className="bg-zinc-900 text-white">Vol: Todos</option>
                   <option value="100" className="bg-zinc-900 text-white">100 Litros</option>
@@ -679,26 +682,57 @@ export default function App() {
               </div>
 
               {/* Status Filter */}
-              <div className="flex items-center space-x-2 bg-zinc-900 px-3.5 py-2 rounded-xl border border-zinc-750">
-                <Activity className="w-4 h-4 text-zinc-400" />
+              <div className="flex items-center space-x-2 bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-750">
+                <Activity className="w-3.5 h-3.5 text-zinc-400" />
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="bg-transparent border-none text-sm font-medium text-white focus:outline-none cursor-pointer"
+                  className="bg-transparent border-none text-xs sm:text-sm font-medium text-white focus:outline-none cursor-pointer"
                 >
                   <option value="all" className="bg-zinc-900 text-white">Status: Todos</option>
                   <option value="vazio" className="bg-zinc-900 text-white">Fase: Vazio</option>
                   <option value="aguardando" className="bg-zinc-900 text-white">Fase: Em preparo</option>
+                  <option value="aguardando_inoculo" className="bg-zinc-900 text-white">Fase: Aguardando inóculo</option>
                   <option value="andamento" className="bg-zinc-900 text-white">Fase: Em cultivo</option>
                   <option value="concluido" className="bg-zinc-900 text-white">Fase: Liberado p/ envase</option>
                 </select>
+              </div>
+
+              {/* View Mode Switcher: Panorama (16 na Tela) vs Expandido */}
+              <div className="flex items-center bg-zinc-900 p-0.5 rounded-xl border border-zinc-750 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('panorama')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                    viewMode === 'panorama'
+                      ? 'bg-lime-400 text-zinc-950 shadow-md'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Exibir todos os 16 biorreatores de uma vez na tela"
+                >
+                  <Monitor className="w-3.5 h-3.5" />
+                  <span>16 na Tela</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('expanded')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                    viewMode === 'expanded'
+                      ? 'bg-lime-400 text-zinc-950 shadow-md'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Exibir em modo expandido com separação por capacidade"
+                >
+                  <Grid3X3 className="w-3.5 h-3.5" />
+                  <span>Expandido</span>
+                </button>
               </div>
 
               {/* Simulator Actions trigger */}
               <div className="flex space-x-2 shrink-0">
                 <button
                   onClick={handleResetSimulator}
-                  className="px-3.5 py-2 bg-zinc-950 hover:bg-zinc-900 text-zinc-400 font-mono text-xs uppercase font-bold tracking-wider rounded-xl border border-zinc-800 transition cursor-pointer"
+                  className="px-3 py-1.5 bg-zinc-950 hover:bg-zinc-900 text-zinc-400 font-mono text-[11px] uppercase font-bold tracking-wider rounded-xl border border-zinc-800 transition cursor-pointer"
                   title="Redefine o status de todos os 16 reatores para o modelo inicial básico"
                 >
                   Resetar Painel
@@ -709,52 +743,80 @@ export default function App() {
           </section>
 
           {/* 4. MAIN WORKSPACE / REACTOR GRID */}
-          <main className="w-full flex-1 mb-8">
+          <main className="w-full flex-1 mb-6">
             
             {/* Render Bioreactor grid match result summary counter */}
-            <div className="flex justify-between items-center text-sm font-mono text-zinc-400 mb-5 px-1">
-              <span className="font-bold">MATRIZ INDUSTRIAL (16 POSTOS ATIVOS)</span>
+            <div className="flex justify-between items-center text-xs font-mono text-zinc-400 mb-2 px-1">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-zinc-200">MATRIZ INDUSTRIAL (16 POSTOS ATIVOS)</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] bg-zinc-800 text-lime-400 font-black border border-zinc-700">
+                  {viewMode === 'panorama' ? '🖥️ VISÃO PANORAMA' : '📑 VISÃO EXPANDIDA'}
+                </span>
+              </div>
               <span>Exibindo: <strong className="text-zinc-100 font-black">{filteredBioreactors.length}</strong> de <strong className="text-cyan-400 font-black">{bioreactorCount}</strong> biorreatores</span>
             </div>
 
             {filteredBioreactors.length > 0 ? (
-              <div className="space-y-12">
-                {[100, 500, 3000, 5000].map((capacity) => {
-                  const reactorsOfCapacity = filteredBioreactors.filter(r => r.capacity === capacity);
-                  if (reactorsOfCapacity.length === 0) return null;
+              viewMode === 'panorama' ? (
+                /* ------------------------------------------------------------------ */
+                /* A) PANORAMA VIEW: ALL 16 BIOREACTORS IN A COMPACT 4x4 MATRIX GRID   */
+                /* ------------------------------------------------------------------ */
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 gap-2 sm:gap-2.5">
+                  {filteredBioreactors.map((reactor) => (
+                    <BioreactorCard
+                      key={reactor.id}
+                      bioreactor={reactor}
+                      compact={true}
+                      onClick={() => {
+                        setSelectedBioreactor(reactor);
+                        setIsModalOpen(true);
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                /* ------------------------------------------------------------------ */
+                /* B) EXPANDED VIEW: GROUPED BY CAPACITY TIERS                         */
+                /* ------------------------------------------------------------------ */
+                <div className="space-y-5">
+                  {[100, 500, 3000, 5000].map((capacity) => {
+                    const reactorsOfCapacity = filteredBioreactors.filter(r => r.capacity === capacity);
+                    if (reactorsOfCapacity.length === 0) return null;
 
-                  return (
-                    <div key={capacity} className="space-y-5">
-                      {/* Row Header with capacity badge and steel background accent */}
-                      <div className="flex items-center space-x-3 border-b border-zinc-800 pb-3">
-                        <div className="px-3.5 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-lime-400 font-mono text-sm font-black tracking-wider">
-                          {capacity.toLocaleString()} Litros
+                    return (
+                      <div key={capacity} className="space-y-2.5">
+                        {/* Row Header with capacity badge and steel background accent */}
+                        <div className="flex items-center space-x-3 border-b border-zinc-800 pb-1.5">
+                          <div className="px-3 py-1 rounded-lg bg-zinc-800 border border-zinc-700 text-lime-400 font-mono text-xs sm:text-sm font-black tracking-wider">
+                            {capacity.toLocaleString()} Litros
+                          </div>
+                          <span className="text-xs sm:text-sm text-zinc-300 font-mono font-medium truncate">
+                            {capacity === 100 && "Estações de Pré-Inoculação (BR 01 ao BR 05)"}
+                            {capacity === 500 && "Estações de Fermentação Piloto (BR 06 ao BR 10)"}
+                            {capacity === 3000 && "Estações de Produção Intermediária (BR 15 e BR 16)"}
+                            {capacity === 5000 && "Estações de Alta Capacidade Geral (BR 11 ao BR 14)"}
+                          </span>
                         </div>
-                        <span className="text-sm text-zinc-300 font-mono font-medium">
-                          {capacity === 100 && "Estações de Pré-Inoculação (BR 01 ao BR 05)"}
-                          {capacity === 500 && "Estações de Fermentação Piloto (BR 06 ao BR 10)"}
-                          {capacity === 3000 && "Estações de Produção Intermediária (BR 15 e BR 16)"}
-                          {capacity === 5000 && "Estações de Alta Capacidade Geral (BR 11 ao BR 14)"}
-                        </span>
-                      </div>
 
-                      {/* Horizontal aligned reactor list with larger cards */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
-                        {reactorsOfCapacity.map((reactor) => (
-                          <BioreactorCard
-                            key={reactor.id}
-                            bioreactor={reactor}
-                            onClick={() => {
-                              setSelectedBioreactor(reactor);
-                              setIsModalOpen(true);
-                            }}
-                          />
-                        ))}
+                        {/* Horizontal aligned reactor list with high-density responsive grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-3.5">
+                          {reactorsOfCapacity.map((reactor) => (
+                            <BioreactorCard
+                              key={reactor.id}
+                              bioreactor={reactor}
+                              compact={false}
+                              onClick={() => {
+                                setSelectedBioreactor(reactor);
+                                setIsModalOpen(true);
+                              }}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )
             ) : (
               <div className="flex flex-col items-center justify-center py-20 p-8 rounded-xl border border-zinc-800 bg-zinc-950/40 text-center space-y-3">
                 <AlertTriangle className="w-12 h-12 text-zinc-600" />

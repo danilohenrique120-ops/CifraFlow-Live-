@@ -27,7 +27,7 @@ service cloud.firestore {
         && data.capacity is int
         && (data.capacity == 100 || data.capacity == 500 || data.capacity == 3000 || data.capacity == 5000)
         && data.status is string
-        && (data.status == 'vazio' || data.status == 'aguardando' || data.status == 'andamento' || data.status == 'concluido')
+        && (data.status == 'vazio' || data.status == 'aguardando' || data.status == 'aguardando_inoculo' || data.status == 'andamento' || data.status == 'concluido')
         && data.fillLevel is int
         && data.fillLevel >= 0
         && data.fillLevel <= 100

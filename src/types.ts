@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type BioreactorStatus = 'vazio' | 'aguardando' | 'andamento' | 'concluido';
+export type BioreactorStatus = 'vazio' | 'aguardando' | 'aguardando_inoculo' | 'andamento' | 'concluido';
 
 export interface Bioreactor {
   id: string; // BR-01 to BR-16

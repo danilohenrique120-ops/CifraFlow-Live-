@@ -140,14 +140,14 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({
   const activeFilterNorm = activeFilter.toLowerCase().trim();
 
   return (
-    <div className="w-full bg-zinc-950/90 rounded-2xl border border-zinc-800 p-4 md:p-5 mb-6 shadow-2xl relative overflow-hidden backdrop-blur-md">
+    <div className="w-full bg-zinc-950/90 rounded-xl border border-zinc-800 p-3 md:p-3.5 mb-3.5 shadow-xl relative overflow-hidden backdrop-blur-md">
       {/* Top subtle decorative gradient bar */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 via-yellow-400 via-purple-500 to-emerald-500 opacity-90" />
 
       {/* Title & Filter bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-zinc-800/80">
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2.5 pb-2 border-b border-zinc-800/80">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <h3 className="text-xs font-black uppercase tracking-wider text-white font-mono">
               PAINEL DA PLANTA
@@ -160,7 +160,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({
 
         {activeFilterNorm ? (
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono text-cyan-400 flex items-center gap-1.5 bg-cyan-950/60 px-2.5 py-1 rounded-lg border border-cyan-800">
+            <span className="text-[11px] font-mono text-cyan-400 flex items-center gap-1.5 bg-cyan-950/60 px-2.5 py-0.5 rounded-lg border border-cyan-800">
               <Filter className="w-3 h-3 text-cyan-400" />
               Filtro por produto: <strong className="text-white uppercase">{activeFilter}</strong>
             </span>
@@ -180,17 +180,17 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({
       </div>
 
       {/* 1. TOP SECTION: 4 UNIFIED STATUS KPIS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-2.5 mb-2.5">
         {/* KPI 1: Fluido em Processo */}
-        <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800/90 flex items-center space-x-3 shadow-inner">
-          <div className="p-2.5 bg-cyan-950/80 border border-cyan-800/80 rounded-lg shrink-0">
-            <Activity className="w-5 h-5 text-cyan-400" />
+        <div className="bg-zinc-900/80 p-2 px-3 rounded-lg border border-zinc-800/90 flex items-center space-x-2.5 shadow-inner">
+          <div className="p-2 bg-cyan-950/80 border border-cyan-800/80 rounded-md shrink-0">
+            <Activity className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wide truncate">
+            <p className="text-[9.5px] uppercase font-bold text-zinc-400 tracking-wide truncate">
               Fluido em Processo
             </p>
-            <p className="text-base md:text-lg font-mono font-black text-white mt-0.5">
+            <p className="text-sm md:text-base font-mono font-black text-white mt-0.5">
               {totalVolumeInProcess.toLocaleString()}{' '}
               <span className="text-xs text-zinc-400 font-normal">L</span>
             </p>
@@ -198,15 +198,15 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({
         </div>
 
         {/* KPI 2: Em Fermentação */}
-        <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800/90 flex items-center space-x-3 shadow-inner">
-          <div className="p-2.5 bg-yellow-950/80 border border-yellow-800/80 rounded-lg shrink-0">
-            <Flame className="w-5 h-5 text-yellow-400 animate-bounce" />
+        <div className="bg-zinc-900/80 p-2 px-3 rounded-lg border border-zinc-800/90 flex items-center space-x-2.5 shadow-inner">
+          <div className="p-2 bg-yellow-950/80 border border-yellow-800/80 rounded-md shrink-0">
+            <Flame className="w-4 h-4 text-yellow-400 animate-bounce" />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wide truncate">
+            <p className="text-[9.5px] uppercase font-bold text-zinc-400 tracking-wide truncate">
               Em Fermentação
             </p>
-            <p className="text-base md:text-lg font-mono font-black text-yellow-400 mt-0.5">
+            <p className="text-sm md:text-base font-mono font-black text-yellow-400 mt-0.5">
               {inProcessCount}{' '}
               <span className="text-xs text-zinc-400 font-normal">
                 {inProcessCount === 1 ? 'Reator' : 'Reatores'}
@@ -216,15 +216,15 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({
         </div>
 
         {/* KPI 3: Liberados Envase */}
-        <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800/90 flex items-center space-x-3 shadow-inner">
-          <div className="p-2.5 bg-emerald-950/80 border border-emerald-800/80 rounded-lg shrink-0">
-            <CheckCircle className="w-5 h-5 text-emerald-400" />
+        <div className="bg-zinc-900/80 p-2 px-3 rounded-lg border border-zinc-800/90 flex items-center space-x-2.5 shadow-inner">
+          <div className="p-2 bg-emerald-950/80 border border-emerald-800/80 rounded-md shrink-0">
+            <CheckCircle className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wide truncate">
+            <p className="text-[9.5px] uppercase font-bold text-zinc-400 tracking-wide truncate">
               Liberados Envase
             </p>
-            <p className="text-base md:text-lg font-mono font-black text-emerald-400 mt-0.5">
+            <p className="text-sm md:text-base font-mono font-black text-emerald-400 mt-0.5">
               {completedCount}{' '}
               <span className="text-xs text-zinc-400 font-normal">
                 {completedCount === 1 ? 'Lote' : 'Lotes'}
@@ -234,15 +234,15 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({
         </div>
 
         {/* KPI 4: Vazios / Standby */}
-        <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800/90 flex items-center space-x-3 shadow-inner">
-          <div className="p-2.5 bg-zinc-800/80 border border-zinc-700/80 rounded-lg shrink-0">
-            <LayoutDashboard className="w-5 h-5 text-zinc-400" />
+        <div className="bg-zinc-900/80 p-2 px-3 rounded-lg border border-zinc-800/90 flex items-center space-x-2.5 shadow-inner">
+          <div className="p-2 bg-zinc-800/80 border border-zinc-700/80 rounded-md shrink-0">
+            <LayoutDashboard className="w-4 h-4 text-zinc-400" />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wide truncate">
+            <p className="text-[9.5px] uppercase font-bold text-zinc-400 tracking-wide truncate">
               Vazios / Standby
             </p>
-            <p className="text-base md:text-lg font-mono font-black text-zinc-300 mt-0.5">
+            <p className="text-sm md:text-base font-mono font-black text-zinc-300 mt-0.5">
               {standbyCount}{' '}
               <span className="text-xs text-zinc-400 font-normal">
                 {standbyCount === 1 ? 'Estação' : 'Estações'}
@@ -253,7 +253,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({
       </div>
 
       {/* 2. BOTTOM SECTION: 5 OFFICIAL PRODUCT COLOR CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         {productStats.map((prod) => {
           const isActive = activeFilterNorm === prod.name.toLowerCase().trim();
           const hasReactors = prod.count > 0;
@@ -263,16 +263,16 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({
               key={prod.id}
               type="button"
               onClick={() => onSelectProductFilter && onSelectProductFilter(prod.name)}
-              className={`flex flex-col justify-between p-3 rounded-xl border bg-gradient-to-b ${
+              className={`flex flex-col justify-between p-2.5 rounded-lg border bg-gradient-to-b ${
                 prod.cardBg
               } transition-all duration-200 cursor-pointer text-left select-none ${
                 isActive ? prod.activeRing : `${prod.borderColor} bg-zinc-900/90`
               } ${!hasReactors ? 'opacity-50 hover:opacity-100' : 'hover:scale-[1.01]'}`}
             >
               {/* Product title row */}
-              <div className="flex items-center justify-between gap-1 mb-2">
+              <div className="flex items-center justify-between gap-1 mb-1.5">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${prod.dotBg}`} />
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${prod.dotBg}`} />
                   <span
                     className={`text-xs font-black uppercase tracking-wider truncate ${prod.textColor}`}
                   >
@@ -280,26 +280,26 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({
                   </span>
                 </div>
                 <span
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider border ${prod.badgeBg}`}
+                  className={`px-1.5 py-0.2 rounded text-[8.5px] font-mono font-bold uppercase tracking-wider border ${prod.badgeBg}`}
                 >
                   {prod.colorLabel}
                 </span>
               </div>
 
               {/* Product metrics row */}
-              <div className="flex items-baseline justify-between font-mono mt-1">
-                <div className="text-[11px] text-zinc-400 font-medium">
-                  <strong className="text-white font-bold text-sm">{prod.count}</strong>{' '}
-                  <span className="text-[10px]">{prod.count === 1 ? 'reator' : 'reatores'}</span>
+              <div className="flex items-baseline justify-between font-mono mt-0.5">
+                <div className="text-[10px] text-zinc-400 font-medium">
+                  <strong className="text-white font-bold text-xs sm:text-sm">{prod.count}</strong>{' '}
+                  <span className="text-[9px]">{prod.count === 1 ? 'reator' : 'reatores'}</span>
                 </div>
                 <div className="text-right">
                   <span
-                    className={`text-xs md:text-sm font-black ${
+                    className={`text-xs sm:text-sm font-black ${
                       hasReactors ? 'text-white' : 'text-zinc-500'
                     }`}
                   >
                     {prod.totalLiquidVolume.toLocaleString()}{' '}
-                    <span className="text-[10px] text-zinc-400 font-normal">L</span>
+                    <span className="text-[9px] text-zinc-400 font-normal">L</span>
                   </span>
                 </div>
               </div>

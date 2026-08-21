@@ -88,6 +88,8 @@ export const BioreactorModal: React.FC<BioreactorModalProps> = ({
       setFillLevel(0);
     } else if (newStatus === 'aguardando' && fillLevel === 0) {
       setFillLevel(20);
+    } else if (newStatus === 'aguardando_inoculo' && fillLevel === 0) {
+      setFillLevel(30);
     } else if (newStatus === 'andamento' && (fillLevel === 0 || fillLevel === 100)) {
       setFillLevel(50);
     } else if (newStatus === 'concluido') {
@@ -190,12 +192,12 @@ export const BioreactorModal: React.FC<BioreactorModalProps> = ({
             <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider mb-2.5">
               Definir Situação de Produção (Status)
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
               {/* Vazio Preset Button */}
               <button
                 type="button"
                 onClick={() => handleStatusChange('vazio')}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition text-center select-none ${
+                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition text-center select-none ${
                   status === 'vazio'
                     ? 'bg-zinc-200 border-zinc-600 text-zinc-950 font-semibold shadow-inner'
                     : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-300 text-zinc-600'
@@ -209,7 +211,7 @@ export const BioreactorModal: React.FC<BioreactorModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleStatusChange('aguardando')}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition text-center select-none ${
+                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition text-center select-none ${
                   status === 'aguardando'
                     ? 'bg-sky-100 border-sky-500 text-sky-900 font-semibold shadow-inner'
                     : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-300 text-zinc-600'
@@ -219,11 +221,25 @@ export const BioreactorModal: React.FC<BioreactorModalProps> = ({
                 <span className="text-xs uppercase font-semibold">Em preparo</span>
               </button>
 
+              {/* Aguardando inóculo Preset Button */}
+              <button
+                type="button"
+                onClick={() => handleStatusChange('aguardando_inoculo')}
+                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition text-center select-none ${
+                  status === 'aguardando_inoculo'
+                    ? 'bg-orange-100 border-orange-500 text-orange-950 font-semibold shadow-inner'
+                    : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-300 text-zinc-600'
+                }`}
+              >
+                <div className="w-3.5 h-3.5 rounded-full bg-orange-500 border border-white mb-1 shadow-[0_0_8px_rgba(249,115,22,0.3)] animate-pulse" />
+                <span className="text-xs uppercase font-semibold">Aguardando inóculo</span>
+              </button>
+
               {/* Em cultivo Preset Button */}
               <button
                 type="button"
                 onClick={() => handleStatusChange('andamento')}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition text-center select-none ${
+                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition text-center select-none ${
                   status === 'andamento'
                     ? 'bg-amber-100 border-amber-500 text-amber-900 font-semibold shadow-inner'
                     : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-300 text-zinc-600'
@@ -237,7 +253,7 @@ export const BioreactorModal: React.FC<BioreactorModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleStatusChange('concluido')}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition text-center select-none ${
+                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition text-center select-none ${
                   status === 'concluido'
                     ? 'bg-emerald-100 border-emerald-500 text-emerald-950 font-semibold shadow-inner'
                     : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-300 text-zinc-600'
