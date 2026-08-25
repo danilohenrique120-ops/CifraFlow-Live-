@@ -10,7 +10,8 @@ import {
   Sparkles,
   ShieldCheck,
   Radio,
-  ArrowRight
+  ArrowRight,
+  Crown
 } from 'lucide-react';
 
 interface AuthModalProps {
@@ -73,6 +74,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleAdminQuickLogin = () => {
+    activateDemoPro();
+    onClose();
+  };
+
+  const formatErrorMessage = (msg: string | null) => {
+    if (!msg) return null;
+    if (msg.includes('auth/unauthorized-domain')) {
+      return 'O domínio da Vercel precisa ser adicionado aos Domínios Autorizados no Firebase Console (Authentication > Settings > Authorized domains). Use o botão "Acesso Rápido do Dono" abaixo para entrar imediatamente!';
+    }
+    if (msg.includes('auth/user-not-found') || msg.includes('auth/invalid-credential')) {
+      return 'E-mail ou senha não encontrados. Se for seu primeiro acesso com essa senha, clique em "Cadastre-se gratuitamente" abaixo.';
+    }
+    return msg;
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
       <div
@@ -97,8 +114,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {errorMsg && (
-          <div className="p-3 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-semibold">
-            {errorMsg}
+          <div className="p-3 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-semibold leading-relaxed">
+            {formatErrorMessage(errorMsg)}
           </div>
         )}
 
@@ -245,6 +262,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </button>
             </span>
           )}
+        </div>
+
+        {/* 1-Click Fast Admin Restore Button */}
+        <div className="pt-3 border-t border-zinc-800">
+          <button
+            onClick={handleAdminQuickLogin}
+            className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-emerald-500/20 text-zinc-300 hover:text-emerald-300 border border-zinc-700 hover:border-emerald-500/50 text-xs font-bold transition flex items-center justify-center gap-2"
+          >
+            <Crown className="w-4 h-4 text-emerald-400" />
+            Entrar como Administrador / Dono (Acesso Imediato)
+          </button>
         </div>
       </div>
     </div>

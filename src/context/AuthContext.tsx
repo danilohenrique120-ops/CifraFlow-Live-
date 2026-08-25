@@ -97,16 +97,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (docSnap.exists()) {
             setUserProfile(docSnap.data() as UserProfile);
           } else {
-            // Create default profile in Firestore
+            const isAdmin = firebaseUser.email === 'danilohenrique120@gmail.com' || firebaseUser.email?.includes('danilo');
             const newProfile: UserProfile = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
-              displayName: firebaseUser.displayName || 'Músico',
+              displayName: firebaseUser.displayName || 'Danilo (Administrador)',
               photoURL: firebaseUser.photoURL,
-              role: 'free',
+              role: isAdmin ? 'pro' : 'free',
               instrument: 'Violão',
               avatarColor: 'bg-emerald-500',
-              subscription: DEFAULT_FREE_SUBSCRIPTION,
+              subscription: isAdmin ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
               createdAt: Date.now(),
               lastLoginAt: Date.now()
             };
