@@ -74,18 +74,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleAdminQuickLogin = () => {
-    activateDemoPro();
-    onClose();
-  };
-
   const formatErrorMessage = (msg: string | null) => {
     if (!msg) return null;
     if (msg.includes('auth/unauthorized-domain')) {
-      return 'O domínio da Vercel precisa ser adicionado aos Domínios Autorizados no Firebase Console (Authentication > Settings > Authorized domains). Use o botão "Acesso Rápido do Dono" abaixo para entrar imediatamente!';
+      return 'O domínio da Vercel precisa ser adicionado aos Domínios Autorizados no Firebase Console (Authentication > Settings > Authorized domains). Você também pode entrar criando uma conta com e-mail e senha abaixo!';
     }
     if (msg.includes('auth/user-not-found') || msg.includes('auth/invalid-credential')) {
-      return 'E-mail ou senha não encontrados. Se for seu primeiro acesso com essa senha, clique em "Cadastre-se gratuitamente" abaixo.';
+      return 'E-mail ou senha não encontrados. Se for seu primeiro acesso, clique em "Cadastre-se gratuitamente" abaixo.';
     }
     return msg;
   };
@@ -262,17 +257,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </button>
             </span>
           )}
-        </div>
-
-        {/* 1-Click Fast Admin Restore Button */}
-        <div className="pt-3 border-t border-zinc-800">
-          <button
-            onClick={handleAdminQuickLogin}
-            className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-emerald-500/20 text-zinc-300 hover:text-emerald-300 border border-zinc-700 hover:border-emerald-500/50 text-xs font-bold transition flex items-center justify-center gap-2"
-          >
-            <Crown className="w-4 h-4 text-emerald-400" />
-            Entrar como Administrador / Dono (Acesso Imediato)
-          </button>
         </div>
       </div>
     </div>
