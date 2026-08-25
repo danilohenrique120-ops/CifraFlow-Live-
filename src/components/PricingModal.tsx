@@ -253,11 +253,11 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 <div className="text-3xl font-black text-white">
                   {billingCycle === 'annual' ? (
                     <>
-                      R$ 24,90 <span className="text-xs text-zinc-400 font-normal">/mês (R$ 240/ano)</span>
+                      R$ 19,90 <span className="text-xs text-zinc-400 font-normal">/mês (R$ 199/ano)</span>
                     </>
                   ) : (
                     <>
-                      R$ 29,90 <span className="text-xs text-zinc-400 font-normal">/mês</span>
+                      R$ 24,90 <span className="text-xs text-zinc-400 font-normal">/mês</span>
                     </>
                   )}
                 </div>
