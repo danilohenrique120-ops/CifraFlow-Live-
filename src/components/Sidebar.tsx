@@ -123,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/20 via-zinc-900 to-zinc-900 border border-amber-500/30 space-y-2">
               <div className="flex items-center gap-2">
                 <Crown className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-black text-white">Plano Ministério Pro</span>
+                <span className="text-xs font-black text-white">Plano Pro</span>
               </div>
               <p className="text-[11px] text-zinc-300 leading-snug">
                 Crie salas de ensaio ilimitadas e guie toda a banda ao vivo.

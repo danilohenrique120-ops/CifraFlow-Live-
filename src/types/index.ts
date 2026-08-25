@@ -71,7 +71,7 @@ export interface Setlist {
 
 export type UserRole = 'leader' | 'member';
 
-export type UserPlanTier = 'free' | 'pro_musician' | 'pro_ministry';
+export type UserPlanTier = 'free' | 'pro_musician' | 'pro_band';
 
 export interface UserSubscription {
   status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'none';

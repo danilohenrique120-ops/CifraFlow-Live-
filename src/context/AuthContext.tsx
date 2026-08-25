@@ -38,8 +38,8 @@ const DEFAULT_FREE_SUBSCRIPTION: UserSubscription = {
 
 const DEFAULT_PRO_SUBSCRIPTION: UserSubscription = {
   status: 'active',
-  tier: 'pro_ministry',
-  planName: 'Plano Ministério Pro (Anual)',
+  tier: 'pro_band',
+  planName: 'Plano Pro (Anual)',
   currentPeriodEnd: Date.now() + 365 * 24 * 60 * 60 * 1000 // 1 year
 };
 

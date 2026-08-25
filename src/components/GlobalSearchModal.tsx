@@ -238,7 +238,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {(activeFilter === 'all' || activeFilter === 'artists') && results.artistsList.length > 0 && (
             <div>
               <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-2">
-                Artistas e Ministérios
+                Artistas e Grupos Musicais
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {results.artistsList.map((artist) => (

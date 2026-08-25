@@ -42,8 +42,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
       alert('Cupom inválido. Tente usar "LOUVOR2026" para testar o desconto!');
     }
   };
-
-  const handleSubscribe = async (tier: 'pro_musician' | 'pro_ministry') => {
+  const handleSubscribe = async (tier: 'pro_musician' | 'pro_band') => {
     setIsProcessing(true);
 
     // Call serverless checkout session if Stripe is configured, or activate demo
@@ -241,7 +240,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
               </div>
             </div>
 
-            {/* 3. Pro Ministry & Live Band Card (MAIS POPULAR) */}
+            {/* 3. Pro Band Card (MAIS POPULAR) */}
             <div className="p-5 rounded-3xl bg-gradient-to-b from-emerald-950/60 via-zinc-900 to-zinc-950 border-2 border-emerald-500 flex flex-col justify-between space-y-4 relative shadow-2xl">
               <div className="absolute -top-3 right-4 px-3 py-1 rounded-full bg-emerald-500 text-zinc-950 font-black text-[10px] uppercase tracking-wider shadow-lg">
                 👑 Mais Escolhido
@@ -249,7 +248,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
 
               <div className="space-y-3">
                 <span className="text-xs font-black text-emerald-400 uppercase tracking-wider block">
-                  Pro Ministério & Banda
+                  Plano Pro
                 </span>
                 <div className="text-3xl font-black text-white">
                   {billingCycle === 'annual' ? (
@@ -263,7 +262,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                   )}
                 </div>
                 <p className="text-xs text-zinc-300">
-                  Para líderes, regentes e ministérios conduzirem ensaios e missas conectados.
+                  Para líderes, regentes e bandas conduzirem ensaios e apresentações conectados.
                 </p>
 
                 <ul className="space-y-2 text-xs text-zinc-200 pt-2 border-t border-zinc-800">
@@ -296,12 +295,12 @@ export const PricingModal: React.FC<PricingModalProps> = ({
 
               <div className="pt-2 space-y-2">
                 <button
-                  onClick={() => handleSubscribe('pro_ministry')}
+                  onClick={() => handleSubscribe('pro_band')}
                   disabled={isProcessing}
                   className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 transition flex items-center justify-center gap-2"
                 >
                   <Radio className="w-4 h-4" />
-                  {isProcessing ? 'Processando...' : 'Ativar Plano Ministério Pro'}
+                  {isProcessing ? 'Processando...' : 'Ativar Plano Pro'}
                 </button>
               </div>
             </div>
