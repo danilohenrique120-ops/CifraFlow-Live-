@@ -1,0 +1,708 @@
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Song, StageTheme, FontScale, ColumnMode, Setlist } from '../types';
+import { isChordLine, transposeSongContent, calculateNewKey } from '../utils/chordEngine';
+import { useLiveRoom } from '../context/LiveRoomContext';
+import { ChordModal } from './ChordTooltip';
+import {
+  Play,
+  Pause,
+  Maximize2,
+  Minimize2,
+  Columns,
+  Square,
+  Sun,
+  Moon,
+  Volume2,
+  ChevronLeft,
+  ChevronRight,
+  Radio,
+  Share2,
+  Sliders,
+  Type,
+  Eye,
+  EyeOff,
+  Zap,
+  RotateCcw,
+  Sparkles,
+  Music,
+  Tv
+} from 'lucide-react';
+
+interface StageViewerProps {
+  song: Song;
+  onBack: () => void;
+  activeSetlist?: Setlist | null;
+  onNavigateSetlist?: (direction: 'prev' | 'next') => void;
+  onOpenLiveRoomModal?: () => void;
+  onOpenMetronome?: () => void;
+}
+
+export const StageViewer: React.FC<StageViewerProps> = ({
+  song,
+  onBack,
+  activeSetlist,
+  onNavigateSetlist,
+  onOpenLiveRoomModal,
+  onOpenMetronome
+}) => {
+  const {
+    isInRoom,
+    isHost,
+    sessionState,
+    changeKey,
+    broadcastScroll,
+    toggleFollowScroll,
+    sendBandAlert,
+    recentAlert
+  } = useLiveRoom();
+
+  // Transposition state
+  const [semitoneShift, setSemitoneShift] = useState<number>(() => {
+    return sessionState?.semitoneShift || 0;
+  });
+
+  // Display preferences
+  const [theme, setTheme] = useState<StageTheme>('dark-stage');
+  const [fontScale, setFontScale] = useState<FontScale>('base');
+  const [columnMode, setColumnMode] = useState<ColumnMode>('1-col');
+  const [isCleanStage, setIsCleanStage] = useState<boolean>(false);
+  const [showCapo, setShowCapo] = useState<boolean>(false);
+  const [capoFret, setCapoFret] = useState<number>(0);
+
+  // Auto-scroll state
+  const [isScrolling, setIsScrolling] = useState<boolean>(false);
+  const [scrollSpeed, setScrollSpeed] = useState<number>(1.5); // Multiplier
+  const [wakeLockActive, setWakeLockActive] = useState<boolean>(false);
+
+  // Chord Modal
+  const [selectedChord, setSelectedChord] = useState<string | null>(null);
+
+  // References
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const wakeLockRef = useRef<any>(null);
+
+  // Sync state from Live Room if follower
+  useEffect(() => {
+    if (sessionState && !isHost) {
+      if (sessionState.semitoneShift !== undefined) {
+        setSemitoneShift(sessionState.semitoneShift);
+      }
+    }
+  }, [sessionState?.semitoneShift, isHost]);
+
+  // Sync scroll position from Leader if followScroll is active
+  useEffect(() => {
+    if (sessionState?.followScroll && !isHost && sessionState.scrollPercentage !== undefined && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const targetScroll = (sessionState.scrollPercentage / 100) * (container.scrollHeight - container.clientHeight);
+      container.scrollTo({ top: targetScroll, behavior: 'smooth' });
+    }
+  }, [sessionState?.scrollPercentage, sessionState?.followScroll, isHost]);
+
+  // Wake Lock API implementation
+  const requestWakeLock = useCallback(async () => {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        setWakeLockActive(true);
+        wakeLockRef.current.addEventListener('release', () => {
+          setWakeLockActive(false);
+        });
+      }
+    } catch (err) {
+      console.warn('Wake Lock not supported or rejected', err);
+    }
+  }, []);
+
+  const releaseWakeLock = useCallback(() => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release();
+      wakeLockRef.current = null;
+      setWakeLockActive(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    requestWakeLock();
+    return () => {
+      releaseWakeLock();
+    };
+  }, [requestWakeLock, releaseWakeLock]);
+
+  // Key calculation
+  const currentKey = useMemo(() => {
+    return calculateNewKey(song.originalKey, semitoneShift);
+  }, [song.originalKey, semitoneShift]);
+
+  // Transposed song text
+  const transposedContent = useMemo(() => {
+    return transposeSongContent(song.content, semitoneShift, currentKey);
+  }, [song.content, semitoneShift, currentKey]);
+
+  // Handlers for transposition
+  const handleSemitoneChange = (delta: number) => {
+    const newShift = semitoneShift + delta;
+    setSemitoneShift(newShift);
+    const newKey = calculateNewKey(song.originalKey, newShift);
+    if (isInRoom && isHost) {
+      changeKey(newKey, newShift);
+    }
+  };
+
+  const handleResetKey = () => {
+    setSemitoneShift(0);
+    if (isInRoom && isHost) {
+      changeKey(song.originalKey, 0);
+    }
+  };
+
+  // Auto-scroll loop
+  useEffect(() => {
+    if (!isScrolling) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      return;
+    }
+
+    let lastTime = performance.now();
+    const scrollStep = (currentTime: number) => {
+      const delta = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
+
+      if (scrollContainerRef.current) {
+        const container = scrollContainerRef.current;
+        const maxScroll = container.scrollHeight - container.clientHeight;
+
+        if (container.scrollTop < maxScroll) {
+          // base speed: 30 pixels per second
+          const pxToScroll = 32 * scrollSpeed * delta;
+          container.scrollTop += pxToScroll;
+
+          // Broadcast scroll to band if leader
+          if (isInRoom && isHost && sessionState?.followScroll && maxScroll > 0) {
+            const percentage = Math.min(100, Math.round((container.scrollTop / maxScroll) * 100));
+            broadcastScroll(percentage);
+          }
+
+          animationFrameRef.current = requestAnimationFrame(scrollStep);
+        } else {
+          setIsScrolling(false);
+        }
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(scrollStep);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isScrolling, scrollSpeed, isInRoom, isHost, sessionState?.followScroll, broadcastScroll]);
+
+  // Keyboard shortcut listener (Space = toggle scroll)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsScrolling(prev => !prev);
+      } else if (e.code === 'ArrowUp' && e.altKey) {
+        e.preventDefault();
+        handleSemitoneChange(1);
+      } else if (e.code === 'ArrowDown' && e.altKey) {
+        e.preventDefault();
+        handleSemitoneChange(-1);
+      } else if (e.key === 'f' || e.key === 'F') {
+        setIsCleanStage(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [semitoneShift, song.originalKey, isInRoom, isHost]);
+
+  // Theme styling definitions
+  const themeStyles = {
+    'dark-stage': {
+      bg: 'bg-zinc-950 text-zinc-100',
+      cardBg: 'bg-zinc-900/90 border-zinc-800',
+      chordColor: 'text-emerald-400 font-bold',
+      lyricColor: 'text-zinc-100',
+      sectionColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+      hudBg: 'bg-zinc-900/95 border-zinc-700/80 text-white backdrop-blur-md'
+    },
+    'oled': {
+      bg: 'bg-black text-white',
+      cardBg: 'bg-zinc-950 border-zinc-900',
+      chordColor: 'text-amber-400 font-bold tracking-wide',
+      lyricColor: 'text-white',
+      sectionColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+      hudBg: 'bg-black/95 border-zinc-800 text-white backdrop-blur-md'
+    },
+    'sepia': {
+      bg: 'bg-[#f4ecd8] text-[#2c2416]',
+      cardBg: 'bg-[#ebe0c5] border-[#d8c8a8]',
+      chordColor: 'text-[#8b2500] font-bold',
+      lyricColor: 'text-[#1c160c]',
+      sectionColor: 'text-[#5a3e1b] bg-[#dfd0b0] border-[#bda682]',
+      hudBg: 'bg-[#ebe0c5]/95 border-[#caba98] text-[#2c2416] backdrop-blur-md shadow-xl'
+    },
+    'light-contrast': {
+      bg: 'bg-slate-50 text-slate-900',
+      cardBg: 'bg-white border-slate-200 shadow-sm',
+      chordColor: 'text-blue-700 font-bold',
+      lyricColor: 'text-slate-950 font-medium',
+      sectionColor: 'text-indigo-800 bg-indigo-50 border-indigo-200',
+      hudBg: 'bg-white/95 border-slate-300 text-slate-900 backdrop-blur-md shadow-xl'
+    }
+  }[theme];
+
+  // Font scale class
+  const fontClass = {
+    sm: 'text-sm leading-relaxed',
+    base: 'text-base sm:text-lg leading-relaxed',
+    lg: 'text-lg sm:text-xl leading-relaxed',
+    xl: 'text-xl sm:text-2xl leading-loose',
+    '2xl': 'text-2xl sm:text-3xl leading-loose'
+  }[fontScale];
+
+  // Split lines for rendering
+  const lines = transposedContent.split('\n');
+
+  // Split into 2 columns if requested
+  const midPoint = Math.ceil(lines.length / 2);
+  const col1Lines = columnMode === '2-col' ? lines.slice(0, midPoint) : lines;
+  const col2Lines = columnMode === '2-col' ? lines.slice(midPoint) : [];
+
+  const renderLinesBlock = (linesToRender: string[]) => {
+    return linesToRender.map((line, idx) => {
+      const trimmed = line.trim();
+
+      // Section Header (e.g. [Refrão], [Intro])
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        return (
+          <div key={idx} className="my-4">
+            <span className={`inline-block px-3 py-1 rounded-md text-xs sm:text-sm font-semibold uppercase tracking-wider border ${themeStyles.sectionColor}`}>
+              {trimmed.replace(/[\[\]]/g, '')}
+            </span>
+          </div>
+        );
+      }
+
+      // Pure chord line
+      if (isChordLine(line)) {
+        // Split line by chords and spaces to make each chord clickable
+        const tokens = line.split(/(\s+)/);
+        return (
+          <div key={idx} className={`font-mono ${themeStyles.chordColor} select-none py-0.5 tracking-wider font-extrabold`}>
+            {tokens.map((token, tIdx) => {
+              if (!token.trim()) return <span key={tIdx}>{token}</span>;
+              return (
+                <button
+                  key={tIdx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedChord(token.replace(/^[[(]|[)\]]$/g, ''));
+                  }}
+                  className="hover:underline hover:scale-105 transition-transform inline-block cursor-pointer px-0.5 rounded focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  title="Clique para ver o diagrama"
+                >
+                  {token}
+                </button>
+              );
+            })}
+          </div>
+        );
+      }
+
+      // Empty line
+      if (!trimmed) {
+        return <div key={idx} className="h-3" />;
+      }
+
+      // Standard Lyrics Line
+      return (
+        <div key={idx} className={`font-sans ${themeStyles.lyricColor} py-0.5 whitespace-pre-wrap font-medium`}>
+          {line}
+        </div>
+      );
+    });
+  };
+
+  // Find setlist index if active
+  const setlistIndex = useMemo(() => {
+    if (!activeSetlist) return null;
+    const idx = activeSetlist.items.findIndex(item => item.songId === song.id);
+    return idx !== -1 ? { current: idx + 1, total: activeSetlist.items.length } : null;
+  }, [activeSetlist, song.id]);
+
+  return (
+    <div className={`fixed inset-0 z-40 flex flex-col ${themeStyles.bg} transition-colors duration-300 select-text overflow-hidden`}>
+      {/* 🚨 High Visibility Live Band Alert Banner */}
+      {recentAlert && (
+        <div className="fixed top-3 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-50 animate-bounce">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-amber-500 text-zinc-950 font-black shadow-2xl border-2 border-white text-base sm:text-lg uppercase tracking-wide">
+            <Zap className="w-6 h-6 animate-pulse" />
+            <span>ALERTA DA BANDA: {recentAlert.message}</span>
+            <span className="text-xs bg-black/20 px-2 py-0.5 rounded font-bold">({recentAlert.senderName})</span>
+          </div>
+        </div>
+      )}
+
+      {/* Top Navbar / Control Bar (hidden in clean stage mode if toggled) */}
+      {!isCleanStage && (
+        <header className="flex-none border-b border-zinc-800/80 px-4 py-2.5 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between gap-2 z-30">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onBack}
+              className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+              title="Voltar ao Catálogo"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base sm:text-lg font-bold text-white truncate max-w-[200px] sm:max-w-md">
+                  {song.title}
+                </h1>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  {song.liturgicalMoment}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400 truncate">{song.artist}</p>
+            </div>
+          </div>
+
+          {/* Quick Action Tools */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Live Room Status Indicator */}
+            {isInRoom ? (
+              <button
+                onClick={onOpenLiveRoomModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold animate-pulse hover:bg-emerald-500/30 transition"
+              >
+                <Radio className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">SALA: {sessionState?.pin}</span>
+                <span className="sm:hidden">{sessionState?.pin}</span>
+              </button>
+            ) : (
+              <button
+                onClick={onOpenLiveRoomModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 text-xs font-semibold transition"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Modo Ensaio Ao Vivo</span>
+              </button>
+            )}
+
+            {/* Metronome Shortcut */}
+            <button
+              onClick={onOpenMetronome}
+              className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+              title="Abrir Metrônomo"
+            >
+              <Music className="w-5 h-5" />
+            </button>
+
+            {/* Stage Fullscreen Clean Trigger */}
+            <button
+              onClick={() => setIsCleanStage(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-900/30 transition"
+              title="Entrar no Modo Palco Limpo (Full Screen)"
+            >
+              <Tv className="w-4 h-4" />
+              <span className="hidden md:inline">Modo Palco</span>
+            </button>
+          </div>
+        </header>
+      )}
+
+      {/* Main Stage Lyrics Area */}
+      <main
+        ref={scrollContainerRef}
+        onClick={() => setIsScrolling(prev => !prev)}
+        className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 cursor-pointer select-text relative scroll-smooth"
+      >
+        {/* Floating Quick Restore Button when in Clean Stage Mode */}
+        {isCleanStage && (
+          <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsCleanStage(false);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/90 text-zinc-200 border border-zinc-700/80 hover:bg-zinc-800 text-xs font-bold backdrop-blur-md shadow-xl"
+            >
+              <EyeOff className="w-3.5 h-3.5 text-zinc-400" />
+              Sair do Palco Limpo
+            </button>
+          </div>
+        )}
+
+        <div className="max-w-6xl mx-auto">
+          {/* Song Header & Key Info inside Stage View */}
+          <div className="mb-6 pb-4 border-b border-zinc-800/40 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white mb-1">
+                {song.title}
+              </h2>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-400">
+                <span>{song.artist}</span>
+                <span>•</span>
+                <span>BPM: <strong className="text-white font-mono">{song.bpm}</strong></span>
+                <span>•</span>
+                <span>Compasso: <strong className="text-white font-mono">{song.timeSignature}</strong></span>
+                {wakeLockActive && (
+                  <>
+                    <span>•</span>
+                    <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                      💡 Tela Sempre Ligada
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Key / Tom Badges */}
+            <div className="flex items-center gap-3">
+              <div className="px-4 py-2 rounded-2xl bg-zinc-900/90 border border-zinc-700/80 text-center shadow-lg">
+                <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">Tom Atual</span>
+                <span className="text-2xl font-black text-emerald-400 font-mono">{currentKey}</span>
+              </div>
+
+              {semitoneShift !== 0 && (
+                <div className="px-3 py-2 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center">
+                  <span className="text-[10px] uppercase font-bold text-zinc-500 block">Original</span>
+                  <span className="text-base font-bold text-zinc-300 font-mono">{song.originalKey}</span>
+                </div>
+              )}
+
+              {song.capo && (
+                <div className="px-3 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center">
+                  <span className="text-[10px] uppercase font-bold text-amber-400 block">Capotraste</span>
+                  <span className="text-sm font-extrabold text-amber-300">{song.capo}ª casa</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Render Lyrics & Chords in 1 or 2 Columns */}
+          <div className={`${fontClass}`}>
+            {columnMode === '1-col' ? (
+              <div className="space-y-0.5">{renderLinesBlock(col1Lines)}</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <div className="space-y-0.5">{renderLinesBlock(col1Lines)}</div>
+                <div className="space-y-0.5">{renderLinesBlock(col2Lines)}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Spacer for comfortable stage scrolling */}
+          <div className="h-44" />
+        </div>
+      </main>
+
+      {/* 🎛️ Floating Stage HUD / Controls */}
+      <footer className="flex-none p-3 sm:p-4 bg-zinc-950/90 border-t border-zinc-800/90 backdrop-blur-lg z-30">
+        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          {/* Left: Transpose Controller (+ / - semitones) */}
+          <div className="flex items-center gap-1.5 bg-zinc-900/90 border border-zinc-700/80 p-1 rounded-2xl shadow-inner">
+            <span className="text-xs font-bold text-zinc-400 px-2 font-mono">TOM</span>
+            <button
+              onClick={() => handleSemitoneChange(-1)}
+              className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
+              title="Diminuir meio-tom (-1 semitom)"
+            >
+              -
+            </button>
+            <div className="px-2 text-center min-w-[50px]">
+              <span className="text-base font-black text-emerald-400 font-mono">{currentKey}</span>
+              {semitoneShift !== 0 && (
+                <span className="text-[10px] text-zinc-400 block font-mono">
+                  {semitoneShift > 0 ? `+${semitoneShift}` : semitoneShift}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => handleSemitoneChange(1)}
+              className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
+              title="Aumentar meio-tom (+1 semitom)"
+            >
+              +
+            </button>
+            {semitoneShift !== 0 && (
+              <button
+                onClick={handleResetKey}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition text-xs"
+                title="Restaurar Tom Original"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Center: Auto-Scroll Controller */}
+          <div className="flex items-center gap-2 bg-zinc-900/90 border border-zinc-700/80 px-3 py-1.5 rounded-2xl shadow-lg">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsScrolling(prev => !prev);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition shadow-md ${
+                isScrolling
+                  ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 animate-pulse'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+              }`}
+            >
+              {isScrolling ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              <span>{isScrolling ? 'Pausar Rolagem' : 'Auto-Rolagem'}</span>
+            </button>
+
+            {/* Speed Selector */}
+            <div className="flex items-center gap-1 pl-2 border-l border-zinc-700/80">
+              <span className="text-[10px] uppercase font-bold text-zinc-400 hidden sm:inline">Vel:</span>
+              {[0.8, 1.2, 1.8, 2.5].map((speed) => (
+                <button
+                  key={speed}
+                  onClick={() => setScrollSpeed(speed)}
+                  className={`px-2 py-1 rounded-lg text-xs font-bold transition ${
+                    scrollSpeed === speed
+                      ? 'bg-emerald-500 text-zinc-950'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                  }`}
+                >
+                  {speed}x
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Layout & Stage Display Tools */}
+          <div className="flex items-center gap-2">
+            {/* Font Scale Selector */}
+            <div className="flex items-center bg-zinc-900/90 border border-zinc-700/80 p-1 rounded-2xl">
+              <span className="text-[10px] font-bold text-zinc-400 px-1.5">FONTE</span>
+              {(['sm', 'base', 'lg', 'xl', '2xl'] as FontScale[]).map((scale, i) => {
+                const labels = ['P', 'M', 'G', 'GG', 'XGG'];
+                return (
+                  <button
+                    key={scale}
+                    onClick={() => setFontScale(scale)}
+                    className={`px-2 py-1 rounded-xl text-xs font-extrabold transition ${
+                      fontScale === scale
+                        ? 'bg-emerald-500 text-zinc-950'
+                        : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                    }`}
+                  >
+                    {labels[i]}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 1 Col vs 2 Col */}
+            <button
+              onClick={() => setColumnMode(prev => prev === '1-col' ? '2-col' : '1-col')}
+              className={`p-2 rounded-xl border transition ${
+                columnMode === '2-col'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'
+              }`}
+              title={columnMode === '2-col' ? 'Mudar para 1 Coluna' : 'Mudar para 2 Colunas (Tablets / Monitores)'}
+            >
+              <Columns className="w-4 h-4" />
+            </button>
+
+            {/* Stage Themes */}
+            <select
+              value={theme}
+              onChange={(e) => setTheme(e.target.value as StageTheme)}
+              className="bg-zinc-900 border border-zinc-700 text-xs font-bold rounded-xl px-2.5 py-2 text-zinc-200 focus:outline-none focus:border-emerald-500"
+            >
+              <option value="dark-stage">Dark Stage</option>
+              <option value="oled">OLED Black</option>
+              <option value="sepia">Sépia Vintage</option>
+              <option value="light-contrast">Light Contrast</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Setlist Navigation Bar if Active */}
+        {activeSetlist && onNavigateSetlist && (
+          <div className="mt-2 pt-2 border-t border-zinc-800/80 flex items-center justify-between max-w-6xl mx-auto text-xs">
+            <button
+              onClick={() => onNavigateSetlist('prev')}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold border border-zinc-700"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Anterior</span>
+            </button>
+
+            <span className="text-zinc-400 font-medium">
+              Repertório: <strong className="text-white">{activeSetlist.title}</strong>{' '}
+              {setlistIndex && `(${setlistIndex.current} de ${setlistIndex.total})`}
+            </span>
+
+            <button
+              onClick={() => onNavigateSetlist('next')}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold border border-zinc-700"
+            >
+              <span>Próxima</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Leader Quick Band Cues Bar */}
+        {isInRoom && isHost && (
+          <div className="mt-2 pt-2 border-t border-zinc-800/60 flex items-center gap-2 overflow-x-auto max-w-6xl mx-auto text-xs py-1">
+            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex-none">
+              Comandos Banda:
+            </span>
+            <button
+              onClick={() => sendBandAlert('REPETIR REFRÃO 🔁', 'repeat-chorus')}
+              className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-emerald-500/20 text-zinc-200 border border-zinc-700 hover:border-emerald-500 text-xs font-bold transition flex-none"
+            >
+              🔁 Repetir Refrão
+            </button>
+            <button
+              onClick={() => sendBandAlert('IR PARA A PONTE ⚡', 'bridge')}
+              className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-amber-500/20 text-zinc-200 border border-zinc-700 hover:border-amber-500 text-xs font-bold transition flex-none"
+            >
+              ⚡ Ponte
+            </button>
+            <button
+              onClick={() => sendBandAlert('SOLO INSTRUMENTAL 🎸', 'solo')}
+              className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-purple-500/20 text-zinc-200 border border-zinc-700 hover:border-purple-500 text-xs font-bold transition flex-none"
+            >
+              🎸 Solo
+            </button>
+            <button
+              onClick={() => sendBandAlert('SUAVE / VOZ E VIOLÃO 🤫', 'soft')}
+              className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-blue-500/20 text-zinc-200 border border-zinc-700 hover:border-blue-500 text-xs font-bold transition flex-none"
+            >
+              🤫 Suave
+            </button>
+            <button
+              onClick={() => sendBandAlert('FINALIZAR 🛑', 'outro')}
+              className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-rose-500/20 text-zinc-200 border border-zinc-700 hover:border-rose-500 text-xs font-bold transition flex-none"
+            >
+              🛑 Finalizar
+            </button>
+          </div>
+        )}
+      </footer>
+
+      {/* Interactive Chord Diagram Modal */}
+      {selectedChord && (
+        <ChordModal
+          chord={selectedChord}
+          onClose={() => setSelectedChord(null)}
+        />
+      )}
+    </div>
+  );
+};

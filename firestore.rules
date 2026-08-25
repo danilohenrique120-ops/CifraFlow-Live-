@@ -2,89 +2,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // 1. Global Safety Net - Default Deny
-    match /{document=**} {
-      allow read, write: if false;
+    // Helper function to check authentication
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper to check user ownership
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Helper to check if user has active Pro subscription
+    function isProUser() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pro';
     }
 
-    // Helper: Validar padrões de IDs para prevenir injeção
-    function isValidId(id) {
-      return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    // Regras para perfil de usuário
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
     }
 
-    function incoming() {
-      return request.resource.data;
+    // Regras para repertórios / setlists na nuvem
+    match /setlists/{setlistId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && (isProUser() || request.resource.data.userId == request.auth.uid);
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
-    // Helpers de validação para a entidade Bioreactor
-    function isValidBioreactor(data) {
-      return data.keys().hasAll(['id', 'name', 'capacity', 'status', 'fillLevel', 'updatedAt'])
-        && data.keys().size() <= 22
-        && data.id is string
-        && data.id.size() <= 16
-        && data.name is string
-        && data.name.size() <= 32
-        && data.capacity is int
-        && (data.capacity == 100 || data.capacity == 500 || data.capacity == 3000 || data.capacity == 5000)
-        && data.status is string
-        && (data.status == 'vazio' || data.status == 'aguardando' || data.status == 'aguardando_inoculo' || data.status == 'andamento' || data.status == 'concluido')
-        && data.fillLevel is int
-        && data.fillLevel >= 0
-        && data.fillLevel <= 100
-        && data.updatedAt is string
-        && (!data.keys().hasAny(['description']) || (data.description is string && data.description.size() <= 2000))
-        && (!data.keys().hasAny(['productName']) || (data.productName is string && data.productName.size() <= 200))
-        && (!data.keys().hasAny(['operator']) || (data.operator is string && data.operator.size() <= 100))
-        && (!data.keys().hasAny(['operatorActivity']) || (data.operatorActivity is string && data.operatorActivity.size() <= 500))
-        && (!data.keys().hasAny(['inoculationTime']) || (data.inoculationTime is string && data.inoculationTime.size() <= 100))
-        && (!data.keys().hasAny(['inoculationRealizado']) || (data.inoculationRealizado is string && data.inoculationRealizado.size() <= 100))
-        && (!data.keys().hasAny(['inoculationDone']) || data.inoculationDone is bool)
-        && (!data.keys().hasAny(['transferTime']) || (data.transferTime is string && data.transferTime.size() <= 100))
-        && (!data.keys().hasAny(['transferRealizado']) || (data.transferRealizado is string && data.transferRealizado.size() <= 100))
-        && (!data.keys().hasAny(['transferDone']) || data.transferDone is bool)
-        && (!data.keys().hasAny(['releaseTime']) || (data.releaseTime is string && data.releaseTime.size() <= 100))
-        && (!data.keys().hasAny(['releaseRealizado']) || (data.releaseRealizado is string && data.releaseRealizado.size() <= 100))
-        && (!data.keys().hasAny(['releaseDone']) || data.releaseDone is bool);
+    // Regras para salas ao vivo (Live Rooms)
+    match /rooms/{roomId} {
+      allow read: if true; // Qualquer membro da banda com o código PIN pode ler a sala
+      allow create: if isProUser(); // Apenas assinantes Pro podem criar salas de ensaio como Líder
+      allow update: if isAuthenticated() && (resource.data.hostId == request.auth.uid || isProUser());
+      allow delete: if isAuthenticated() && resource.data.hostId == request.auth.uid;
     }
 
-    // Helpers de validação para a entidade WhiteboardNote
-    function isValidWhiteboardNote(data) {
-      return data.keys().hasAll(['id', 'content', 'updatedBy', 'updatedAt'])
-        && data.id is string
-        && (data.id == 'global' || data.id == 'manager')
-        && data.content is string
-        && data.content.size() <= 50000
-        && data.updatedBy is string
-        && data.updatedBy.size() <= 100
-        && data.updatedAt is string;
-    }
-
-    // Helpers de validação para metadados de turno
-    function isValidShiftMeta(data) {
-      return (!data.keys().hasAny(['shift']) || (data.shift is string && data.shift.size() <= 200))
-        && (!data.keys().hasAny(['supervisor']) || (data.supervisor is string && data.supervisor.size() <= 100))
-        && (!data.keys().hasAny(['updatedAt']) || (data.updatedAt is string && data.updatedAt.size() <= 100));
-    }
-
-    // 2. Rules for Bioreactors
-    match /bioreactors/{bioreactorId} {
+    // Catálogo público de músicas
+    match /songs/{songId} {
       allow read: if true;
-      allow create, update: if isValidId(bioreactorId) && isValidBioreactor(incoming());
-      allow delete: if false; // Não permitimos deletar biorreatores fixos
-    }
-
-    // 3. Rules for Whiteboard (Quadro de Avisos e Avisos do Gestor)
-    match /whiteboard/{noteId} {
-      allow read: if true;
-      allow create, update: if isValidId(noteId) && isValidWhiteboardNote(incoming());
-      allow delete: if false;
-    }
-
-    // 4. Rules for Metadata (Turno e Supervisor)
-    match /meta/{metaId} {
-      allow read: if true;
-      allow create, update: if isValidId(metaId) && isValidShiftMeta(incoming());
-      allow delete: if false;
+      allow write: if false; // Apenas administradores via Firebase Console
     }
   }
 }
