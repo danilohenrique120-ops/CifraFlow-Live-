@@ -79,16 +79,16 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pinInput.trim()) return;
-    const success = joinRoom(pinInput, nameInput, selectedInstrument);
+    const success = await joinRoom(pinInput, nameInput, selectedInstrument);
     if (success) {
       setActiveTab('status');
     }
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isPro) {
       if (onRequirePro) {
@@ -96,7 +96,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
       }
       return;
     }
-    createRoom(roomNameInput, nameInput, selectedInstrument);
+    await createRoom(roomNameInput, nameInput, selectedInstrument);
     setActiveTab('status');
   };
 
@@ -345,7 +345,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                     type="text"
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
-                    placeholder="Ex: Danilo"
+                    placeholder="Digite seu nome"
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
                     required
                   />
@@ -396,7 +396,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                     type="text"
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
-                    placeholder="Ex: Danilo (Regente)"
+                    placeholder="Nome do líder ou regente"
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
                     required
                   />

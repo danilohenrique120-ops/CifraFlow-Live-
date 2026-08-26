@@ -1,6 +1,6 @@
 {
-  "name": "CifraFlow Live",
-  "short_name": "CifraFlow",
+  "name": "CifraSync Live",
+  "short_name": "CifraSync",
   "description": "Cifras, Descoberta Litúrgica e Sincronização em Tempo Real para Ensaios e Palco Conectado",
   "start_url": "/",
   "display": "standalone",

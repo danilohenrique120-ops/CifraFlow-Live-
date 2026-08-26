@@ -48,6 +48,23 @@ export interface Song {
   parsedLines?: ChordLine[];
   videoUrl?: string;
   duration?: string;
+  isCustom?: boolean;
+  audioPreviewUrl?: string;
+  albumName?: string;
+  coverUrl?: string;
+}
+
+export interface OnlineSongResult {
+  trackId: number | string;
+  trackName: string;
+  artistName: string;
+  collectionName?: string;
+  artworkUrl100?: string;
+  previewUrl?: string;
+  trackTimeMillis?: number;
+  primaryGenreName?: string;
+  releaseDate?: string;
+  source: 'online_spotify' | 'online_itunes';
 }
 
 export interface SetlistItem {

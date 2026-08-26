@@ -11,12 +11,14 @@ import {
   Users,
   Compass,
   User,
-  Crown
+  Crown,
+  Upload
 } from 'lucide-react';
 
 interface NavbarProps {
   onOpenSearch: () => void;
   onOpenLiveRoomModal: () => void;
+  onOpenUploadModal: () => void;
   onOpenMetronome: () => void;
   onOpenTuner: () => void;
   onOpenPricing: () => void;
@@ -28,6 +30,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenSearch,
   onOpenLiveRoomModal,
+  onOpenUploadModal,
   onOpenMetronome,
   onOpenTuner,
   onOpenPricing,
@@ -55,7 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <div>
             <span className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-1.5">
-              CifraFlow <span className="text-emerald-400">Live</span>
+              CifraSync <span className="text-emerald-400">Live</span>
             </span>
           </div>
         </div>
@@ -69,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <div className="flex items-center gap-2.5">
             <Search className="w-4 h-4 text-emerald-400" />
-            <span className="truncate">Buscar músicas, artistas, letras ou momentos...</span>
+            <span className="truncate">Buscar músicas locais ou pesquisar online...</span>
           </div>
           <kbd className="px-2 py-0.5 rounded-lg bg-zinc-800 text-[10px] font-mono text-zinc-400 border border-zinc-700">
             Ctrl+K
@@ -85,6 +88,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="sm:hidden p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition"
         >
           <Search className="w-5 h-5" />
+        </button>
+
+        {/* Upload Song Button */}
+        <button
+          onClick={onOpenUploadModal}
+          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-emerald-400 border border-zinc-800 hover:border-emerald-500/50 text-xs font-bold transition shadow-sm"
+          title="Fazer Upload de Cifra Própria"
+        >
+          <Upload className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Subir Cifra</span>
         </button>
 
         {/* Metronome */}

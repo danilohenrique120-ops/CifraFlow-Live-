@@ -6,11 +6,7 @@ import {
   ShieldCheck,
   Sparkles,
   LogOut,
-  Calendar,
-  CreditCard,
-  Zap,
-  Check,
-  RotateCcw
+  Check
 } from 'lucide-react';
 
 interface UserProfileModalProps {
@@ -24,7 +20,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onClose,
   onOpenPricing
 }) => {
-  const { userProfile, isPro, signOutUser, updateUserInstrument, activateDemoPro, activateDemoFree } = useAuth();
+  const { userProfile, isPro, signOutUser, updateUserInstrument } = useAuth();
   const [selectedInstrument, setSelectedInstrument] = useState(userProfile?.instrument || 'Violão');
   const [isSaved, setIsSaved] = useState(false);
 
@@ -62,7 +58,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="text-base font-extrabold text-white truncate">
-              {userProfile.displayName || 'Músico CifraFlow'}
+              {userProfile.displayName || 'Músico'}
             </h4>
             <p className="text-xs text-zinc-400 truncate">{userProfile.email || 'Conta Local'}</p>
             <div className="flex items-center gap-2 mt-1">
@@ -123,31 +119,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 font-bold text-xs text-white transition flex items-center gap-1"
             >
               {isSaved ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : 'Salvar'}
-            </button>
-          </div>
-        </div>
-
-        {/* Sandbox / Testing Switch for Paywall Demo */}
-        <div className="p-3 rounded-2xl bg-zinc-950/40 border border-dashed border-zinc-800 space-y-2">
-          <span className="text-[10px] uppercase font-black tracking-wider text-zinc-500 block">
-            Ambiente de Testes (Simular Planos)
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={activateDemoPro}
-              className={`py-1.5 rounded-xl text-[11px] font-bold transition ${
-                isPro ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-zinc-800 text-zinc-400'
-              }`}
-            >
-              Simular Pro 👑
-            </button>
-            <button
-              onClick={activateDemoFree}
-              className={`py-1.5 rounded-xl text-[11px] font-bold transition ${
-                !isPro ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-zinc-800 text-zinc-400'
-              }`}
-            >
-              Simular Free 🔒
             </button>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Song, Setlist } from './types';
+import { Song, Setlist, LiturgicalMoment } from './types';
 import { INITIAL_SONGS, INITIAL_SETLISTS } from './data/songsData';
 import { LiveRoomProvider, useLiveRoom } from './context/LiveRoomContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -15,12 +15,16 @@ import { TunerModal } from './components/TunerModal';
 import { PricingModal } from './components/PricingModal';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
+import { UploadSongModal } from './components/UploadSongModal';
 
 const MainAppContent: React.FC = () => {
-  // Persistence state
+  const { isInRoom, isHost, sessionState, selectSong } = useLiveRoom();
+  const { isPro, userProfile, isLoading } = useAuth();
+
+  // User-isolated songs and setlists state
   const [songs, setSongs] = useState<Song[]>(() => {
-    if (typeof window === 'undefined') return INITIAL_SONGS;
-    const saved = localStorage.getItem('cifraflow_songs');
+    if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_SONGS;
+    const saved = localStorage.getItem(`cifrasync_songs_${userProfile.uid}`);
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
@@ -28,13 +32,48 @@ const MainAppContent: React.FC = () => {
   });
 
   const [setlists, setSetlists] = useState<Setlist[]>(() => {
-    if (typeof window === 'undefined') return INITIAL_SETLISTS;
-    const saved = localStorage.getItem('cifraflow_setlists');
+    if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_SETLISTS;
+    const saved = localStorage.getItem(`cifrasync_setlists_${userProfile.uid}`);
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
     return INITIAL_SETLISTS;
   });
+
+  // Automatically load the isolated workspace for the logged-in user
+  useEffect(() => {
+    if (userProfile?.uid) {
+      const userSongsKey = `cifrasync_songs_${userProfile.uid}`;
+      const userSetlistsKey = `cifrasync_setlists_${userProfile.uid}`;
+
+      const savedSongs = localStorage.getItem(userSongsKey);
+      if (savedSongs) {
+        try {
+          setSongs(JSON.parse(savedSongs));
+        } catch (e) {
+          setSongs(INITIAL_SONGS);
+        }
+      } else {
+        setSongs(INITIAL_SONGS);
+      }
+
+      const savedSetlists = localStorage.getItem(userSetlistsKey);
+      if (savedSetlists) {
+        try {
+          setSetlists(JSON.parse(savedSetlists));
+        } catch (e) {
+          setSetlists(INITIAL_SETLISTS);
+        }
+      } else {
+        setSetlists(INITIAL_SETLISTS);
+      }
+    } else {
+      setSongs(INITIAL_SONGS);
+      setSetlists(INITIAL_SETLISTS);
+      setSelectedSong(null);
+      setActiveSetlist(null);
+    }
+  }, [userProfile?.uid]);
 
   // Navigation and active views
   const [currentView, setCurrentView] = useState<'discovery' | 'setlists'>('discovery');
@@ -44,6 +83,7 @@ const MainAppContent: React.FC = () => {
   // Modals state
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isLiveRoomModalOpen, setIsLiveRoomModalOpen] = useState<boolean>(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [isMetronomeOpen, setIsMetronomeOpen] = useState<boolean>(false);
   const [isTunerOpen, setIsTunerOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
@@ -51,18 +91,20 @@ const MainAppContent: React.FC = () => {
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [pricingReason, setPricingReason] = useState<string | undefined>(undefined);
+  const [uploadPresetMoment, setUploadPresetMoment] = useState<LiturgicalMoment | undefined>(undefined);
 
-  const { isInRoom, isHost, sessionState, selectSong } = useLiveRoom();
-  const { isPro } = useAuth();
-
-  // Save to localStorage
+  // Save changes isolated per user
   useEffect(() => {
-    localStorage.setItem('cifraflow_songs', JSON.stringify(songs));
-  }, [songs]);
+    if (userProfile?.uid) {
+      localStorage.setItem(`cifrasync_songs_${userProfile.uid}`, JSON.stringify(songs));
+    }
+  }, [songs, userProfile?.uid]);
 
   useEffect(() => {
-    localStorage.setItem('cifraflow_setlists', JSON.stringify(setlists));
-  }, [setlists]);
+    if (userProfile?.uid) {
+      localStorage.setItem(`cifrasync_setlists_${userProfile.uid}`, JSON.stringify(setlists));
+    }
+  }, [setlists, userProfile?.uid]);
 
   // Sync active song with Live Room state if changed remotely by Host
   useEffect(() => {
@@ -103,6 +145,10 @@ const MainAppContent: React.FC = () => {
 
   // Handlers
   const handleSelectSong = (song: Song, setlist?: Setlist) => {
+    // Add to songs list if it's an online song not yet in catalog
+    if (!songs.some(s => s.id === song.id)) {
+      setSongs(prev => [song, ...prev]);
+    }
     setSelectedSong(song);
     if (setlist) {
       setActiveSetlist(setlist);
@@ -110,6 +156,11 @@ const MainAppContent: React.FC = () => {
     if (isInRoom && isHost) {
       selectSong(song.id, song.currentKey || song.originalKey);
     }
+  };
+
+  const handleSaveCustomSong = (newSong: Song) => {
+    setSongs(prev => [newSong, ...prev]);
+    setSelectedSong(newSong);
   };
 
   const handleNavigateSetlist = (direction: 'prev' | 'next') => {
@@ -186,12 +237,47 @@ const MainAppContent: React.FC = () => {
     }));
   };
 
+  const handleOpenUploadWithPreset = (preset?: LiturgicalMoment) => {
+    setUploadPresetMoment(preset);
+    setIsUploadModalOpen(true);
+  };
+
+  const handleUpdateSongMoment = (songId: string, newMoment: LiturgicalMoment) => {
+    setSongs(prev => prev.map(s => s.id === songId ? { ...s, liturgicalMoment: newMoment } : s));
+  };
+
+  const handleBatchUpdateMoments = (songIdsToAdd: string[], songIdsToRemove: string[], moment: LiturgicalMoment) => {
+    setSongs(prev => prev.map(s => {
+      if (songIdsToAdd.includes(s.id)) {
+        return { ...s, liturgicalMoment: moment };
+      }
+      if (songIdsToRemove.includes(s.id)) {
+        return { ...s, liturgicalMoment: 'Ação de Graças' };
+      }
+      return s;
+    }));
+  };
+
+  // 🔒 OPÇÃO B: Bloqueio Total Obrigatório para qualquer visitante deslogado
+  if (!userProfile && !isLoading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+        <AuthModal
+          isOpen={true}
+          onClose={() => {}}
+          isMandatory={true}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col antialiased selection:bg-emerald-500 selection:text-zinc-950">
       {/* Top Navbar */}
       <Navbar
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
+        onOpenUploadModal={() => handleOpenUploadWithPreset()}
         onOpenMetronome={() => setIsMetronomeOpen(true)}
         onOpenTuner={() => setIsTunerOpen(true)}
         onOpenPricing={() => handleOpenPricingWithReason()}
@@ -211,6 +297,7 @@ const MainAppContent: React.FC = () => {
             setCurrentView('setlists');
           }}
           onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
+          onOpenUploadModal={() => handleOpenUploadWithPreset()}
           onOpenMetronome={() => setIsMetronomeOpen(true)}
           onOpenTuner={() => setIsTunerOpen(true)}
           onOpenPricing={() => handleOpenPricingWithReason()}
@@ -226,8 +313,11 @@ const MainAppContent: React.FC = () => {
               onSelectSong={(song) => handleSelectSong(song)}
               onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
               onOpenSearch={() => setIsSearchOpen(true)}
+              onOpenUploadModal={handleOpenUploadWithPreset}
               setlists={setlists}
               onAddToSetlist={handleAddToSetlist}
+              onUpdateSongMoment={handleUpdateSongMoment}
+              onBatchUpdateMoments={handleBatchUpdateMoments}
             />
           ) : (
             <SetlistsManager
@@ -255,12 +345,24 @@ const MainAppContent: React.FC = () => {
         />
       )}
 
-      {/* Global Search Modal (Spotify style Ctrl+K) */}
+      {/* Global Search Modal (Local & Online Spotify style Ctrl+K) */}
       <GlobalSearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         songs={songs}
         onSelectSong={(song) => handleSelectSong(song)}
+        onOpenUploadModal={() => handleOpenUploadWithPreset()}
+      />
+
+      {/* Custom Song Upload & Creation Modal */}
+      <UploadSongModal
+        isOpen={isUploadModalOpen}
+        onClose={() => {
+          setIsUploadModalOpen(false);
+          setUploadPresetMoment(undefined);
+        }}
+        onSaveSong={handleSaveCustomSong}
+        initialMoment={uploadPresetMoment}
       />
 
       {/* Live Room Modal (QR Code & Band Sync) */}
@@ -290,6 +392,7 @@ const MainAppContent: React.FC = () => {
           setIsPricingOpen(false);
           setPricingReason(undefined);
         }}
+        onOpenAuth={() => setIsAuthOpen(true)}
         featureReason={pricingReason}
       />
 

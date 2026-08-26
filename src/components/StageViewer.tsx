@@ -25,7 +25,10 @@ import {
   RotateCcw,
   Sparkles,
   Music,
-  Tv
+  Tv,
+  Plus,
+  Minus,
+  FastForward
 } from 'lucide-react';
 
 interface StageViewerProps {
@@ -69,10 +72,15 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   const [showCapo, setShowCapo] = useState<boolean>(false);
   const [capoFret, setCapoFret] = useState<number>(0);
 
-  // Auto-scroll state
+  // Auto-scroll state & responsive speed ref
   const [isScrolling, setIsScrolling] = useState<boolean>(false);
-  const [scrollSpeed, setScrollSpeed] = useState<number>(1.5); // Multiplier
+  const [scrollSpeed, setScrollSpeed] = useState<number>(1.2); // Multiplier
+  const scrollSpeedRef = useRef<number>(1.2);
   const [wakeLockActive, setWakeLockActive] = useState<boolean>(false);
+
+  // Audio Preview for online songs
+  const [isPlayingPreview, setIsPlayingPreview] = useState<boolean>(false);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Chord Modal
   const [selectedChord, setSelectedChord] = useState<string | null>(null);
@@ -81,6 +89,39 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const wakeLockRef = useRef<any>(null);
+
+  // Keep scrollSpeedRef always in sync with state for instantaneous speed responsiveness
+  useEffect(() => {
+    scrollSpeedRef.current = scrollSpeed;
+  }, [scrollSpeed]);
+
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleToggleAudioPreview = () => {
+    if (!song.audioPreviewUrl) return;
+
+    if (isPlayingPreview && previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      setIsPlayingPreview(false);
+    } else {
+      if (!previewAudioRef.current) {
+        const audio = new Audio(song.audioPreviewUrl);
+        audio.volume = 0.7;
+        audio.onended = () => setIsPlayingPreview(false);
+        previewAudioRef.current = audio;
+      }
+      previewAudioRef.current.play();
+      setIsPlayingPreview(true);
+    }
+  };
 
   // Sync state from Live Room if follower
   useEffect(() => {
@@ -157,7 +198,20 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     }
   };
 
-  // Auto-scroll loop
+  const handleAdjustSpeed = (delta: number) => {
+    setScrollSpeed((prev) => {
+      const next = Math.max(0.3, Math.min(6.0, Number((prev + delta).toFixed(1))));
+      scrollSpeedRef.current = next;
+      return next;
+    });
+  };
+
+  const handleSetSpeedPreset = (speed: number) => {
+    setScrollSpeed(speed);
+    scrollSpeedRef.current = speed;
+  };
+
+  // High performance auto-scroll loop with instant speed reaction
   useEffect(() => {
     if (!isScrolling) {
       if (animationFrameRef.current) {
@@ -176,8 +230,9 @@ export const StageViewer: React.FC<StageViewerProps> = ({
         const maxScroll = container.scrollHeight - container.clientHeight;
 
         if (container.scrollTop < maxScroll) {
-          // base speed: 30 pixels per second
-          const pxToScroll = 32 * scrollSpeed * delta;
+          // Dynamic pixel movement using active scrollSpeedRef
+          // Base speed: 32 pixels/sec * speed multiplier
+          const pxToScroll = 32 * scrollSpeedRef.current * delta;
           container.scrollTop += pxToScroll;
 
           // Broadcast scroll to band if leader
@@ -199,9 +254,9 @@ export const StageViewer: React.FC<StageViewerProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isScrolling, scrollSpeed, isInRoom, isHost, sessionState?.followScroll, broadcastScroll]);
+  }, [isScrolling, isInRoom, isHost, sessionState?.followScroll, broadcastScroll]);
 
-  // Keyboard shortcut listener (Space = toggle scroll)
+  // Keyboard shortcut listener (Space = toggle scroll, Alt+Up/Down = transpose)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -236,7 +291,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     'oled': {
       bg: 'bg-black text-white',
       cardBg: 'bg-zinc-950 border-zinc-900',
-      chordColor: 'text-amber-400 font-bold tracking-wide',
+      chordColor: 'text-amber-400 font-bold',
       lyricColor: 'text-white',
       sectionColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
       hudBg: 'bg-black/95 border-zinc-800 text-white backdrop-blur-md'
@@ -259,13 +314,13 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     }
   }[theme];
 
-  // Font scale class
+  // Font scale class for pixel-perfect mono font rendering
   const fontClass = {
-    sm: 'text-sm leading-relaxed',
-    base: 'text-base sm:text-lg leading-relaxed',
-    lg: 'text-lg sm:text-xl leading-relaxed',
-    xl: 'text-xl sm:text-2xl leading-loose',
-    '2xl': 'text-2xl sm:text-3xl leading-loose'
+    sm: 'text-xs sm:text-sm leading-relaxed',
+    base: 'text-sm sm:text-base leading-relaxed',
+    lg: 'text-base sm:text-lg leading-relaxed',
+    xl: 'text-lg sm:text-xl leading-relaxed',
+    '2xl': 'text-xl sm:text-2xl leading-loose'
   }[fontScale];
 
   // Split lines for rendering
@@ -276,55 +331,66 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   const col1Lines = columnMode === '2-col' ? lines.slice(0, midPoint) : lines;
   const col2Lines = columnMode === '2-col' ? lines.slice(midPoint) : [];
 
+  // Realistic Character-Aligned Chord & Lyrics Renderer
   const renderLinesBlock = (linesToRender: string[]) => {
     return linesToRender.map((line, idx) => {
       const trimmed = line.trim();
 
-      // Section Header (e.g. [Refrão], [Intro])
+      // Section Header (e.g. [Refrão], [Intro], [Primeira Parte])
       if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
         return (
-          <div key={idx} className="my-4">
-            <span className={`inline-block px-3 py-1 rounded-md text-xs sm:text-sm font-semibold uppercase tracking-wider border ${themeStyles.sectionColor}`}>
+          <div key={idx} className="pt-4 pb-2">
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider border shadow-sm ${themeStyles.sectionColor}`}>
+              <Sparkles className="w-3.5 h-3.5" />
               {trimmed.replace(/[\[\]]/g, '')}
             </span>
           </div>
         );
       }
 
-      // Pure chord line
+      // Empty line spacer
+      if (!trimmed) {
+        return <div key={idx} className="h-3.5" />;
+      }
+
+      // Pure Chord Line (spaced with whitespace-pre so chords sit exactly above lyrics)
       if (isChordLine(line)) {
-        // Split line by chords and spaces to make each chord clickable
+        // Tokenize into whitespace and chords while preserving character offsets
         const tokens = line.split(/(\s+)/);
         return (
-          <div key={idx} className={`font-mono ${themeStyles.chordColor} select-none py-0.5 tracking-wider font-extrabold`}>
+          <div
+            key={idx}
+            className={`font-mono whitespace-pre ${themeStyles.chordColor} select-none font-black tracking-normal leading-tight`}
+          >
             {tokens.map((token, tIdx) => {
-              if (!token.trim()) return <span key={tIdx}>{token}</span>;
+              if (!token.trim()) {
+                return <span key={tIdx}>{token}</span>;
+              }
+              const cleanChord = token.replace(/^[[(]|[)\]]$/g, '');
               return (
-                <button
+                <span
                   key={tIdx}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedChord(token.replace(/^[[(]|[)\]]$/g, ''));
+                    setSelectedChord(cleanChord);
                   }}
-                  className="hover:underline hover:scale-105 transition-transform inline-block cursor-pointer px-0.5 rounded focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                  title="Clique para ver o diagrama"
+                  className="cursor-pointer hover:underline hover:text-amber-400 transition-colors inline font-extrabold"
+                  title="Clique para ver o diagrama e ouvir o acorde"
                 >
                   {token}
-                </button>
+                </span>
               );
             })}
           </div>
         );
       }
 
-      // Empty line
-      if (!trimmed) {
-        return <div key={idx} className="h-3" />;
-      }
-
-      // Standard Lyrics Line
+      // Standard Lyrics Line (aligned in font-mono with whitespace-pre so characters align 1:1 with chords above)
       return (
-        <div key={idx} className={`font-sans ${themeStyles.lyricColor} py-0.5 whitespace-pre-wrap font-medium`}>
+        <div
+          key={idx}
+          className={`font-mono whitespace-pre-wrap ${themeStyles.lyricColor} font-medium tracking-normal leading-relaxed`}
+        >
           {line}
         </div>
       );
@@ -351,7 +417,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
         </div>
       )}
 
-      {/* Top Navbar / Control Bar (hidden in clean stage mode if toggled) */}
+      {/* Top Navbar / Control Bar */}
       {!isCleanStage && (
         <header className="flex-none border-b border-zinc-800/80 px-4 py-2.5 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between gap-2 z-30">
           <div className="flex items-center gap-2">
@@ -364,12 +430,17 @@ export const StageViewer: React.FC<StageViewerProps> = ({
             </button>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold text-white truncate max-w-[200px] sm:max-w-md">
+                <h1 className="text-base sm:text-lg font-bold text-white truncate max-w-[180px] sm:max-w-md">
                   {song.title}
                 </h1>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   {song.liturgicalMoment}
                 </span>
+                {song.isCustom && (
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-zinc-950 shadow-sm">
+                    Própria
+                  </span>
+                )}
               </div>
               <p className="text-xs text-zinc-400 truncate">{song.artist}</p>
             </div>
@@ -465,8 +536,26 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               </div>
             </div>
 
-            {/* Key / Tom Badges */}
-            <div className="flex items-center gap-3">
+            {/* Key / Tom Badges & Audio Player */}
+            <div className="flex flex-wrap items-center gap-3">
+              {song.audioPreviewUrl && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleAudioPreview();
+                  }}
+                  className={`px-4 py-2 rounded-2xl border flex items-center gap-2 text-xs font-black transition shadow-lg ${
+                    isPlayingPreview
+                      ? 'bg-emerald-500 text-zinc-950 border-emerald-400 animate-pulse'
+                      : 'bg-zinc-900/90 text-zinc-200 border-zinc-700 hover:border-emerald-500 hover:text-white'
+                  }`}
+                  title="Ouvir 30 segundos da gravação original"
+                >
+                  {isPlayingPreview ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+                  <span>{isPlayingPreview ? 'Pausar Áudio' : 'Ouvir Áudio Original'}</span>
+                </button>
+              )}
+
               <div className="px-4 py-2 rounded-2xl bg-zinc-900/90 border border-zinc-700/80 text-center shadow-lg">
                 <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">Tom Atual</span>
                 <span className="text-2xl font-black text-emerald-400 font-mono">{currentKey}</span>
@@ -488,7 +577,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
             </div>
           </div>
 
-          {/* Render Lyrics & Chords in 1 or 2 Columns */}
+          {/* Render Lyrics & Chords in 1 or 2 Columns with pixel-perfect character alignment */}
           <div className={`${fontClass}`}>
             {columnMode === '1-col' ? (
               <div className="space-y-0.5">{renderLinesBlock(col1Lines)}</div>
@@ -501,12 +590,12 @@ export const StageViewer: React.FC<StageViewerProps> = ({
           </div>
 
           {/* Spacer for comfortable stage scrolling */}
-          <div className="h-44" />
+          <div className="h-48" />
         </div>
       </main>
 
       {/* 🎛️ Floating Stage HUD / Controls */}
-      <footer className="flex-none p-3 sm:p-4 bg-zinc-950/90 border-t border-zinc-800/90 backdrop-blur-lg z-30">
+      <footer className="flex-none p-3 sm:p-4 bg-zinc-950/95 border-t border-zinc-800/90 backdrop-blur-lg z-30">
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
           {/* Left: Transpose Controller (+ / - semitones) */}
           <div className="flex items-center gap-1.5 bg-zinc-900/90 border border-zinc-700/80 p-1 rounded-2xl shadow-inner">
@@ -544,7 +633,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
             )}
           </div>
 
-          {/* Center: Auto-Scroll Controller */}
+          {/* Center: Dynamic Auto-Scroll Controller with Live Multiplier & Stepper */}
           <div className="flex items-center gap-2 bg-zinc-900/90 border border-zinc-700/80 px-3 py-1.5 rounded-2xl shadow-lg">
             <button
               onClick={(e) => {
@@ -561,20 +650,48 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               <span>{isScrolling ? 'Pausar Rolagem' : 'Auto-Rolagem'}</span>
             </button>
 
-            {/* Speed Selector */}
+            {/* Stepper + & - */}
             <div className="flex items-center gap-1 pl-2 border-l border-zinc-700/80">
-              <span className="text-[10px] uppercase font-bold text-zinc-400 hidden sm:inline">Vel:</span>
-              {[0.8, 1.2, 1.8, 2.5].map((speed) => (
+              <button
+                onClick={() => handleAdjustSpeed(-0.2)}
+                className="w-6 h-6 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center text-xs font-bold transition"
+                title="Diminuir velocidade (-0.2x)"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+
+              <span className="text-xs font-mono font-black text-emerald-400 px-1.5 min-w-[38px] text-center">
+                {scrollSpeed.toFixed(1)}x
+              </span>
+
+              <button
+                onClick={() => handleAdjustSpeed(0.2)}
+                className="w-6 h-6 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center text-xs font-bold transition"
+                title="Aumentar velocidade (+0.2x)"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* Speed Presets */}
+            <div className="hidden sm:flex items-center gap-1 pl-2 border-l border-zinc-700/80">
+              {[
+                { label: '0.5x', value: 0.5 },
+                { label: '1.0x', value: 1.0 },
+                { label: '1.8x', value: 1.8 },
+                { label: '3.0x', value: 3.0 },
+                { label: '5.0x', value: 5.0 }
+              ].map((preset) => (
                 <button
-                  key={speed}
-                  onClick={() => setScrollSpeed(speed)}
+                  key={preset.value}
+                  onClick={() => handleSetSpeedPreset(preset.value)}
                   className={`px-2 py-1 rounded-lg text-xs font-bold transition ${
-                    scrollSpeed === speed
-                      ? 'bg-emerald-500 text-zinc-950'
+                    scrollSpeed === preset.value
+                      ? 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
                       : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                   }`}
                 >
-                  {speed}x
+                  {preset.label}
                 </button>
               ))}
             </div>
@@ -593,7 +710,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                     onClick={() => setFontScale(scale)}
                     className={`px-2 py-1 rounded-xl text-xs font-extrabold transition ${
                       fontScale === scale
-                        ? 'bg-emerald-500 text-zinc-950'
+                        ? 'bg-emerald-500 text-zinc-950 font-black'
                         : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                     }`}
                   >

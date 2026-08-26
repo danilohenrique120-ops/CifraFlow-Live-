@@ -1,36 +1,39 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  X,
+  Crown,
   Check,
+  X,
+  Sparkles,
   Zap,
   Radio,
-  Sparkles,
-  ShieldCheck,
+  Music,
+  Shield,
   CreditCard,
-  QrCode,
   Flame,
-  Clock,
-  Layers
+  ArrowRight,
+  UserCheck
 } from 'lucide-react';
 
 interface PricingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenAuth?: () => void;
   featureReason?: string;
 }
 
 export const PricingModal: React.FC<PricingModalProps> = ({
   isOpen,
   onClose,
+  onOpenAuth,
   featureReason
 }) => {
-  const { userProfile, isPro, activateDemoPro } = useAuth();
+  const { userProfile, isPro } = useAuth();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [coupon, setCoupon] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -38,30 +41,54 @@ export const PricingModal: React.FC<PricingModalProps> = ({
     e.preventDefault();
     if (['PAROQUIA100', 'LOUVOR2026', 'PROVIP'].includes(coupon.trim().toUpperCase())) {
       setCouponApplied(true);
+      setErrorMessage(null);
     } else {
       alert('Cupom inválido. Tente usar "LOUVOR2026" para testar o desconto!');
     }
   };
+
   const handleSubscribe = async (tier: 'pro_musician' | 'pro_band') => {
+    setErrorMessage(null);
+
+    // If user is not logged in, prompt them to login/register first so subscription is attached to their account
+    if (!userProfile) {
+      onClose();
+      if (onOpenAuth) {
+        onOpenAuth();
+      }
+      return;
+    }
+
     setIsProcessing(true);
 
-    // Call serverless checkout session if Stripe is configured, or activate demo
     try {
-      if (typeof window !== 'undefined' && (window as any).StripeCheckout) {
-        // Stripe integration logic
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId: userProfile.uid,
+          userEmail: userProfile.email,
+          tier,
+          billingCycle,
+          returnUrl: window.location.origin
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        // Redirect to official Stripe Hosted Checkout
+        window.location.href = data.url;
       } else {
-        // Instant activation simulation for showcase & test
-        setTimeout(() => {
-          activateDemoPro();
-          setIsProcessing(false);
-          setSuccessMessage(true);
-          setTimeout(() => {
-            setSuccessMessage(false);
-            onClose();
-          }, 2000);
-        }, 1000);
+        throw new Error(data.error || 'Erro ao gerar o link de pagamento da Stripe.');
       }
-    } catch (e) {
+    } catch (error: any) {
+      console.error('Stripe redirect error:', error);
+      setErrorMessage(
+        error.message || 'Não foi possível conectar ao checkout do Stripe no momento. Tente novamente.'
+      );
       setIsProcessing(false);
     }
   };
@@ -80,7 +107,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
               Planos e Assinaturas
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white">
-              Desbloqueie o Poder Total do <span className="text-emerald-400">CifraFlow Live</span>
+              Desbloqueie o Poder Total do <span className="text-emerald-400">CifraSync Live</span>
             </h2>
             {featureReason && (
               <p className="text-xs text-amber-400 font-semibold mt-0.5">
@@ -99,10 +126,10 @@ export const PricingModal: React.FC<PricingModalProps> = ({
 
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Success Message Banner */}
-          {successMessage && (
-            <div className="p-4 rounded-2xl bg-emerald-500 text-zinc-950 font-black text-center text-sm animate-bounce shadow-xl">
-              🎉 Parabéns! Plano Pro ativado com sucesso. Aproveite o Live Band Sync!
+          {/* Error Banner if any */}
+          {errorMessage && (
+            <div className="p-4 rounded-2xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-semibold">
+              ⚠️ {errorMessage}
             </div>
           )}
 
@@ -179,7 +206,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                   disabled
                   className="w-full py-2.5 rounded-xl bg-zinc-800 text-zinc-400 font-bold text-xs cursor-default"
                 >
-                  Plano Atual Padrão
+                  Plano Padrão Gratuito
                 </button>
               </div>
             </div>
@@ -193,11 +220,11 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 <div className="text-3xl font-black text-white">
                   {billingCycle === 'annual' ? (
                     <>
-                      R$ 14,90 <span className="text-xs text-zinc-500 font-normal">/mês (R$ 149/ano)</span>
+                      R$ 9,90 <span className="text-xs text-zinc-500 font-normal">/mês (R$ 99/ano)</span>
                     </>
                   ) : (
                     <>
-                      R$ 19,90 <span className="text-xs text-zinc-500 font-normal">/mês</span>
+                      R$ 14,90 <span className="text-xs text-zinc-500 font-normal">/mês</span>
                     </>
                   )}
                 </div>
@@ -233,9 +260,10 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 <button
                   onClick={() => handleSubscribe('pro_musician')}
                   disabled={isProcessing}
-                  className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs transition"
+                  className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs transition flex items-center justify-center gap-2"
                 >
-                  Assinar Músico Solo
+                  <CreditCard className="w-4 h-4" />
+                  {isProcessing ? 'Abrindo Stripe Checkout...' : 'Assinar Músico Solo'}
                 </button>
               </div>
             </div>
@@ -299,8 +327,8 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                   disabled={isProcessing}
                   className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 transition flex items-center justify-center gap-2"
                 >
-                  <Radio className="w-4 h-4" />
-                  {isProcessing ? 'Processando...' : 'Ativar Plano Pro'}
+                  <CreditCard className="w-4 h-4" />
+                  {isProcessing ? 'Abrindo Stripe Checkout...' : 'Ir para o Pagamento (Stripe)'}
                 </button>
               </div>
             </div>

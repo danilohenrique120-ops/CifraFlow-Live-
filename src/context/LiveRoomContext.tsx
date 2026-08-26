@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { BandAlert, LiveMember, LiveSessionState, UserRole } from '../types';
 import { generateRoomPin, LiveSyncEngine, SyncMessage } from '../services/liveSync';
+import { useAuth } from './AuthContext';
 
 interface LiveRoomContextType {
   isInRoom: boolean;
@@ -8,8 +9,8 @@ interface LiveRoomContextType {
   currentMember: LiveMember | null;
   sessionState: LiveSessionState | null;
   engine: LiveSyncEngine | null;
-  createRoom: (roomName?: string, memberName?: string, instrument?: string) => string;
-  joinRoom: (pin: string, memberName?: string, instrument?: string) => boolean;
+  createRoom: (roomName?: string, memberName?: string, instrument?: string) => Promise<string>;
+  joinRoom: (pin: string, memberName?: string, instrument?: string) => Promise<boolean>;
   leaveRoom: () => void;
   selectSong: (songId: string, songKey?: string) => void;
   changeKey: (key: string, semitones: number) => void;
@@ -24,7 +25,6 @@ interface LiveRoomContextType {
 
 const LiveRoomContext = createContext<LiveRoomContextType | undefined>(undefined);
 
-const DEFAULT_INSTRUMENTS = ['Violão', 'Teclado', 'Vocal', 'Guitarra', 'Baixo', 'Bateria', 'Regente'];
 const AVATAR_COLORS = [
   'bg-emerald-500',
   'bg-blue-500',
@@ -36,18 +36,19 @@ const AVATAR_COLORS = [
 ];
 
 export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { userProfile } = useAuth();
+
   const [currentMember, setCurrentMember] = useState<LiveMember | null>(() => {
     if (typeof window === 'undefined') return null;
     const saved = localStorage.getItem('cifraflow_member');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
-    const defaultName = 'Músico ' + Math.floor(100 + Math.random() * 900);
     return {
       id: 'usr_' + Math.random().toString(36).substring(2, 9),
-      name: defaultName,
+      name: userProfile?.displayName || 'Músico ' + Math.floor(100 + Math.random() * 900),
       role: 'leader',
-      instrument: 'Violão',
+      instrument: userProfile?.instrument || 'Violão',
       joinedAt: Date.now(),
       isHost: true,
       avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
@@ -58,6 +59,20 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [engine, setEngine] = useState<LiveSyncEngine | null>(null);
   const [recentAlert, setRecentAlert] = useState<BandAlert | null>(null);
   const engineRef = useRef<LiveSyncEngine | null>(null);
+
+  // Keep member details in sync with AuthProfile
+  useEffect(() => {
+    if (userProfile) {
+      setCurrentMember(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          name: userProfile.displayName || prev.name,
+          instrument: userProfile.instrument || prev.instrument
+        };
+      });
+    }
+  }, [userProfile]);
 
   // Auto-dismiss alerts after 5 seconds
   useEffect(() => {
@@ -166,7 +181,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const createRoom = useCallback((roomName = 'Ensaio Geral', memberName?: string, instrument?: string): string => {
+  const createRoom = useCallback(async (roomName = 'Ensaio Geral', memberName?: string, instrument?: string): Promise<string> => {
     if (engineRef.current) {
       engineRef.current.destroy();
     }
@@ -174,38 +189,15 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const pin = generateRoomPin('MTS');
     const member: LiveMember = {
       id: currentMember?.id || 'usr_' + Math.random().toString(36).substring(2, 9),
-      name: memberName || currentMember?.name || 'Líder da Banda',
+      name: memberName || userProfile?.displayName || currentMember?.name || 'Líder da Banda',
       role: 'leader',
-      instrument: instrument || currentMember?.instrument || 'Violão',
+      instrument: instrument || userProfile?.instrument || currentMember?.instrument || 'Violão',
       joinedAt: Date.now(),
       isHost: true,
       avatarColor: currentMember?.avatarColor || 'bg-emerald-500'
     };
 
     setCurrentMember(member);
-
-    // Initial simulated mock members to make the band experience feel alive right away
-    const simulatedBanda: LiveMember[] = [
-      member,
-      {
-        id: 'usr_mock_piano',
-        name: 'Carlos (Teclado)',
-        role: 'member',
-        instrument: 'Teclado',
-        joinedAt: Date.now() - 120000,
-        isHost: false,
-        avatarColor: 'bg-blue-500'
-      },
-      {
-        id: 'usr_mock_vocal',
-        name: 'Mariana (Voz Principal)',
-        role: 'member',
-        instrument: 'Vocal',
-        joinedAt: Date.now() - 60000,
-        isHost: false,
-        avatarColor: 'bg-rose-500'
-      }
-    ];
 
     const initialState: LiveSessionState = {
       roomId: pin,
@@ -215,23 +207,23 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       currentSongId: 'ninguem-te-ama-como-eu',
       currentKey: 'C',
       semitoneShift: 0,
-      activeSetlistId: 'missa-domingo-19h',
+      activeSetlistId: null,
       followScroll: true,
       scrollPercentage: 0,
       currentAlert: null,
-      members: simulatedBanda,
+      members: [member],
       lastUpdated: Date.now()
     };
 
     const newEngine = new LiveSyncEngine(pin);
-    newEngine.saveState(initialState);
-    const unsub = newEngine.subscribe(handleIncomingMessage);
+    await newEngine.saveState(initialState);
+    newEngine.subscribe(handleIncomingMessage);
 
     engineRef.current = newEngine;
     setEngine(newEngine);
     setSessionState(initialState);
 
-    // Update URL query param quietly
+    // Update URL query param
     if (typeof window !== 'undefined' && window.history.pushState) {
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('room', pin);
@@ -239,9 +231,9 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     return pin;
-  }, [currentMember, handleIncomingMessage]);
+  }, [currentMember, userProfile, handleIncomingMessage]);
 
-  const joinRoom = useCallback((pin: string, memberName?: string, instrument?: string): boolean => {
+  const joinRoom = useCallback(async (pin: string, memberName?: string, instrument?: string): Promise<boolean> => {
     const cleanPin = pin.trim().toUpperCase();
     if (!cleanPin) return false;
 
@@ -250,13 +242,13 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     const newEngine = new LiveSyncEngine(cleanPin);
-    const saved = newEngine.getSavedState();
+    const cloudState = await newEngine.fetchCloudRoomState();
 
     const member: LiveMember = {
       id: currentMember?.id || 'usr_' + Math.random().toString(36).substring(2, 9),
-      name: memberName || currentMember?.name || 'Músico Conectado',
+      name: memberName || userProfile?.displayName || currentMember?.name || 'Músico Conectado',
       role: 'member',
-      instrument: instrument || currentMember?.instrument || 'Violão',
+      instrument: instrument || userProfile?.instrument || currentMember?.instrument || 'Violão',
       joinedAt: Date.now(),
       isHost: false,
       avatarColor: currentMember?.avatarColor || AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
@@ -267,21 +259,21 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const mergedState: LiveSessionState = {
       roomId: cleanPin,
       pin: cleanPin,
-      roomName: saved?.roomName || `Sala ${cleanPin}`,
-      hostId: saved?.hostId || 'host_leader',
-      currentSongId: saved?.currentSongId || 'ninguem-te-ama-como-eu',
-      currentKey: saved?.currentKey || 'C',
-      semitoneShift: saved?.semitoneShift || 0,
-      activeSetlistId: saved?.activeSetlistId || null,
-      followScroll: saved?.followScroll ?? true,
-      scrollPercentage: saved?.scrollPercentage || 0,
+      roomName: cloudState?.roomName || `Sala ${cleanPin}`,
+      hostId: cloudState?.hostId || 'host_leader',
+      currentSongId: cloudState?.currentSongId || 'ninguem-te-ama-como-eu',
+      currentKey: cloudState?.currentKey || 'C',
+      semitoneShift: cloudState?.semitoneShift || 0,
+      activeSetlistId: cloudState?.activeSetlistId || null,
+      followScroll: cloudState?.followScroll ?? true,
+      scrollPercentage: cloudState?.scrollPercentage || 0,
       currentAlert: null,
-      members: saved?.members ? [...saved.members.filter(m => m.id !== member.id), member] : [member],
+      members: cloudState?.members ? [...cloudState.members.filter(m => m.id !== member.id), member] : [member],
       lastUpdated: Date.now()
     };
 
     newEngine.subscribe(handleIncomingMessage);
-    newEngine.broadcast({
+    await newEngine.broadcast({
       type: 'MEMBER_JOIN',
       senderId: member.id,
       senderName: member.name,
@@ -299,11 +291,11 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     return true;
-  }, [currentMember, handleIncomingMessage]);
+  }, [currentMember, userProfile, handleIncomingMessage]);
 
-  const leaveRoom = useCallback(() => {
+  const leaveRoom = useCallback(async () => {
     if (engineRef.current && sessionState && currentMember) {
-      engineRef.current.broadcast({
+      await engineRef.current.broadcast({
         type: 'MEMBER_LEAVE',
         senderId: currentMember.id,
         senderName: currentMember.name,

@@ -8,6 +8,7 @@ import {
   Lock,
   User,
   Sparkles,
+  Music,
   ShieldCheck,
   Radio,
   ArrowRight,
@@ -17,6 +18,7 @@ import {
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  isMandatory?: boolean;
 }
 
 const INSTRUMENT_OPTIONS = [
@@ -30,8 +32,8 @@ const INSTRUMENT_OPTIONS = [
   'Regente / Coral'
 ];
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, activateDemoPro } = useAuth();
+export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandatory = false }) => {
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -76,36 +78,57 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   const formatErrorMessage = (msg: string | null) => {
     if (!msg) return null;
-    if (msg.includes('auth/unauthorized-domain')) {
-      return 'O domínio da Vercel precisa ser adicionado aos Domínios Autorizados no Firebase Console (Authentication > Settings > Authorized domains). Você também pode entrar criando uma conta com e-mail e senha abaixo!';
+    if (msg.includes('auth/email-already-in-use') || msg.includes('já possui cadastro') || msg.includes('já está cadastrado')) {
+      return 'Este e-mail já está cadastrado no sistema! Por favor, clique em "Faça login" abaixo e use sua senha.';
     }
-    if (msg.includes('auth/user-not-found') || msg.includes('auth/invalid-credential')) {
-      return 'E-mail ou senha não encontrados. Se for seu primeiro acesso, clique em "Cadastre-se gratuitamente" abaixo.';
+    if (msg.includes('auth/wrong-password') || msg.includes('auth/invalid-credential')) {
+      return 'E-mail ou senha incorretos. Verifique os dados digitados.';
+    }
+    if (msg.includes('auth/user-not-found')) {
+      return 'Nenhuma conta encontrada com este e-mail. Clique em "Cadastre-se gratuitamente" para criar sua conta.';
+    }
+    if (msg.includes('auth/weak-password')) {
+      return 'A senha escolhida é muito fraca. Utilize no mínimo 6 caracteres.';
+    }
+    if (msg.includes('auth/invalid-email')) {
+      return 'Formato de e-mail inválido. Verifique o endereço digitado.';
+    }
+    if (msg.includes('auth/unauthorized-domain')) {
+      return 'O domínio da Vercel precisa ser autorizado no Firebase Console. Entre digitando seu e-mail e senha!';
     }
     return msg;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in">
       <div
-        className="relative w-full max-w-md rounded-3xl bg-zinc-900 border border-zinc-700/80 p-6 text-white shadow-2xl space-y-5"
+        className="relative w-full max-w-md rounded-3xl bg-zinc-900 border border-zinc-700/80 p-6 sm:p-8 text-white shadow-2xl space-y-5"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Brand Banner */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <LogIn className="w-4 h-4" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-zinc-950 shadow-lg shadow-emerald-900/40">
+              <Music className="w-5 h-5 fill-current" />
             </div>
-            <h3 className="text-lg font-black">
-              {isSignUp ? 'Criar Conta no CifraFlow' : 'Entrar no CifraFlow'}
-            </h3>
+            <div>
+              <h3 className="text-base sm:text-lg font-black tracking-tight flex items-center gap-1.5">
+                CifraSync <span className="text-emerald-400">Live</span>
+              </h3>
+              <p className="text-[11px] text-zinc-400">
+                {isSignUp ? 'Crie sua conta para começar' : 'Acesse sua conta para entrar no app'}
+              </p>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          {!isMandatory && (
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {errorMsg && (
@@ -158,7 +181,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Danilo Henrique"
+                  placeholder="Digite seu nome completo"
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
                   required
                 />
@@ -214,14 +237,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-900/30 transition flex items-center justify-center gap-2 mt-4"
+            className="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-emerald-950/50 transition flex items-center justify-center gap-2 mt-4"
           >
             {isLoading ? (
-              'Carregando...'
+              'Processando...'
             ) : isSignUp ? (
               <>
                 <UserPlus className="w-4 h-4" />
-                Criar Conta Gratuita
+                Criar Minha Conta
               </>
             ) : (
               <>

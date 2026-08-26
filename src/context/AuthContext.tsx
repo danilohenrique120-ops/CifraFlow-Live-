@@ -22,8 +22,6 @@ interface AuthContextType {
   signUpWithEmail: (email: string, pass: string, name: string, instrument?: string) => Promise<void>;
   signOutUser: () => Promise<void>;
   updateUserInstrument: (instrument: string) => Promise<void>;
-  activateDemoPro: () => void;
-  activateDemoFree: () => void;
   isDemoMode: boolean;
 }
 
@@ -45,25 +43,15 @@ const DEFAULT_PRO_SUBSCRIPTION: UserSubscription = {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
+  // Clean initial state: null if new visitor, or restored from localStorage ONLY if logged in previously on this device
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
     if (typeof window === 'undefined') return null;
     const saved = localStorage.getItem('cifraflow_user_profile');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
-    // Default initial profile for guest / demo
-    return {
-      uid: 'guest_' + Math.random().toString(36).substring(2, 8),
-      email: 'musico@cifraflow.com',
-      displayName: 'Danilo (Regente)',
-      photoURL: null,
-      role: 'pro', // Start as Pro by default for seamless developer / evaluation testing!
-      instrument: 'Violão',
-      avatarColor: 'bg-emerald-500',
-      subscription: DEFAULT_PRO_SUBSCRIPTION,
-      createdAt: Date.now(),
-      lastLoginAt: Date.now()
-    };
+    return null;
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -73,8 +61,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (userProfile) {
       localStorage.setItem('cifraflow_user_profile', JSON.stringify(userProfile));
+    } else {
+      localStorage.removeItem('cifraflow_user_profile');
     }
   }, [userProfile]);
+
+  // Handle Stripe redirect query parameters (e.g. ?payment_success=true)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('payment_success') === 'true') {
+        const tier = params.get('tier') || 'pro_band';
+        const upgradedSubscription: UserSubscription = {
+          status: 'active',
+          tier: tier as any,
+          planName: tier === 'pro_musician' ? 'Pro Músico Solo' : 'Plano Pro',
+          currentPeriodEnd: Date.now() + 365 * 24 * 60 * 60 * 1000
+        };
+
+        setUserProfile((prev) => {
+          if (!prev) return null;
+          const updated = {
+            ...prev,
+            role: 'pro' as const,
+            subscription: upgradedSubscription
+          };
+          if (currentUser && isFirebaseConfigured) {
+            setDoc(doc(db, 'users', currentUser.uid), updated, { merge: true });
+          }
+          return updated;
+        });
+
+        // Clean up URL without reload
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    }
+  }, [currentUser]);
 
   // Listen to Firebase Auth state if configured
   useEffect(() => {
@@ -97,15 +120,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (docSnap.exists()) {
             setUserProfile(docSnap.data() as UserProfile);
           } else {
-            const isAdmin = firebaseUser.email === 'danilohenrique120@gmail.com' || firebaseUser.email?.includes('danilo');
+            // Check if user is the admin / owner
+            const isAdmin = firebaseUser.email === 'danilohenrique120@gmail.com';
             const newProfile: UserProfile = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
-              displayName: firebaseUser.displayName || 'Danilo (Administrador)',
+              displayName: firebaseUser.displayName || (isAdmin ? 'Administrador' : 'Músico'),
               photoURL: firebaseUser.photoURL,
               role: isAdmin ? 'pro' : 'free',
               instrument: 'Violão',
-              avatarColor: 'bg-emerald-500',
+              avatarColor: isAdmin ? 'bg-emerald-500' : 'bg-blue-500',
               subscription: isAdmin ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
               createdAt: Date.now(),
               lastLoginAt: Date.now()
@@ -120,6 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       } else {
         if (unsubscribeProfile) unsubscribeProfile();
+        setUserProfile(null);
         setIsLoading(false);
       }
     });
@@ -132,47 +157,106 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
-      activateDemoPro();
+      alert('Firebase não configurado localmente.');
       return;
     }
     await signInWithPopup(auth, googleProvider);
   };
 
   const signInWithEmail = async (email: string, pass: string) => {
-    if (!isFirebaseConfigured) {
-      setUserProfile(prev => prev ? { ...prev, email, displayName: email.split('@')[0] } : null);
-      return;
-    }
-    await signInWithEmailAndPassword(auth, email, pass);
-  };
+    const cleanEmail = email.trim().toLowerCase();
+    const isAdmin = cleanEmail === 'danilohenrique120@gmail.com';
 
-  const signUpWithEmail = async (email: string, pass: string, name: string, instrument = 'Violão') => {
+    // Se for o e-mail do Administrador, validação estrita da senha do proprietário
+    if (isAdmin) {
+      if (pass !== 'Auroralilo*313194') {
+        throw new Error('auth/wrong-password');
+      }
+    }
+
     if (!isFirebaseConfigured) {
       setUserProfile({
         uid: 'user_' + Date.now(),
-        email,
-        displayName: name,
+        email: cleanEmail,
+        displayName: isAdmin ? 'Administrador' : cleanEmail.split('@')[0],
         photoURL: null,
-        role: 'free',
-        instrument,
-        avatarColor: 'bg-emerald-500',
-        subscription: DEFAULT_FREE_SUBSCRIPTION,
+        role: isAdmin ? 'pro' : 'free',
+        instrument: 'Violão',
+        avatarColor: isAdmin ? 'bg-emerald-500' : 'bg-blue-500',
+        subscription: isAdmin ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
         createdAt: Date.now(),
         lastLoginAt: Date.now()
       });
       return;
     }
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+
+    try {
+      await signInWithEmailAndPassword(auth, cleanEmail, pass);
+    } catch (err: any) {
+      // Se a conta de admin ainda não estiver criada no Firebase Auth pela primeira vez, cria com a senha oficial
+      if (isAdmin && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')) {
+        if (pass === 'Auroralilo*313194') {
+          const cred = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
+          await updateProfile(cred.user, { displayName: 'Administrador' });
+          const newProfile: UserProfile = {
+            uid: cred.user.uid,
+            email: cleanEmail,
+            displayName: 'Administrador',
+            photoURL: null,
+            role: 'pro',
+            instrument: 'Violão',
+            avatarColor: 'bg-emerald-500',
+            subscription: DEFAULT_PRO_SUBSCRIPTION,
+            createdAt: Date.now(),
+            lastLoginAt: Date.now()
+          };
+          await setDoc(doc(db, 'users', cred.user.uid), newProfile);
+          setUserProfile(newProfile);
+          return;
+        }
+      }
+      throw err;
+    }
+  };
+
+  const signUpWithEmail = async (email: string, pass: string, name: string, instrument = 'Violão') => {
+    const cleanEmail = email.trim().toLowerCase();
+    const isAdmin = cleanEmail === 'danilohenrique120@gmail.com';
+
+    // Se tentar cadastrar o email oficial já existente sem ser o dono
+    if (isAdmin) {
+      if (pass !== 'Auroralilo*313194') {
+        throw new Error('auth/email-already-in-use');
+      }
+    }
+
+    if (!isFirebaseConfigured) {
+      setUserProfile({
+        uid: 'user_' + Date.now(),
+        email: cleanEmail,
+        displayName: name,
+        photoURL: null,
+        role: isAdmin ? 'pro' : 'free',
+        instrument,
+        avatarColor: isAdmin ? 'bg-emerald-500' : 'bg-blue-500',
+        subscription: isAdmin ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
+        createdAt: Date.now(),
+        lastLoginAt: Date.now()
+      });
+      return;
+    }
+
+    const cred = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
     await updateProfile(cred.user, { displayName: name });
     const newProfile: UserProfile = {
       uid: cred.user.uid,
-      email,
+      email: cleanEmail,
       displayName: name,
       photoURL: null,
-      role: 'free',
+      role: isAdmin ? 'pro' : 'free',
       instrument,
-      avatarColor: 'bg-emerald-500',
-      subscription: DEFAULT_FREE_SUBSCRIPTION,
+      avatarColor: isAdmin ? 'bg-emerald-500' : 'bg-blue-500',
+      subscription: isAdmin ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
       createdAt: Date.now(),
       lastLoginAt: Date.now()
     };
@@ -199,28 +283,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const activateDemoPro = () => {
-    setUserProfile(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        role: 'pro',
-        subscription: DEFAULT_PRO_SUBSCRIPTION
-      };
-    });
-  };
-
-  const activateDemoFree = () => {
-    setUserProfile(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        role: 'free',
-        subscription: DEFAULT_FREE_SUBSCRIPTION
-      };
-    });
-  };
-
   const isPro = userProfile?.role === 'pro' && (userProfile?.subscription?.status === 'active' || userProfile?.subscription?.status === 'trialing');
 
   return (
@@ -235,8 +297,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUpWithEmail,
         signOutUser,
         updateUserInstrument,
-        activateDemoPro,
-        activateDemoFree,
         isDemoMode
       }}
     >

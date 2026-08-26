@@ -14,7 +14,8 @@ import {
   X,
   Crown,
   User,
-  Sparkles
+  Sparkles,
+  Upload
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -23,6 +24,7 @@ interface SidebarProps {
   setlists: Setlist[];
   onSelectSetlist: (setlist: Setlist) => void;
   onOpenLiveRoomModal: () => void;
+  onOpenUploadModal: () => void;
   onOpenMetronome: () => void;
   onOpenTuner: () => void;
   onOpenPricing: () => void;
@@ -37,6 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setlists,
   onSelectSetlist,
   onOpenLiveRoomModal,
+  onOpenUploadModal,
   onOpenMetronome,
   onOpenTuner,
   onOpenPricing,
@@ -104,6 +107,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <ListMusic className="w-5 h-5" />
               Repertórios / Setlists
+            </button>
+
+            <button
+              onClick={() => {
+                onOpenUploadModal();
+                onCloseMobile();
+              }}
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-zinc-400 hover:text-emerald-400 hover:bg-zinc-900 transition"
+            >
+              <Upload className="w-5 h-5 text-emerald-400" />
+              Subir Minha Cifra
             </button>
 
             <button
@@ -240,7 +254,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           <div className="text-center text-[10px] text-zinc-600">
-            <p className="font-bold text-zinc-400">CifraFlow Live v2.0</p>
+            <p className="font-bold text-zinc-400">CifraSync Live v2.0</p>
             <p>PWA & Live Band Sync Ready</p>
           </div>
         </div>
