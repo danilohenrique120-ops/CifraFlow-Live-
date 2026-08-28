@@ -1,5 +1,6 @@
 // Serverless Function para Vercel
 // Endpoint: POST /api/create-checkout-session
+import Stripe from 'stripe';
 
 export default async function handler(req: any, res: any) {
   // Set CORS headers
@@ -16,19 +17,20 @@ export default async function handler(req: any, res: any) {
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Método não permitido.' });
   }
+
+  const { priceId, userId, userEmail, returnUrl, tier, billingCycle } = req.body || {};
 
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
 
   if (!stripeSecretKey) {
     return res.status(500).json({
-      error: 'Chave STRIPE_SECRET_KEY não configurada nas variáveis de ambiente da Vercel.'
+      error: 'Chave STRIPE_SECRET_KEY não configurada na Vercel! Por favor, acesse o painel da Vercel (Project Settings > Environment Variables) e adicione a variável STRIPE_SECRET_KEY.'
     });
   }
 
   try {
-    const Stripe = (await import('stripe')).default;
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16' as any
     });
@@ -38,7 +40,7 @@ export default async function handler(req: any, res: any) {
     // Determine plan details & pricing
     const isAnnual = billingCycle === 'annual';
     const isProBand = tier === 'pro_band' || tier === 'pro_ministry' || !tier;
-    
+
     // Amounts in Brazilian Centavos (R$ 24,90 -> 2490, R$ 199,00 -> 19900)
     let unitAmount = isProBand ? (isAnnual ? 19900 : 2490) : (isAnnual ? 9900 : 1490);
     const planTitle = isProBand ? 'CifraSync Live - Plano Pro' : 'CifraSync Live - Pro Músico Solo';
