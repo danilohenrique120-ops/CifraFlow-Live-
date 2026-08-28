@@ -271,6 +271,13 @@ const MainAppContent: React.FC = () => {
     );
   }
 
+  const handleAddSongDirectToSetlist = (song: Song, setlistId: string) => {
+    if (!songs.some(s => s.id === song.id)) {
+      setSongs(prev => [song, ...prev]);
+    }
+    handleAddToSetlist(song.id, setlistId);
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col antialiased selection:bg-emerald-500 selection:text-zinc-950">
       {/* Top Navbar */}
@@ -304,6 +311,7 @@ const MainAppContent: React.FC = () => {
           onOpenProfile={() => setIsProfileOpen(true)}
           isOpenMobile={isMobileMenuOpen}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
+          activeSetlistId={activeSetlist?.id}
         />
 
         <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 max-w-7xl mx-auto w-full">
@@ -352,6 +360,8 @@ const MainAppContent: React.FC = () => {
         songs={songs}
         onSelectSong={(song) => handleSelectSong(song)}
         onOpenUploadModal={() => handleOpenUploadWithPreset()}
+        setlists={setlists}
+        onAddToSetlist={handleAddSongDirectToSetlist}
       />
 
       {/* Custom Song Upload & Creation Modal */}

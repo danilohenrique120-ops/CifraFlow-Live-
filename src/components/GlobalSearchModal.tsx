@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Song, LiturgicalMoment, OnlineSongResult } from '../types';
-import { searchOnlineTracks, convertOnlineTrackToSong } from '../services/onlineMusicSearch';
+import { Song, LiturgicalMoment, OnlineSongResult, Setlist } from '../types';
+import { searchOnlineTracks, convertOnlineTrackToSongWithRealLyrics } from '../services/onlineMusicSearch';
 import {
   Search,
   X,
@@ -16,7 +16,11 @@ import {
   Globe,
   Plus,
   Radio,
-  Volume2
+  Volume2,
+  ListPlus,
+  Check,
+  ListMusic,
+  Loader2
 } from 'lucide-react';
 
 interface GlobalSearchModalProps {
@@ -25,6 +29,8 @@ interface GlobalSearchModalProps {
   songs: Song[];
   onSelectSong: (song: Song) => void;
   onOpenUploadModal?: () => void;
+  setlists: Setlist[];
+  onAddToSetlist: (song: Song, setlistId: string) => void;
 }
 
 export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
@@ -32,7 +38,9 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   onClose,
   songs,
   onSelectSong,
-  onOpenUploadModal
+  onOpenUploadModal,
+  setlists,
+  onAddToSetlist
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'local' | 'online'>('local');
@@ -41,8 +49,13 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   // Online search state
   const [onlineResults, setOnlineResults] = useState<OnlineSongResult[]>([]);
   const [isSearchingOnline, setIsSearchingOnline] = useState<boolean>(false);
+  const [loadingTrackId, setLoadingTrackId] = useState<string | number | null>(null);
   const [playingAudioId, setPlayingAudioId] = useState<string | number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Setlist dropdown menu state
+  const [activeDropdownSongId, setActiveDropdownSongId] = useState<string | null>(null);
+  const [feedbackSongSetlist, setFeedbackSongSetlist] = useState<{ songId: string; setlistTitle: string } | null>(null);
 
   // Listen to Ctrl+K or Cmd+K
   useEffect(() => {
@@ -66,6 +79,15 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       }
     };
   }, [isOpen]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = () => setActiveDropdownSongId(null);
+    if (activeDropdownSongId) {
+      window.addEventListener('click', handleClickOutside);
+      return () => window.removeEventListener('click', handleClickOutside);
+    }
+  }, [activeDropdownSongId]);
 
   // Online search debounced effect
   useEffect(() => {
@@ -111,13 +133,44 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     setPlayingAudioId(track.trackId);
   };
 
-  const handleSelectOnlineTrack = (track: OnlineSongResult) => {
+  const handleSelectOnlineTrack = async (track: OnlineSongResult) => {
     if (audioRef.current) {
       audioRef.current.pause();
     }
-    const converted = convertOnlineTrackToSong(track);
-    onSelectSong(converted);
-    onClose();
+    setLoadingTrackId(track.trackId);
+    try {
+      const converted = await convertOnlineTrackToSongWithRealLyrics(track);
+      onSelectSong(converted);
+      onClose();
+    } catch (e) {
+      console.warn('Error converting online track:', e);
+    } finally {
+      setLoadingTrackId(null);
+    }
+  };
+
+  const handleAddSongToSetlist = (song: Song, setlist: Setlist, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAddToSetlist(song, setlist.id);
+    setActiveDropdownSongId(null);
+    setFeedbackSongSetlist({ songId: song.id, setlistTitle: setlist.title });
+    setTimeout(() => setFeedbackSongSetlist(null), 3000);
+  };
+
+  const handleAddOnlineTrackToSetlist = async (track: OnlineSongResult, setlist: Setlist, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLoadingTrackId(track.trackId);
+    try {
+      const converted = await convertOnlineTrackToSongWithRealLyrics(track);
+      onAddToSetlist(converted, setlist.id);
+      setActiveDropdownSongId(null);
+      setFeedbackSongSetlist({ songId: converted.id, setlistTitle: setlist.title });
+      setTimeout(() => setFeedbackSongSetlist(null), 3000);
+    } catch (err) {
+      console.warn('Error adding online track to setlist:', err);
+    } finally {
+      setLoadingTrackId(null);
+    }
   };
 
   // Local filtered results
@@ -175,6 +228,14 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
         className="relative w-full max-w-3xl rounded-3xl bg-zinc-900 border border-zinc-700/80 shadow-2xl text-white overflow-hidden flex flex-col max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Feedback notification toast */}
+        {feedbackSongSetlist && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl bg-emerald-500 text-zinc-950 font-black text-xs shadow-2xl shadow-emerald-900/50 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+            <Check className="w-4 h-4" />
+            <span>Música adicionada ao repertório "{feedbackSongSetlist.setlistTitle}"!</span>
+          </div>
+        )}
+
         {/* Search Input Bar */}
         <div className="p-4 border-b border-zinc-800 bg-zinc-950/90 flex items-center gap-3">
           <Search className="w-5 h-5 text-emerald-400 flex-none" />
@@ -226,7 +287,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               }`}
             >
               <Globe className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Busca Global Online (Estilo Spotify)</span>
+              <span>Buscar Online</span>
               {isSearchingOnline && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />}
             </button>
           </div>
@@ -257,7 +318,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                     Músicas Encontradas Online Globalmente
                   </h3>
                   <p className="text-[11px] text-zinc-400">
-                    Toque no play para ouvir 30s da gravação original ou clique para abrir a cifra no palco.
+                    Toque no play para ouvir a prévia, abra no palco ou adicione diretamente a um repertório.
                   </p>
                 </div>
                 {isSearchingOnline && (
@@ -269,11 +330,13 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                 <div className="space-y-2">
                   {onlineResults.map((track) => {
                     const isPlaying = playingAudioId === track.trackId;
+                    const isDropdownOpen = activeDropdownSongId === `online_${track.trackId}`;
+
                     return (
                       <div
                         key={track.trackId}
                         onClick={() => handleSelectOnlineTrack(track)}
-                        className="group p-3 rounded-2xl bg-zinc-950/70 border border-zinc-800 hover:border-emerald-500/80 hover:bg-zinc-850 transition cursor-pointer flex items-center justify-between gap-3 shadow-md"
+                        className="group relative p-3 rounded-2xl bg-zinc-950/70 border border-zinc-800 hover:border-emerald-500/80 hover:bg-zinc-850 transition cursor-pointer flex items-center justify-between gap-3 shadow-md"
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
                           {/* Album Art or Cover with Play overlay */}
@@ -318,22 +381,72 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2.5 flex-none">
-                          {track.primaryGenreName && (
-                            <span className="hidden sm:inline text-[10px] px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 font-semibold border border-zinc-700">
-                              {track.primaryGenreName}
-                            </span>
-                          )}
+                        <div className="flex items-center gap-2 flex-none" onClick={(e) => e.stopPropagation()}>
+                          {/* Add to Setlist Action */}
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownSongId(isDropdownOpen ? null : `online_${track.trackId}`);
+                              }}
+                              className={`p-2 rounded-xl transition flex items-center gap-1.5 text-xs font-bold ${
+                                isDropdownOpen
+                                  ? 'bg-emerald-500 text-zinc-950'
+                                  : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-emerald-400 border border-zinc-800'
+                              }`}
+                              title="Adicionar a um Repertório"
+                            >
+                              <ListPlus className="w-4 h-4" />
+                              <span className="hidden sm:inline">Adicionar</span>
+                            </button>
+
+                            {/* Setlist Selector Dropdown */}
+                            {isDropdownOpen && (
+                              <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+                                <div className="px-2 py-1 border-b border-zinc-800 mb-1 flex items-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-zinc-400">
+                                  <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>Escolha o Repertório:</span>
+                                </div>
+
+                                {setlists.map((setlist) => (
+                                  <button
+                                    key={setlist.id}
+                                    onClick={(e) => handleAddOnlineTrackToSetlist(track, setlist, e)}
+                                    className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-zinc-800 text-xs font-semibold text-zinc-200 truncate transition flex items-center justify-between group/item"
+                                  >
+                                    <span className="truncate">{setlist.title}</span>
+                                    <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
+                                  </button>
+                                ))}
+
+                                {setlists.length === 0 && (
+                                  <p className="px-2 py-2 text-xs text-zinc-500 text-center">
+                                    Nenhum repertório criado ainda.
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
 
                           <button
+                            disabled={loadingTrackId === track.trackId}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSelectOnlineTrack(track);
                             }}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1 shadow-md"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-75 text-white text-xs font-bold transition flex items-center gap-1 shadow-md"
                           >
-                            <span>Abrir Cifra</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
+                            {loadingTrackId === track.trackId ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Carregando Cifra...</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>Abrir Cifra</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
@@ -377,7 +490,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                         onClose();
                       }
                     }}
-                    className="group p-4 rounded-2xl bg-gradient-to-r from-zinc-800/90 to-zinc-900 border border-zinc-700/80 hover:border-emerald-500/80 transition-all cursor-pointer flex items-center justify-between shadow-lg"
+                    className="group relative p-4 rounded-2xl bg-gradient-to-r from-zinc-800/90 to-zinc-900 border border-zinc-700/80 hover:border-emerald-500/80 transition-all cursor-pointer flex flex-wrap items-center justify-between gap-3 shadow-lg"
                   >
                     <div className="flex items-center gap-3.5">
                       <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${localResults.topResult.coverGradient} flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform`}>
@@ -399,8 +512,58 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="w-10 h-10 rounded-full bg-emerald-500 text-zinc-950 flex items-center justify-center opacity-90 group-hover:opacity-100 group-hover:scale-110 shadow-lg transition">
-                      <Play className="w-5 h-5 fill-current ml-0.5" />
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      {/* Add to Setlist button */}
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (localResults.topResult) {
+                              const uniqueKey = `top_${localResults.topResult.id}`;
+                              setActiveDropdownSongId(activeDropdownSongId === uniqueKey ? null : uniqueKey);
+                            }
+                          }}
+                          className={`px-3 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
+                            activeDropdownSongId === `top_${localResults.topResult.id}`
+                              ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
+                              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-emerald-400 border-zinc-700'
+                          }`}
+                          title="Adicionar a um Repertório"
+                        >
+                          <ListPlus className="w-4 h-4" />
+                          <span>Adicionar ao Repertório</span>
+                        </button>
+
+                        {activeDropdownSongId === `top_${localResults.topResult.id}` && (
+                          <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+                            <div className="px-2 py-1 border-b border-zinc-800 mb-1 flex items-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-zinc-400">
+                              <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Escolha o Repertório:</span>
+                            </div>
+
+                            {setlists.map((setlist) => (
+                              <button
+                                key={setlist.id}
+                                onClick={(e) => localResults.topResult && handleAddSongToSetlist(localResults.topResult, setlist, e)}
+                                className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-zinc-800 text-xs font-semibold text-zinc-200 truncate transition flex items-center justify-between group/item"
+                              >
+                                <span className="truncate">{setlist.title}</span>
+                                <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
+                              </button>
+                            ))}
+
+                            {setlists.length === 0 && (
+                              <p className="px-2 py-2 text-xs text-zinc-500 text-center">
+                                Nenhum repertório criado ainda.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="w-10 h-10 rounded-full bg-emerald-500 text-zinc-950 flex items-center justify-center opacity-90 group-hover:opacity-100 group-hover:scale-110 shadow-lg transition">
+                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -413,38 +576,88 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                     Músicas no Catálogo
                   </span>
                   <div className="space-y-1">
-                    {localResults.songsList.map((song) => (
-                      <div
-                        key={song.id}
-                        onClick={() => {
-                          onSelectSong(song);
-                          onClose();
-                        }}
-                        className="p-2.5 rounded-xl hover:bg-zinc-800/80 transition cursor-pointer flex items-center justify-between group border border-transparent hover:border-zinc-700"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${song.coverGradient} flex items-center justify-center text-white text-xs font-bold`}>
-                            <Music className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition">
-                              {song.title}
-                            </h4>
-                            <p className="text-xs text-zinc-400">{song.artist}</p>
-                          </div>
-                        </div>
+                    {localResults.songsList.map((song) => {
+                      const isDropdownOpen = activeDropdownSongId === `catalog_${song.id}`;
 
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 font-semibold border border-zinc-700">
-                            {song.liturgicalMoment}
-                          </span>
-                          <span className="text-xs font-bold text-emerald-400 font-mono">
-                            {song.originalKey}
-                          </span>
-                          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition" />
+                      return (
+                        <div
+                          key={song.id}
+                          onClick={() => {
+                            onSelectSong(song);
+                            onClose();
+                          }}
+                          className="p-2.5 rounded-2xl hover:bg-zinc-800/80 transition cursor-pointer flex items-center justify-between group border border-transparent hover:border-zinc-700 relative"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${song.coverGradient} flex items-center justify-center text-white text-xs font-bold flex-none`}>
+                              <Music className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition truncate">
+                                {song.title}
+                              </h4>
+                              <p className="text-xs text-zinc-400 truncate">{song.artist}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-none" onClick={(e) => e.stopPropagation()}>
+                            <span className="hidden sm:inline text-[10px] px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 font-semibold border border-zinc-700">
+                              {song.liturgicalMoment}
+                            </span>
+                            <span className="text-xs font-bold text-emerald-400 font-mono">
+                              {song.originalKey}
+                            </span>
+
+                            {/* Add to Setlist Dropdown Trigger */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveDropdownSongId(isDropdownOpen ? null : `catalog_${song.id}`);
+                                }}
+                                className={`p-1.5 rounded-xl transition flex items-center gap-1 text-xs ${
+                                  isDropdownOpen
+                                    ? 'bg-emerald-500 text-zinc-950 font-bold'
+                                    : 'text-zinc-400 hover:text-white hover:bg-zinc-700'
+                                }`}
+                                title="Adicionar ao Repertório"
+                              >
+                                <ListPlus className="w-4 h-4" />
+                              </button>
+
+                              {/* Setlist Selector Dropdown */}
+                              {isDropdownOpen && (
+                                <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+                                  <div className="px-2 py-1 border-b border-zinc-800 mb-1 flex items-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-zinc-400">
+                                    <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>Escolha o Repertório:</span>
+                                  </div>
+
+                                  {setlists.map((setlist) => (
+                                    <button
+                                      key={setlist.id}
+                                      onClick={(e) => handleAddSongToSetlist(song, setlist, e)}
+                                      className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-zinc-800 text-xs font-semibold text-zinc-200 truncate transition flex items-center justify-between group/item"
+                                    >
+                                      <span className="truncate">{setlist.title}</span>
+                                      <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
+                                    </button>
+                                  ))}
+
+                                  {setlists.length === 0 && (
+                                    <p className="px-2 py-2 text-xs text-zinc-500 text-center">
+                                      Nenhum repertório criado ainda.
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition" />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -500,7 +713,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5 mx-auto"
                   >
                     <Globe className="w-4 h-4" />
-                    Buscar Online Globalmente (Estilo Spotify)
+                    Buscar Online
                   </button>
                 </div>
               )}

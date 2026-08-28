@@ -76,13 +76,19 @@ export const PricingModal: React.FC<PricingModalProps> = ({
         })
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        throw new Error('Não foi possível processar a resposta do servidor de checkout.');
+      }
 
       if (data.url) {
         // Redirect to official Stripe Hosted Checkout
         window.location.href = data.url;
       } else {
-        throw new Error(data.error || 'Erro ao gerar o link de pagamento da Stripe.');
+        throw new Error(data.error || 'Erro ao gerar o link de pagamento do Stripe.');
       }
     } catch (error: any) {
       console.error('Stripe redirect error:', error);

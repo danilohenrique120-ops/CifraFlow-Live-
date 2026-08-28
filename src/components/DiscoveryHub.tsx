@@ -103,7 +103,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
           </h1>
 
           <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
-            Navegue pelo catálogo litúrgico, personalize as músicas de cada momento da missa, busque online no estilo Spotify e guie toda a banda em tempo real.
+            Navegue pelo catálogo litúrgico, personalize as músicas de cada momento da missa, busque músicas online e guie toda a banda em tempo real.
           </p>
 
           <div className="pt-2 flex flex-wrap gap-3">
@@ -128,7 +128,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
               className="px-4 py-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-sm border border-zinc-800 transition flex items-center gap-2"
             >
               <Globe className="w-4 h-4 text-blue-400" />
-              Busca Global Online (Spotify)
+              Buscar Online
             </button>
           </div>
         </div>
