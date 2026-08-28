@@ -108,29 +108,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     let unsubscribeProfile: (() => void) | null = null;
 
+    const SPECIAL_PRO_ACCOUNTS: Record<string, { pass: string; name: string; avatar: string }> = {
+      'danilohenrique120@gmail.com': {
+        pass: 'Auroralilo*313194',
+        name: 'Administrador',
+        avatar: 'bg-emerald-500'
+      },
+      'patrick@socio.com': {
+        pass: 'patrick222',
+        name: 'Patrick',
+        avatar: 'bg-emerald-500'
+      }
+    };
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       setCurrentUser(firebaseUser);
 
       if (firebaseUser) {
         setIsDemoMode(false);
         const userRef = doc(db, 'users', firebaseUser.uid);
+        const userEmail = (firebaseUser.email || '').trim().toLowerCase();
+        const special = SPECIAL_PRO_ACCOUNTS[userEmail];
+        const isSpecialPro = Boolean(special);
 
         // Listen to live updates on user's subscription in Firestore
         unsubscribeProfile = onSnapshot(userRef, async (docSnap) => {
           if (docSnap.exists()) {
-            setUserProfile(docSnap.data() as UserProfile);
+            const data = docSnap.data() as UserProfile;
+            // Se for conta de sócio/admin, garantir que sempre tenha role pro
+            if (isSpecialPro && data.role !== 'pro') {
+              const fixed: UserProfile = {
+                ...data,
+                role: 'pro',
+                subscription: DEFAULT_PRO_SUBSCRIPTION
+              };
+              await setDoc(userRef, fixed, { merge: true });
+              setUserProfile(fixed);
+            } else {
+              setUserProfile(data);
+            }
           } else {
-            // Check if user is the admin / owner
-            const isAdmin = firebaseUser.email === 'danilohenrique120@gmail.com';
             const newProfile: UserProfile = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
-              displayName: firebaseUser.displayName || (isAdmin ? 'Administrador' : 'Músico'),
+              displayName: firebaseUser.displayName || (special ? special.name : 'Músico'),
               photoURL: firebaseUser.photoURL,
-              role: isAdmin ? 'pro' : 'free',
+              role: isSpecialPro ? 'pro' : 'free',
               instrument: 'Violão',
-              avatarColor: isAdmin ? 'bg-emerald-500' : 'bg-blue-500',
-              subscription: isAdmin ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
+              avatarColor: special ? special.avatar : 'bg-blue-500',
+              subscription: isSpecialPro ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
               createdAt: Date.now(),
               lastLoginAt: Date.now()
             };
@@ -155,6 +181,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  const SPECIAL_ACCOUNTS: Record<string, { pass: string; name: string; avatar: string }> = {
+    'danilohenrique120@gmail.com': {
+      pass: 'Auroralilo*313194',
+      name: 'Administrador',
+      avatar: 'bg-emerald-500'
+    },
+    'patrick@socio.com': {
+      pass: 'patrick222',
+      name: 'Patrick',
+      avatar: 'bg-emerald-500'
+    }
+  };
+
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
       alert('Firebase não configurado localmente.');
@@ -165,11 +204,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithEmail = async (email: string, pass: string) => {
     const cleanEmail = email.trim().toLowerCase();
-    const isAdmin = cleanEmail === 'danilohenrique120@gmail.com';
+    const special = SPECIAL_ACCOUNTS[cleanEmail];
+    const isSpecialPro = Boolean(special);
 
-    // Se for o e-mail do Administrador, validação estrita da senha do proprietário
-    if (isAdmin) {
-      if (pass !== 'Auroralilo*313194') {
+    // Validação estrita de senhas para contas de sócio e admin
+    if (special) {
+      if (pass !== special.pass) {
         throw new Error('auth/wrong-password');
       }
     }
@@ -178,12 +218,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserProfile({
         uid: 'user_' + Date.now(),
         email: cleanEmail,
-        displayName: isAdmin ? 'Administrador' : cleanEmail.split('@')[0],
+        displayName: special ? special.name : cleanEmail.split('@')[0],
         photoURL: null,
-        role: isAdmin ? 'pro' : 'free',
+        role: isSpecialPro ? 'pro' : 'free',
         instrument: 'Violão',
-        avatarColor: isAdmin ? 'bg-emerald-500' : 'bg-blue-500',
-        subscription: isAdmin ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
+        avatarColor: special ? special.avatar : 'bg-blue-500',
+        subscription: isSpecialPro ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
         createdAt: Date.now(),
         lastLoginAt: Date.now()
       });
@@ -193,19 +233,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signInWithEmailAndPassword(auth, cleanEmail, pass);
     } catch (err: any) {
-      // Se a conta de admin ainda não estiver criada no Firebase Auth pela primeira vez, cria com a senha oficial
-      if (isAdmin && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')) {
-        if (pass === 'Auroralilo*313194') {
+      // Se a conta de sócio/admin ainda não estiver criada no Firebase Auth pela primeira vez, cria com a senha oficial
+      if (special && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')) {
+        if (pass === special.pass) {
           const cred = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
-          await updateProfile(cred.user, { displayName: 'Administrador' });
+          await updateProfile(cred.user, { displayName: special.name });
           const newProfile: UserProfile = {
             uid: cred.user.uid,
             email: cleanEmail,
-            displayName: 'Administrador',
+            displayName: special.name,
             photoURL: null,
             role: 'pro',
             instrument: 'Violão',
-            avatarColor: 'bg-emerald-500',
+            avatarColor: special.avatar,
             subscription: DEFAULT_PRO_SUBSCRIPTION,
             createdAt: Date.now(),
             lastLoginAt: Date.now()
@@ -221,11 +261,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUpWithEmail = async (email: string, pass: string, name: string, instrument = 'Violão') => {
     const cleanEmail = email.trim().toLowerCase();
-    const isAdmin = cleanEmail === 'danilohenrique120@gmail.com';
+    const special = SPECIAL_ACCOUNTS[cleanEmail];
+    const isSpecialPro = Boolean(special);
 
-    // Se tentar cadastrar o email oficial já existente sem ser o dono
-    if (isAdmin) {
-      if (pass !== 'Auroralilo*313194') {
+    // Se tentar cadastrar email especial sem ser a senha oficial
+    if (special) {
+      if (pass !== special.pass) {
         throw new Error('auth/email-already-in-use');
       }
     }
@@ -234,12 +275,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserProfile({
         uid: 'user_' + Date.now(),
         email: cleanEmail,
-        displayName: name,
+        displayName: special ? special.name : name,
         photoURL: null,
-        role: isAdmin ? 'pro' : 'free',
+        role: isSpecialPro ? 'pro' : 'free',
         instrument,
-        avatarColor: isAdmin ? 'bg-emerald-500' : 'bg-blue-500',
-        subscription: isAdmin ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
+        avatarColor: special ? special.avatar : 'bg-blue-500',
+        subscription: isSpecialPro ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
         createdAt: Date.now(),
         lastLoginAt: Date.now()
       });
@@ -247,16 +288,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const cred = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
-    await updateProfile(cred.user, { displayName: name });
+    const finalName = special ? special.name : name;
+    await updateProfile(cred.user, { displayName: finalName });
     const newProfile: UserProfile = {
       uid: cred.user.uid,
       email: cleanEmail,
-      displayName: name,
+      displayName: finalName,
       photoURL: null,
-      role: isAdmin ? 'pro' : 'free',
+      role: isSpecialPro ? 'pro' : 'free',
       instrument,
-      avatarColor: isAdmin ? 'bg-emerald-500' : 'bg-blue-500',
-      subscription: isAdmin ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
+      avatarColor: special ? special.avatar : 'bg-blue-500',
+      subscription: isSpecialPro ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
       createdAt: Date.now(),
       lastLoginAt: Date.now()
     };
