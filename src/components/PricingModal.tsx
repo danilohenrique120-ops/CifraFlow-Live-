@@ -61,6 +61,11 @@ export const PricingModal: React.FC<PricingModalProps> = ({
 
     setIsProcessing(true);
 
+    const STRIPE_PRICES = {
+      monthly: 'price_1U9q744Ms9CHJegrDCcskGlP',
+      annual: 'price_1U9q8i4Ms9CHJegrgGtIK2Oa'
+    };
+
     try {
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
@@ -72,6 +77,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
           userEmail: userProfile.email,
           tier,
           billingCycle,
+          priceId: billingCycle === 'annual' ? STRIPE_PRICES.annual : STRIPE_PRICES.monthly,
           returnUrl: window.location.origin
         })
       });

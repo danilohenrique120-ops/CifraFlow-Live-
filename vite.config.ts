@@ -27,8 +27,7 @@ export default defineConfig(() => {
                       const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' as any });
                       const isAnnual = body.billingCycle === 'annual';
                       const isProBand = body.tier === 'pro_band' || body.tier === 'pro_ministry' || !body.tier;
-                      const unitAmount = isProBand ? (isAnnual ? 19900 : 2490) : (isAnnual ? 9900 : 1490);
-                      const planTitle = isProBand ? 'CifraSync Live - Plano Pro' : 'CifraSync Live - Pro Músico Solo';
+                      const targetPriceId = body.priceId || (isAnnual ? 'price_1U9q8i4Ms9CHJegrgGtIK2Oa' : 'price_1U9q744Ms9CHJegrDCcskGlP');
                       const origin = body.returnUrl || 'http://localhost:3000';
 
                       const session = await stripe.checkout.sessions.create({
@@ -36,23 +35,14 @@ export default defineConfig(() => {
                         payment_method_types: ['card'],
                         customer_email: body.userEmail || undefined,
                         client_reference_id: body.userId || 'anonymous',
+                        allow_promotion_codes: true,
                         metadata: {
                           userId: body.userId || 'anonymous',
                           tier: isProBand ? 'pro_band' : 'pro_musician',
                           billingCycle: isAnnual ? 'annual' : 'monthly'
                         },
                         line_items: [{
-                          price_data: {
-                            currency: 'brl',
-                            unit_amount: unitAmount,
-                            recurring: { interval: isAnnual ? 'year' : 'month' },
-                            product_data: {
-                              name: planTitle,
-                              description: isProBand
-                                ? 'Acesso completo ao Live Band Sync, transposição em tempo real e salas de ensaio ilimitadas.'
-                                : 'Repertórios ilimitados, transposição e ferramentas de palco para músico solo.'
-                            }
-                          },
+                          price: targetPriceId,
                           quantity: 1
                         }],
                         success_url: `${origin}?session_id={CHECKOUT_SESSION_ID}&payment_success=true&tier=${isProBand ? 'pro_band' : 'pro_musician'}`,

@@ -2,6 +2,11 @@
 // Endpoint: POST /api/create-checkout-session
 import Stripe from 'stripe';
 
+const STRIPE_PRICES = {
+  monthly: 'price_1U9q744Ms9CHJegrDCcskGlP',
+  annual: 'price_1U9q8i4Ms9CHJegrgGtIK2Oa'
+};
+
 export default async function handler(req: any, res: any) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -35,25 +40,28 @@ export default async function handler(req: any, res: any) {
       apiVersion: '2023-10-16' as any
     });
 
-    const origin = returnUrl || 'http://localhost:3000';
+    const origin = returnUrl || 'https://cifrasync.vercel.app';
 
     // Determine plan details & pricing
     const isAnnual = billingCycle === 'annual';
     const isProBand = tier === 'pro_band' || tier === 'pro_ministry' || !tier;
 
-    // Amounts in Brazilian Centavos (R$ 24,90 -> 2490, R$ 199,00 -> 19900)
-    let unitAmount = isProBand ? (isAnnual ? 19900 : 2490) : (isAnnual ? 9900 : 1490);
-    const planTitle = isProBand ? 'CifraSync Live - Plano Pro' : 'CifraSync Live - Pro Músico Solo';
+    // Use configured Stripe Price ID if available or fallback
+    const targetPriceId = priceId && priceId.startsWith('price_')
+      ? priceId
+      : (isAnnual ? STRIPE_PRICES.annual : STRIPE_PRICES.monthly);
 
     let lineItem: any;
 
-    // If explicit Stripe Price ID is passed, use it; otherwise generate dynamic price_data
-    if (priceId && priceId.startsWith('price_')) {
+    if (targetPriceId) {
       lineItem = {
-        price: priceId,
+        price: targetPriceId,
         quantity: 1
       };
     } else {
+      const unitAmount = isProBand ? (isAnnual ? 19900 : 2490) : (isAnnual ? 9900 : 1490);
+      const planTitle = isProBand ? 'CifraSync Live - Plano Pro' : 'CifraSync Live - Pro Músico Solo';
+
       lineItem = {
         price_data: {
           currency: 'brl',
@@ -77,6 +85,7 @@ export default async function handler(req: any, res: any) {
       payment_method_types: ['card'],
       customer_email: userEmail || undefined,
       client_reference_id: userId || 'anonymous',
+      allow_promotion_codes: true,
       metadata: {
         userId: userId || 'anonymous',
         tier: isProBand ? 'pro_band' : 'pro_musician',
