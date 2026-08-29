@@ -67,10 +67,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [userProfile]);
 
-  // Function to verify Stripe subscription by email and upgrade in Firestore
+  // Function to verify Stripe subscription by email and update in Firestore (Upgrade or Downgrade)
   const verifyStripeSubscription = async (targetEmail?: string): Promise<boolean> => {
-    const emailToVerify = targetEmail || userProfile?.email || currentUser?.email;
+    const emailToVerify = (targetEmail || userProfile?.email || currentUser?.email || '').trim().toLowerCase();
     if (!emailToVerify) return false;
+
+    // Contas de administrador e sócio nunca sofrem downgrade
+    const SPECIAL_PRO_EMAILS = ['danilohenrique120@gmail.com', 'patrick@socio.com'];
+    if (SPECIAL_PRO_EMAILS.includes(emailToVerify)) {
+      return true;
+    }
 
     try {
       const response = await fetch('/api/check-subscription-by-email', {
@@ -79,6 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ email: emailToVerify })
       });
       const data = await response.json();
+      const targetUid = currentUser?.uid || userProfile?.uid;
 
       if (data.hasActiveSubscription) {
         const upgradedSubscription: UserSubscription = {
@@ -88,7 +95,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           currentPeriodEnd: data.currentPeriodEnd || Date.now() + 365 * 24 * 60 * 60 * 1000
         };
 
-        const targetUid = currentUser?.uid || userProfile?.uid;
         if (targetUid && isFirebaseConfigured) {
           await setDoc(
             doc(db, 'users', targetUid),
@@ -107,8 +113,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         return true;
+      } else {
+        // Se a assinatura foi cancelada ou estornada no Stripe, volta para o Plano Gratuito
+        if (targetUid && isFirebaseConfigured) {
+          await setDoc(
+            doc(db, 'users', targetUid),
+            { role: 'free', subscription: DEFAULT_FREE_SUBSCRIPTION },
+            { merge: true }
+          );
+        }
+
+        setUserProfile((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            role: 'free',
+            subscription: DEFAULT_FREE_SUBSCRIPTION
+          };
+        });
+
+        return false;
       }
-      return false;
     } catch (err) {
       console.error('Error verifying Stripe subscription:', err);
       return false;
@@ -210,8 +235,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             else {
               setUserProfile(data);
 
-              // 3. Se o usuário estiver como gratuito, fazer checagem de fundo no Stripe para recuperar compras
-              if (data.role === 'free' && userEmail) {
+              // 3. Sincronizar status real no Stripe (ativa Pro se pago, ou volta para Gratuito se cancelado/estornado)
+              if (!isSpecialPro && userEmail) {
                 verifyStripeSubscription(userEmail);
               }
             }
