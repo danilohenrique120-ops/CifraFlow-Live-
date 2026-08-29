@@ -15,22 +15,13 @@ import {
   Crown
 } from 'lucide-react';
 
+import { INSTRUMENT_OPTIONS } from '../types';
+
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   isMandatory?: boolean;
 }
-
-const INSTRUMENT_OPTIONS = [
-  'Violão',
-  'Teclado / Piano',
-  'Vocal Principal',
-  'Backing Vocal',
-  'Guitarra',
-  'Baixo',
-  'Bateria / Percussão',
-  'Regente / Coral'
-];
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandatory = false }) => {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
@@ -38,7 +29,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [instrument, setInstrument] = useState('Violão');
+  const [instrument, setInstrument] = useState('Violão / Guitarra');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -221,16 +212,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
 
           {isSignUp && (
             <div>
-              <label className="text-xs font-bold text-zinc-300 block mb-1">Instrumento Principal</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-zinc-300">Instrumento Inicial</label>
+                <span className="text-[10px] text-emerald-400 font-semibold">Gratuito: Violão / Guitarra</span>
+              </div>
               <select
                 value={instrument}
                 onChange={(e) => setInstrument(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-medium"
               >
-                {INSTRUMENT_OPTIONS.map((inst) => (
-                  <option key={inst} value={inst}>{inst}</option>
-                ))}
+                {INSTRUMENT_OPTIONS.map((inst) => {
+                  const isFree = inst.id === 'guitar';
+                  return (
+                    <option key={inst.id} value={inst.label} disabled={!isFree}>
+                      {inst.icon} {inst.label} {isFree ? '(Liberado)' : '🔒 (Exclusivo Pro)'}
+                    </option>
+                  );
+                })}
               </select>
+              <p className="text-[10px] text-zinc-400 mt-1 leading-tight">
+                💡 No Plano Gratuito, as cifras são geradas em Violão/Guitarra. Os outros instrumentos e afinações são desbloqueados no <strong>Plano Pro</strong>.
+              </p>
             </div>
           )}
 

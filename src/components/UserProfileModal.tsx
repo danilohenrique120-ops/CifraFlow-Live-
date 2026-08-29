@@ -172,11 +172,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               onChange={(e) => setSelectedInstrument(e.target.value)}
               className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
             >
-              {INSTRUMENT_OPTIONS.map((inst) => (
-                <option key={inst.id} value={inst.label}>
-                  {inst.icon} {inst.label} {inst.isTransposing ? '(Transpositor)' : ''}
-                </option>
-              ))}
+              {INSTRUMENT_OPTIONS.map((inst) => {
+                const isFree = inst.id === 'guitar';
+                return (
+                  <option key={inst.id} value={inst.label}>
+                    {inst.icon} {inst.label} {inst.isTransposing ? '(Transpositor)' : ''} {!isPro && !isFree ? '🔒 (Plano Pro)' : ''}
+                  </option>
+                );
+              })}
             </select>
 
             {!isPro && selectedInstrument !== 'Violão / Guitarra' && selectedInstrument !== 'Violão' ? (
