@@ -1,18 +1,706 @@
-import { Song } from '../types';
+import { Song, Setlist } from '../types';
+
+export const CATALOG_VERSION = 'v3_capo_universal_multi_genre';
 
 export const INITIAL_SONGS: Song[] = [
   {
-    id: 'ninguem-te-ama-como-eu',
-    title: 'Ninguém Te Ama Como Eu',
-    artist: 'Martín Valverde (Pe. Marcelo Rossi)',
+    id: 'tempo-perdido',
+    title: 'Tempo Perdido',
+    artist: 'Legião Urbana',
+    originalKey: 'C',
+    currentKey: 'C',
+    bpm: 124,
+    timeSignature: '4/4',
+    liturgicalMoment: 'Pop Rock',
+    categories: ['Pop Rock', 'Anos 80/90', 'Clássicos'],
+    coverGradient: 'from-blue-600 to-indigo-900',
+    tags: ['rock', 'legiao', 'nacional', 'anos 80', 'pop rock'],
+    duration: '5:02',
+    content: `[Intro] C  Am7  Bm  Em
+
+[Primeira Parte]
+C             Am7
+ Todos os dias quando acordo
+Bm              Em
+ Não tenho mais o tempo que passou
+C             Am7
+ Mas tenho muito tempo
+Bm              Em
+ Temos todo o tempo do mundo
+
+[Segunda Parte]
+C             Am7
+ Todos os dias antes de dormir
+Bm              Em
+ Lembro e esqueço como foi o dia
+C             Am7
+ Sempre em frente
+Bm              Em
+ Não temos tempo a perder
+
+[Refrão]
+C             Am7
+ Nosso suor sagrado
+Bm                  Em
+ É bem mais belo que esse sangue amargo
+C           Am7
+ E tão sério
+Bm      Em
+ E selvagem
+
+[Ponte]
+C           Am7
+ Veja o sol dessa manhã tão cinza
+Bm               Em
+ A tempestade que chega é da cor dos teus olhos
+C        Am7      Bm     Em
+ Castanhos...
+
+[Refrão Final]
+C             Am7
+ Então me abraça forte
+Bm               Em
+ E me diz mais uma vez que já estamos
+C        Am7
+ Distantes de tudo
+Bm           Em
+ Temos nosso próprio tempo`
+  },
+  {
+    id: 'anunciacao',
+    title: 'Anunciação',
+    artist: 'Alceu Valença',
+    originalKey: 'C',
+    currentKey: 'C',
+    bpm: 110,
+    timeSignature: '4/4',
+    liturgicalMoment: 'MPB',
+    categories: ['MPB', 'Forró', 'Clássicos'],
+    coverGradient: 'from-amber-500 to-orange-700',
+    tags: ['mpb', 'nordeste', 'alceu', 'tu vens', 'acustico'],
+    duration: '4:20',
+    content: `[Intro] C  Dm  F  C
+
+[Primeira Parte]
+C
+ Na bruma leve das paixões
+    Dm
+Que vêm de dentro
+F
+ Tu vens chegando pra brincar
+      C
+No meu quintal
+
+C
+ No teu cavalo peito nu
+   Dm
+Cabelo ao vento
+F
+ E o sol quarando nossas roupas
+   C
+No varal
+
+[Refrão]
+C
+ Tu vens, tu vens
+Dm           F
+ Eu já escuto os teus sinais
+C
+ Tu vens, tu vens
+Dm           F         C
+ Eu já escuto os teus sinais
+
+[Segunda Parte]
+C
+ A voz do anjo sussurrou
+    Dm
+No meu ouvido
+F
+ Eu não duvido, já escuto
+   C
+Os teus sinais
+
+C
+ Que tu virias numa manhã
+    Dm
+De domingo
+F
+ Eu rezo e peço pra você
+   C
+Chegar mais cedo
+
+[Refrão Final]
+C
+ Tu vens, tu vens
+Dm           F
+ Eu já escuto os teus sinais
+C
+ Tu vens, tu vens
+Dm           F         C
+ Eu já escuto os teus sinais`
+  },
+  {
+    id: 'evidencias',
+    title: 'Evidências',
+    artist: 'Chitãozinho & Xororó',
+    originalKey: 'E',
+    currentKey: 'E',
+    bpm: 78,
+    timeSignature: '4/4',
+    liturgicalMoment: 'Sertanejo',
+    categories: ['Sertanejo', 'Romântica', 'Hits do Show'],
+    coverGradient: 'from-amber-600 to-yellow-800',
+    tags: ['sertanejo', 'hino', 'chitaozinho', 'evidencias', 'karaoke'],
+    duration: '4:39',
+    content: `[Intro] E  B/D#  C#m7  B  A  B7
+
+[Primeira Parte]
+E                      B/D#
+ Quando eu digo que deixei de te amar
+C#m7                   B
+ É porque eu te amo
+A                      E/G#
+ Quando eu digo que não quero mais você
+F#m7                   B7
+ É porque eu te quero
+
+[Segunda Parte]
+E                  B/D#
+ Eu tenho medo de te dar meu coração
+C#m7               B
+ E confessar que eu estou em tuas mãos
+A                  E/G#
+ Mas não posso esconder a verdade
+F#m7                 B7
+ Que eu me perco no teu olhar
+
+[Refrão]
+             E
+E nessa loucura de dizer que não te quero
+          B/D#
+Vou negando as aparências
+                C#m7
+Disfarçando as evidências
+         B                  A
+Mas pra que viver fingindo, se eu não posso
+F#m7          B7
+Enganar meu coração?
+            E
+Eu sei que te amo!
+              B/D#
+Chega de mentiras, de negar o meu desejo
+          C#m7
+Eu te quero mais que tudo
+          B
+Eu preciso do teu beijo
+A           B7          E
+ Eu entrego a minha vida pra você!`
+  },
+  {
+    id: 'pe-na-areia',
+    title: 'Pé na Areia',
+    artist: 'Diogo Nogueira',
+    originalKey: 'G',
+    currentKey: 'G',
+    bpm: 96,
+    timeSignature: '2/4',
+    liturgicalMoment: 'Pagode & Samba',
+    categories: ['Pagode', 'Ao Vivo', 'Hits do Show'],
+    coverGradient: 'from-emerald-500 to-teal-800',
+    tags: ['samba', 'pagode', 'praia', 'diogo nogueira', 'roda de samba'],
+    duration: '3:45',
+    content: `[Intro] G  D7  Em7  C  D7
+
+[Primeira Parte]
+G
+ Vamos pular a parte que eu peço
+     D7
+A sua mão e você diz que sim
+Em7
+ Vamos pular a parte que a gente
+   C            D7
+Aluga um apê na praia
+
+[Segunda Parte]
+G
+ Que a gente já tá velhinho
+   D7
+Gozando a aposentadoria
+Em7
+ Tomando caipirinha
+      C         D7
+E ouvindo um pagodinho
+
+[Refrão]
+G
+ Pé na areia, caipirinha
+D7
+ Água de coco, a cervejinha
+Em7
+ Pé na areia, caipirinha
+C              D7
+ Água de coco, a cervejinha
+G
+ E um amor pra chamar de meu!`
+  },
+  {
+    id: 'gostava-tanto-de-voce',
+    title: 'Gostava Tanto de Você',
+    artist: 'Tim Maia',
+    originalKey: 'D',
+    currentKey: 'D',
+    bpm: 72,
+    timeSignature: '4/4',
+    liturgicalMoment: 'MPB',
+    categories: ['MPB', 'Baladas & Românticas', 'Clássicos'],
+    coverGradient: 'from-purple-600 to-indigo-900',
+    tags: ['soul', 'tim maia', 'mpb', 'romantica', 'nostalgia'],
+    duration: '4:15',
+    content: `[Intro] D  F#m7  G  A7
+
+[Primeira Parte]
+D                  F#m7
+ Não sei porque você se foi
+G                  A7
+ Quantas saudades eu senti
+D                  F#m7
+ E de tristeza vou viver
+G                  A7
+ Aquele adeus não pude dar
+
+[Pré-Refrão]
+Em7                F#m7
+ Você marcou na minha vida
+G                  A7
+ Viveu, morreu na minha história
+Em7                F#m7
+ Chego a chorar se me lembro
+G                  A7
+ Do tempo que não volta mais
+
+[Refrão]
+     D    F#m7
+Eu gostava tanto de você!
+     G    A7
+Eu gostava tanto de você!
+     D    F#m7
+Eu gostava tanto de você!
+     G    A7          D
+Eu gostava tanto de você!`
+  },
+  {
+    id: 'whisky-a-go-go',
+    title: 'Whisky a Go-Go',
+    artist: 'Roupa Nova',
+    originalKey: 'C',
+    currentKey: 'C',
+    bpm: 130,
+    timeSignature: '4/4',
+    liturgicalMoment: 'Hits do Show',
+    categories: ['Pop Rock', 'Hits do Show', 'Anos 80/90'],
+    coverGradient: 'from-rose-600 to-pink-900',
+    tags: ['festa', 'roupa nova', 'show', 'anos 80', 'pop'],
+    duration: '4:08',
+    content: `[Intro] C  G/B  Am7  F  G
+
+[Primeira Parte]
+C             G/B
+ Foi num baile, meia-luz
+Am7           Em
+ Que eu te conheci
+F             C/E
+ Um beijo na boca
+Dm7           G
+ E tudo começou
+
+[Refrão]
+C             G/B
+ Eu perguntava: Do you wanna dance?
+Am7           Em
+ E te abraçava: Do you wanna dance?
+F             C/E
+ Lembra daquele som que rolava?
+Dm7           G
+ É o meu coração que tocava!
+
+[Segunda Parte]
+C             G/B
+ Um whisky a go-go
+Am7           Em
+ Naquele salão
+F             C/E
+ E a gente dançando
+Dm7           G
+ Até o sol raiar!`
+  },
+  {
+    id: 'lanterna-dos-afogados',
+    title: 'Lanterna dos Afogados',
+    artist: 'Os Paralamas do Sucesso',
+    originalKey: 'Em',
+    currentKey: 'Em',
+    bpm: 80,
+    timeSignature: '4/4',
+    liturgicalMoment: 'Pop Rock',
+    categories: ['Pop Rock', 'Anos 80/90', 'Clássicos'],
+    coverGradient: 'from-blue-800 to-slate-900',
+    tags: ['paralamas', 'herbert vianna', 'rock nacional'],
+    duration: '3:50',
+    content: `[Intro] Em  C  Am  B7
+
+[Primeira Parte]
+Em
+ Quando tá escuro e ninguém te ouve
+C
+ Quando não há forças pra você pedir
+Am
+ Quando o desespero bate à sua porta
+B7
+ E não há mais ninguém por perto
+
+[Refrão]
+Em
+ Eu tô ligando a lanterna dos afogados
+C
+ Pra te mostrar que nem tudo tá perdido
+Am
+ Que o amor que a gente tem guardado
+B7               Em
+ Ainda pode nos salvar!`
+  },
+  {
+    id: 'dormi-na-praca',
+    title: 'Dormi na Praça',
+    artist: 'Bruno & Marrone',
+    originalKey: 'D',
+    currentKey: 'D',
+    bpm: 82,
+    timeSignature: '4/4',
+    liturgicalMoment: 'Sertanejo',
+    categories: ['Sertanejo', 'Hits do Show'],
+    coverGradient: 'from-amber-700 to-orange-950',
+    tags: ['bruno marrone', 'sertanejo', 'guarda', 'dormi na praca'],
+    duration: '3:30',
+    content: `[Intro] D  A/C#  Bm  G  A7
+
+[Primeira Parte]
+D                 A/C#
+ Eu caminhei sozinho pela rua
+Bm                F#m
+ Falei com as estrelas e com a lua
+G                 D/F#
+ Deitei no banco da praça
+Em7               A7
+ Tentando te esquecer
+
+[Refrão]
+D
+ Seu guarda, eu não sou vagabundo
+A/C#
+ Eu não sou delinquente
+Bm
+ Sou um homem carente
+G
+ Que perdeu a grande
+A7             D
+ Esperança da sua vida!`
+  },
+  {
+    id: 'boate-azul',
+    title: 'Boate Azul',
+    artist: 'Milionário & José Rico',
+    originalKey: 'Am',
+    currentKey: 'Am',
+    bpm: 90,
+    timeSignature: '3/4',
+    liturgicalMoment: 'Sertanejo',
+    categories: ['Sertanejo', 'Clássicos'],
+    coverGradient: 'from-blue-900 to-indigo-950',
+    tags: ['boate azul', 'sertanejo raiz', 'classico'],
+    duration: '3:20',
+    content: `[Intro] Am  E7  Am  E7  Am
+
+[Primeira Parte]
+Am                               E7
+ Doente de amor, procurei remédio na vida noturna
+                                               Am
+Com a flor da noite, numa boate aqui na zona sul
+                                   A7          Dm
+A dor do amor é com outro amor que a gente cura
+                        Am        E7          Am
+Vim curar a dor desse mal de amor na Boate Azul
+
+[Refrão]
+             E7
+Sair de que jeito, se eu nem sei o rumo
+          Am
+Para onde vou?
+          E7
+Muito embriagado, que nem meus passos
+         Am
+Eu sinto no chão
+             Dm                      Am
+Garçom, me ajude aqui no meu primeiro passo
+            E7                         Am
+Até o meu carro, é meu dia de desilusão!`
+  },
+  {
+    id: 'deixa-acontecer',
+    title: 'Deixa Acontecer',
+    artist: 'Grupo Revelação',
+    originalKey: 'F',
+    currentKey: 'F',
+    bpm: 98,
+    timeSignature: '2/4',
+    liturgicalMoment: 'Pagode & Samba',
+    categories: ['Pagode', 'Ao Vivo', 'Clássicos'],
+    coverGradient: 'from-teal-600 to-emerald-900',
+    tags: ['pagode', 'revelacao', 'xande', 'deixa acontecer'],
+    duration: '4:02',
+    content: `[Intro] F  C7  Bb  C7
+
+[Primeira Parte]
+F            C7
+ Deixa acontecer naturalmente
+Bb           C7
+ Eu não quero ver você chorar
+F            C7
+ Deixa que o amor encontre a gente
+Bb           C7
+ Nosso caso vai se eternizar
+
+[Refrão]
+F             C7
+ Você já é o meu xodó
+Bb            C7
+ Não tem como disfarçar
+F             C7
+ O nosso amor é de verdade
+Bb            C7       F
+ E nada vai nos separar!`
+  },
+  {
+    id: 'ta-escrito',
+    title: 'Tá Escrito',
+    artist: 'Grupo Revelação (Xande de Pilares)',
+    originalKey: 'C',
+    currentKey: 'C',
+    bpm: 102,
+    timeSignature: '2/4',
+    liturgicalMoment: 'Pagode & Samba',
+    categories: ['Pagode', 'Hits do Show', 'Ao Vivo'],
+    coverGradient: 'from-emerald-600 to-yellow-800',
+    tags: ['xande', 'ta escrito', 'samba', 'pagode', 'guerreiro'],
+    duration: '3:50',
+    content: `[Intro] C  G7  Am  F  G7
+
+[Primeira Parte]
+C
+ Quem cultiva a semente do amor
+G7
+ Segue em frente e não se apavora
+Am
+ Se na vida encontrar dissabor
+F                 G7
+ Vai saber com a dor conviver
+
+[Refrão]
+C
+ Ergue essa cabeça, mete o pé e vai na fé
+G7
+ Manda essa tristeza embora
+Am
+ Basta acreditar que um novo dia vai raiar
+F            G7      C
+ Sua hora vai chegar!`
+  },
+  {
+    id: 'primeiros-erros',
+    title: 'Primeiros Erros',
+    artist: 'Capital Inicial (Kiko Zambianchi)',
+    originalKey: 'G',
+    currentKey: 'G',
+    bpm: 116,
+    timeSignature: '4/4',
+    liturgicalMoment: 'Pop Rock',
+    categories: ['Pop Rock', 'Acústico', 'Anos 80/90'],
+    coverGradient: 'from-blue-700 to-indigo-950',
+    tags: ['capital inicial', 'rock nacional', 'chove la fora', 'acustico'],
+    duration: '4:30',
+    content: `[Intro] G  D/F#  Em7  C9
+
+[Primeira Parte]
+G              D/F#
+ Meu caminho é cada manhã
+Em7            C9
+ Não procuro saber onde vou
+G              D/F#
+ Meu destino não é de ninguém
+Em7            C9
+ E eu não deixo os meus passos no chão
+
+[Refrão]
+G              D/F#
+ Se o sol nascer no horizonte
+Em7            C9
+ E a chuva molhar o meu rosto
+G              D/F#
+ Mas se for pra recomeçar
+Em7            C9
+ Eu começo outra vez!`
+  },
+  {
+    id: 'oceano',
+    title: 'Oceano',
+    artist: 'Djavan',
+    originalKey: 'D',
+    currentKey: 'D',
+    bpm: 68,
+    timeSignature: '4/4',
+    liturgicalMoment: 'MPB',
+    categories: ['MPB', 'Baladas & Românticas', 'Clássicos'],
+    coverGradient: 'from-teal-700 to-cyan-950',
+    tags: ['djavan', 'mpb', 'violao', 'oceano'],
+    duration: '4:50',
+    content: `[Intro] D  Em7  F#m7  G  A7
+
+[Primeira Parte]
+D                    Em7
+ Assim que o dia amanheceu
+F#m7                 G
+ Lá no mar alto da paixão
+D                    Em7
+ Dava pra ver o tempo mudar
+F#m7                 G
+ Se afastar da solidão
+
+[Refrão]
+D               F#m7
+ Amar é um deserto e seus temores
+G                    A7
+ Vida que vai na sela dessas dores
+D               F#m7
+ Só você pra me dar a certeza
+G             A7         D
+ Do oceano da minha beleza!`
+  },
+  {
+    id: 'sozinho',
+    title: 'Sozinho',
+    artist: 'Caetano Veloso (Peninha)',
+    originalKey: 'G',
+    currentKey: 'G',
+    bpm: 65,
+    timeSignature: '4/4',
+    liturgicalMoment: 'Acústico',
+    categories: ['MPB', 'Acústico', 'Romântica'],
+    coverGradient: 'from-amber-800 to-zinc-900',
+    tags: ['caetano', 'peninha', 'sozinho', 'voz e violao'],
+    duration: '3:40',
+    content: `[Intro] G  Bm7  C  D7
+
+[Primeira Parte]
+G               Bm7
+ Às vezes no silêncio da noite
+C                      D7
+ Eu fico imaginando nós dois
+G                Bm7
+ Eu fico vendo o sol se apagar
+C                  D7
+ E a escuridão me abraçar
+
+[Refrão]
+G            Bm7
+ Quando a gente gosta é claro que a gente cuida
+C                 D7
+ Fala que me ama, só não joga fora
+G                 Bm7
+ Porque quando a gente perde um amor
+C             D7         G
+ Fica sem saber pra onde ir!`
+  },
+  {
+    id: 'a-casa-e-sua',
+    title: 'A Casa É Sua',
+    artist: 'Casa Worship',
+    originalKey: 'G',
+    currentKey: 'G',
+    bpm: 70,
+    timeSignature: '4/4',
+    liturgicalMoment: 'Gospel & Louvor',
+    categories: ['Gospel', 'Adoração', 'Louvor'],
+    coverGradient: 'from-amber-600 to-emerald-800',
+    tags: ['gospel', 'casa worship', 'louvor', 'adoracao'],
+    duration: '6:15',
+    content: `[Intro] G  C9  Em7  D
+
+[Primeira Parte]
+G
+ Você é bem-vindo aqui
+C9
+ A casa é Sua, pode entrar
+Em7
+ Me esvazio de mim
+D
+ Pra que Tu possas reinar
+
+[Refrão]
+G
+ Essa casa é Sua casa
+C9
+ Nós deixamos ela pra Você, Jesus
+Em7
+ Essa casa é Sua casa
+D
+ Nós deixamos ela pra Você!`
+  },
+  {
+    id: 'raridade',
+    title: 'Raridade',
+    artist: 'Anderson Freire',
     originalKey: 'C',
     currentKey: 'C',
     bpm: 68,
     timeSignature: '4/4',
-    liturgicalMoment: 'Comunhão',
-    categories: ['Adoração', 'Missa / Liturgia', 'Cura e Libertação'],
+    liturgicalMoment: 'Gospel & Louvor',
+    categories: ['Gospel', 'Adoração'],
+    coverGradient: 'from-violet-700 to-indigo-950',
+    tags: ['anderson freire', 'raridade', 'gospel'],
+    duration: '4:45',
+    content: `[Intro] C  G/B  Am  F
+
+[Primeira Parte]
+C                 G/B
+ Não consigo entender como Tu me amas tanto
+Am                F
+ Sendo eu tão falho e imperfeito assim
+C                 G/B
+ Mas a Tua graça me alcançou no abismo
+Am                F
+ E mudou a minha história
+
+[Refrão]
+C
+ Você é um espelho que reflete a imagem do Senhor
+G/B
+ Não chore se o mundo ainda não notou
+Am
+ Já é o bastante Deus reconhecer o seu valor
+F
+ Você é precioso, mais raro que o ouro puro de Ofir!`
+  },
+  {
+    id: 'ninguem-te-ama-como-eu',
+    title: 'Ninguém Te Ama Como Eu',
+    artist: 'Martín Valverde',
+    originalKey: 'C',
+    currentKey: 'C',
+    bpm: 68,
+    timeSignature: '4/4',
+    liturgicalMoment: 'Gospel & Louvor',
+    categories: ['Gospel', 'Adoração', 'Clássicos'],
     coverGradient: 'from-amber-600 to-rose-700',
-    tags: ['comunhão', 'adoração', 'amor', 'cura', 'jesus'],
+    tags: ['comunhao', 'adoracao', 'amor', 'jesus'],
     duration: '5:12',
     content: `[Intro] C  G/B  Am  Am/G  F  G  C  G7
 
@@ -26,49 +714,7 @@ C            G/B          Am   Am/G
 F            Dm           G4   G
  Tenho esperado que estivesses assim
 
-[Segunda Parte]
-C           G/B        Am     Am/G
- Eu sei bem o que tens vivido
-F          Dm             G4   G
- Sei também que tens chorado
-C           G/B        Am    Am/G
- Eu sei bem o que tens sofrido
-F            Dm          G4   G
- Pois permaneço ao teu lado
-
 [Refrão]
-             C     G/B        Am   Am/G
-Ninguém te ama como eu, ninguém te ama como eu
-      F               Dm           G4   G
-Olha pra cruz, esta é a minha grande prova
-             C     G/B        Am   Am/G
-Ninguém te ama como eu, ninguém te ama como eu
-      F               Dm           G4   G
-Olha pra cruz, foi por ti, porque te amo
-             C     G/B  Am  Am/G  F  G  C
-Ninguém te ama como eu
-
-[Terceira Parte]
-C           G/B        Am    Am/G
- Eu sei bem o que me dizes
-F            Dm               G4   G
- Ainda que nunca me fales
-C           G/B          Am   Am/G
- Eu sei bem o que tens sentido
-F            Dm             G4   G
- Ainda que nunca me reveles
-
-[Quarta Parte]
-C           G/B       Am    Am/G
- A teu lado permaneço
-F             Dm             G4   G
- Junto a ti sempre hei de estar
-C              G/B           Am     Am/G
- Do teu pranto eu sou o consolo
-F             Dm            G4   G
- Pois sou teu amigo e protetor
-
-[Refrão Final]
              C     G/B        Am   Am/G
 Ninguém te ama como eu, ninguém te ama como eu
       F               Dm           G4   G
@@ -81,931 +727,231 @@ Olha pra cruz, foi por ti, porque te amo
 Ninguém te ama como eu`
   },
   {
-    id: 'como-es-lindo',
-    title: 'Como És Lindo',
-    artist: 'Vida Reluz (Walmir Alencar)',
+    id: 'lugar-secreto',
+    title: 'Lugar Secreto',
+    artist: 'Gabriela Rocha',
     originalKey: 'D',
     currentKey: 'D',
     bpm: 72,
     timeSignature: '4/4',
-    liturgicalMoment: 'Comunhão',
-    categories: ['Adoração', 'Missa / Liturgia', 'Louvor'],
-    coverGradient: 'from-blue-600 to-indigo-800',
-    tags: ['comunhão', 'eucaristia', 'adoração', 'vida reluz'],
-    duration: '4:45',
-    content: `[Intro] D  A/C#  Bm  Bm/A  G  Em  A4  A
+    liturgicalMoment: 'Gospel & Louvor',
+    categories: ['Gospel', 'Adoração'],
+    coverGradient: 'from-violet-600 to-indigo-900',
+    tags: ['gabriela rocha', 'gospel', 'adoracao'],
+    duration: '5:40',
+    content: `[Intro] D  A/C#  Bm7  G
 
 [Primeira Parte]
-D              A/C#        Bm  Bm/A
- Que bom, Senhor, ir ao teu altar
-G              D/F#          Em      A4  A
- Compartilhar da tua mesa e te encontrar
-D            A/C#        Bm   Bm/A
- Te ver no vinho e no pão
-G              D/F#          Em      A4  A
- Nos dá o teu corpo e sangue pra redenção
-
-[Segunda Parte]
-Bm          F#m
- Pão da vida, luz da vida
-G               D
- Pão dos anjos, vinho da paz
-G             D/F#
- Sei que estás presente aqui
-Em            A4  A
- Nos alimentando
+D
+ Tu és tudo o que eu mais quero
+A/C#
+ O meu refúgio e proteção
+Bm7
+ No Teu altar me coloco
+G
+ Pra ouvir o Teu coração
 
 [Refrão]
-         D    A/C#     Bm   Bm/A
-Como és lindo, como és belo
-        G       D/F#     Em    A4  A
-Meu Senhor, meu Deus, meu Salvador
-         D    A/C#     Bm   Bm/A
-Como és santo, como és doce
-        G       A       D    A
-Meu Senhor, meu Rei, meu Deus
-
-[Terceira Parte]
-D           A/C#         Bm  Bm/A
- Tua presença nos transforma
-G           D/F#            Em    A4  A
- Teu corpo nos faz viver a comunhão
-D           A/C#        Bm   Bm/A
- Envia o Teu Santo Espírito
-G             D/F#          Em    A4  A
- Renova a chama em nosso coração
-
-[Refrão Final]
-         D    A/C#     Bm   Bm/A
-Como és lindo, como és belo
-        G       D/F#     Em    A4  A
-Meu Senhor, meu Deus, meu Salvador
-         D    A/C#     Bm   Bm/A
-Como és santo, como és doce
-        G       A       D
-Meu Senhor, meu Rei, meu Deus`
+D
+ Leva-me ao lugar secreto
+A/C#
+ Onde a Tua glória habita
+Bm7
+ Eu quero Te conhecer mais
+G
+ E viver da Tua presença!`
   },
   {
-    id: 'noites-traicoeiras',
-    title: 'Noites Traiçoeiras',
-    artist: 'Anjos de Resgate / Pe. Marcelo Rossi',
-    originalKey: 'E',
-    currentKey: 'E',
-    bpm: 74,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Ação de Graças',
-    categories: ['Cura e Libertação', 'Adoração', 'Louvor'],
-    coverGradient: 'from-purple-700 to-indigo-900',
-    tags: ['cura', 'esperança', 'ação de graças', 'anjos de resgate'],
-    duration: '5:30',
-    content: `[Intro] E  B/D#  C#m  C#m/B  A  F#m  B4  B
-
-[Primeira Parte]
-E          B/D#           C#m   C#m/B
- Deus conhece a tua estrutura
-A             F#m             B4   B
- Sabe o que está passando o teu coração
-E          B/D#          C#m   C#m/B
- Não desanime se a tempestade
-A           F#m         B4   B
- Parecer querer te afogar
-
-[Segunda Parte]
-C#m          G#m
- Lembra que Deus não te esquece
-A             E
- Ele está sempre ao teu lado
-F#m          E/G#
- Segura a tua mão aflita
-A               B4   B
- E sopra vida em ti
-
-[Refrão]
-            E       B/D#     C#m   C#m/B
-E ainda que venham noites traiçoeiras
-        A         F#m        B4   B
-Se a cruz pesada for, Cristo estará contigo
-            E     B/D#     C#m   C#m/B
-O mundo pode até fazer você chorar
-        A          B          E    B
-Mas Deus te quer sorrindo, sorrindo
-
-[Terceira Parte]
-E           B/D#          C#m   C#m/B
- Seja qual for o teu problema
-A              F#m          B4   B
- Fala pra Deus em oração
-E           B/D#         C#m    C#m/B
- Ele é fiel pra responder
-A              F#m           B4   B
- E enxugar as lágrimas do teu olhar
-
-[Refrão Final]
-            E       B/D#     C#m   C#m/B
-E ainda que venham noites traiçoeiras
-        A         F#m        B4   B
-Se a cruz pesada for, Cristo estará contigo
-            E     B/D#     C#m   C#m/B
-O mundo pode até fazer você chorar
-        A          B          E
-Mas Deus te quer sorrindo, sorrindo`
-  },
-  {
-    id: 'sacramento-da-comunhao',
-    title: 'Sacramento da Comunhão',
-    artist: 'Nelsinho Corrêa (Canção Nova)',
+    id: 'esperando-na-janela',
+    title: 'Esperando na Janela',
+    artist: 'Gilberto Gil',
     originalKey: 'G',
     currentKey: 'G',
-    bpm: 76,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Comunhão',
-    categories: ['Missa / Liturgia', 'Adoração', 'Louvor'],
-    coverGradient: 'from-emerald-700 to-teal-900',
-    tags: ['comunhão', 'canção nova', 'eucaristia', 'liturgia'],
+    bpm: 104,
+    timeSignature: '2/4',
+    liturgicalMoment: 'Forró & Piseiro',
+    categories: ['Forró', 'MPB', 'Clássicos'],
+    coverGradient: 'from-orange-500 to-amber-800',
+    tags: ['forro', 'gilberto gil', 'xote', 'nordeste'],
     duration: '4:20',
-    content: `[Intro] G  D/F#  Em  Em/D  C  Am  D4  D
+    content: `[Intro] G  D7  G  D7
 
 [Primeira Parte]
-G            D/F#          Em   Em/D
- Senhor, quando te vejo no sacramento
-C            Am               D4   D
- Tão humilde e tão puro no altar
-G          D/F#           Em    Em/D
- O meu coração se enche de glória
-C             Am             D4   D
- E o meu ser quer se ajoelhar
-
-[Segunda Parte]
-Em         Bm
- Tu és o pão descido do céu
-C          G
- Alimento que nos faz viver
-C          G/B
- Cordeiro de Deus que se entrega
-Am          D4   D
- Em sacrifício de amor
+G
+ Ainda lembro daquela noite
+             D7
+Que você me olhou
+Com aquele sorriso lindo
+              G
+Que me conquistou
 
 [Refrão]
-           G         D/F#       Em    Em/D
-Sacramento sublime, mistério de fé
-          C          Am         D4   D
-Onde o céu se une à terra neste altar
-          G          D/F#       Em    Em/D
-Corpo e sangue de Cristo, presença real
-        C          D        G   D
-Neste santo e bendito memorial
-
-[Terceira Parte]
-G           D/F#           Em   Em/D
- Senhor, recebo agora a tua graça
-C             Am            D4   D
- Que cura a fraqueza do meu ser
-G            D/F#          Em    Em/D
- Fica comigo, ó meu Mestre amado
-C               Am          D4   D
- Não me deixes jamais me afastar
-
-[Refrão Final]
-           G         D/F#       Em    Em/D
-Sacramento sublime, mistério de fé
-          C          Am         D4   D
-Onde o céu se une à terra neste altar
-          G          D/F#       Em    Em/D
-Corpo e sangue de Cristo, presença real
-        C          D        G
-Neste santo e bendito memorial`
+G
+ Por isso eu fico esperando na janela
+          D7
+Pra ver se você passa por aqui
+E quando você vem toda bela
+            G
+Eu fico tão feliz!`
   },
   {
-    id: 'sonda-me',
-    title: 'Sonda-me (Salmo 139)',
-    artist: 'Pe. Marcelo Rossi',
+    id: 'rindo-a-toa',
+    title: 'Rindo à Toa',
+    artist: 'Falamansa',
     originalKey: 'A',
     currentKey: 'A',
-    bpm: 65,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Ação de Graças',
-    categories: ['Adoração', 'Cura e Libertação', 'Missa / Liturgia'],
-    coverGradient: 'from-violet-700 to-fuchsia-900',
-    tags: ['salmo', 'sonda-me', 'adoração', 'oração'],
-    duration: '5:00',
-    content: `[Intro] A  E/G#  F#m  F#m/E  D  Bm  E4  E
-
-[Primeira Parte]
-A             E/G#          F#m   F#m/E
- Senhor, eu sei que tu me sondas
-D            Bm             E4   E
- Sei também que me conheces
-A             E/G#          F#m   F#m/E
- Se me assento ou me levanto
-D             Bm            E4   E
- Conheces meus pensamentos
-
-[Segunda Parte]
-F#m         C#m
- Quer deitado ou andando
-D           A
- Sabes todos os meus passos
-Bm           A/C#
- E antes que haja em mim palavra
-D           E4   E
- Já a conheces, Senhor
-
-[Refrão]
-            A       E/G#     F#m   F#m/E
-Senhor, tu me sondas e me conheces
-           D        Bm       E4   E
-Tu me conheces, Senhor, tu me sondas
-            A       E/G#     F#m   F#m/E
-Senhor, tu me sondas e me conheces
-           D        E        A   E
-Tu me conheces, Senhor, tu me amas
-
-[Terceira Parte]
-A              E/G#            F#m   F#m/E
- Para onde me ausentarei do teu Espírito?
-D             Bm             E4   E
- Para onde fugirei da tua face?
-A              E/G#        F#m   F#m/E
- Se eu subir aos céus, lá estás
-D             Bm            E4   E
- Se no mais profundo abismo for, estás lá
-
-[Refrão Final]
-            A       E/G#     F#m   F#m/E
-Senhor, tu me sondas e me conheces
-           D        Bm       E4   E
-Tu me conheces, Senhor, tu me sondas
-            A       E/G#     F#m   F#m/E
-Senhor, tu me sondas e me conheces
-           D        E        A
-Tu me conheces, Senhor, tu me amas`
-  },
-  {
-    id: 'vem-eu-te-mostrarei',
-    title: 'Vem, Eu Te Mostrarei (O Profeta)',
-    artist: 'Pe. Zezinho, scj',
-    originalKey: 'D',
-    currentKey: 'D',
-    bpm: 82,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Entrada',
-    categories: ['Missa / Liturgia', 'Louvor', 'Jovem'],
-    coverGradient: 'from-amber-500 to-orange-700',
-    tags: ['entrada', 'profeta', 'vocacional', 'pe zezinho'],
-    duration: '4:10',
-    content: `[Intro] D  G  A  D  G  A  D
-
-[Primeira Parte]
-D               G         D
- Vem, e eu te farei da minha vinha
-      Bm          Em        A7
-Um operário alegre e trabalhador
-D               G         D
- Vem, e eu te farei da minha grei
-      Bm           Em         A7
-Um mensageiro da paz e do amor
-
-[Refrão]
-       D             G
-Vem, e eu te mostrarei
-         D             A7
-Que o meu reino é de justiça
-       D            G
-Vem, e eu te mostrarei
-        D     A7     D
-Que a vitória é do Senhor
-
-[Segunda Parte]
-D               G           D
- Se o mundo te rejeita e não te quer
-      Bm          Em        A7
-Não tenhas medo, pois contigo estou
-D               G          D
- Se a caminhada for pesada e dura
-      Bm           Em        A7
-A minha mão segura te conduzirá
-
-[Refrão Final]
-       D             G
-Vem, e eu te mostrarei
-         D             A7
-Que o meu reino é de justiça
-       D            G
-Vem, e eu te mostrarei
-        D     A7     D
-Que a vitória é do Senhor`
-  },
-  {
-    id: 'consagracao-a-nossa-senhora',
-    title: 'Consagração a Nossa Senhora',
-    artist: 'Tradicional Litúrgico',
-    originalKey: 'F',
-    currentKey: 'F',
-    bpm: 80,
-    timeSignature: '3/4',
-    liturgicalMoment: 'Ação de Graças',
-    categories: ['Mariana', 'Missa / Liturgia', 'Adoração'],
-    coverGradient: 'from-sky-500 to-blue-800',
-    tags: ['maria', 'nossa senhora', 'consagração', 'mãe'],
-    duration: '3:45',
-    content: `[Intro] F  C/E  Dm  Bb  Gm  C7  F
-
-[Primeira Parte]
-F       C/E       Dm
- Ó Minha Senhora e também minha Mãe
-Bb       Gm          C7
- Eu me ofereço inteiramente a vós
-F        C/E        Dm
- E em prova da minha devoção
-Bb         Gm         C7
- Eu vos consagro neste dia e para sempre
-
-[Segunda Parte]
-Dm        Am
- Os meus olhos, meus ouvidos
-Bb        F
- A minha boca, meu coração
-Gm         Dm
- Inteiramente todo o meu ser
-Bb         C7
- Guardai-me, defendei-me
-
-[Refrão]
-      F      C/E    Dm
-Como coisa e propriedade vossa
-Bb   Gm       C7
- Ó Mãe, Mãe querida
-      F      C/E    Dm
-Como coisa e propriedade vossa
-Bb     C7     F
- Amém, ó minha Mãe`
-  },
-  {
-    id: 'a-barca',
-    title: 'A Barca (Tu Te Abeiraste da Praia)',
-    artist: 'Cesáreo Gabaráin',
-    originalKey: 'C',
-    currentKey: 'C',
-    bpm: 70,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Comunhão',
-    categories: ['Missa / Liturgia', 'Adoração', 'Louvor'],
-    coverGradient: 'from-cyan-600 to-blue-900',
-    tags: ['a barca', 'vocacional', 'comunhão', 'pescador'],
-    duration: '4:55',
-    content: `[Intro] C  G/B  Am  F  Dm  G7  C
-
-[Primeira Parte]
-C             G/B        Am
- Tu te abeiraste da praia
-F          Dm             G7
- Não buscaste nem sábios nem ricos
-C          G/B       Am
- Somente queres que eu te siga
-
-[Refrão]
-       F      G       C   G/B  Am
-Senhor, tu me olhaste nos olhos
-       Dm     G7       C   C7
-A sorrir, pronunciaste meu nome
-       F     G       C   G/B  Am
-Lá na praia, eu deixei o meu barco
-        Dm      G7        C
-Junto a ti, buscarei outro mar
-
-[Segunda Parte]
-C             G/B        Am
- Tu sabes bem o que tenho
-F            Dm          G7
- No meu barco não há ouro nem espadas
-C           G/B      Am
- Somente redes e meu trabalho
-
-[Refrão]
-       F      G       C   G/B  Am
-Senhor, tu me olhaste nos olhos
-       Dm     G7       C   C7
-A sorrir, pronunciaste meu nome
-       F     G       C   G/B  Am
-Lá na praia, eu deixei o meu barco
-        Dm      G7        C
-Junto a ti, buscarei outro mar
-
-[Terceira Parte]
-C             G/B        Am
- Tu, pescador de outros lagos
-F          Dm            G7
- Ânsia eterna de almas que esperam
-C           G/B        Am
- Bondoso amigo que assim me chamas
-
-[Refrão Final]
-       F      G       C   G/B  Am
-Senhor, tu me olhaste nos olhos
-       Dm     G7       C   C7
-A sorrir, pronunciaste meu nome
-       F     G       C   G/B  Am
-Lá na praia, eu deixei o meu barco
-        Dm      G7        C
-Junto a ti, buscarei outro mar`
-  },
-  {
-    id: 'ofertas-singelas',
-    title: 'Ofertas Singelas',
-    artist: 'Tradicional Litúrgico',
-    originalKey: 'G',
-    currentKey: 'G',
-    bpm: 84,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Ofertório',
-    categories: ['Missa / Liturgia'],
-    coverGradient: 'from-amber-600 to-yellow-800',
-    tags: ['ofertório', 'oferendas', 'pão e vinho', 'missa'],
-    duration: '3:30',
-    content: `[Intro] G  D/F#  Em  C  Am  D7  G
-
-[Primeira Parte]
-G          D/F#          Em
- Ofertas singelas, pão e vinho sobre a mesa
-C           Am          D7
- Trazemos ao teu altar, Senhor da vida
-G           D/F#         Em
- O fruto da terra e do trabalho de tuas mãos
-C          Am          D7
- Apresentamos com alegria e gratidão
-
-[Refrão]
-          G    D/F#     Em
-Recebe, Senhor, esta oblação
-       C        Am        D7
-Que o teu povo traz de coração
-          G    D/F#     Em
-Transforma este pão e este vinho
-      C         D7       G
-No corpo e sangue do Senhor
-
-[Segunda Parte]
-G           D/F#         Em
- O vinho que brota da videira e do suor
-C            Am          D7
- Será o cálice da nossa salvação
-G          D/F#          Em
- O pão amassado pelo trigo dos irmãos
-C            Am           D7
- Será alimento pra toda a nossa união
-
-[Refrão Final]
-          G    D/F#     Em
-Recebe, Senhor, esta oblação
-       C        Am        D7
-Que o teu povo traz de coração
-          G    D/F#     Em
-Transforma este pão e este vinho
-      C         D7       G
-No corpo e sangue do Senhor`
-  },
-  {
-    id: 'gloria-a-deus-nas-alturas',
-    title: 'Glória a Deus nas Alturas',
-    artist: 'Comunidade Shalom / Eliana Ribeiro',
-    originalKey: 'D',
-    currentKey: 'D',
     bpm: 112,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Glória',
-    categories: ['Missa / Liturgia', 'Louvor'],
-    coverGradient: 'from-yellow-500 to-amber-700',
-    tags: ['glória', 'shalom', 'louvor', 'liturgia'],
-    duration: '3:50',
-    content: `[Intro] D  A  Bm  G  D  A  G  D
+    timeSignature: '2/4',
+    liturgicalMoment: 'Forró & Piseiro',
+    categories: ['Forró', 'Ao Vivo', 'Hits do Show'],
+    coverGradient: 'from-amber-500 to-red-800',
+    tags: ['falamansa', 'xote', 'forro universitario', 'alegria'],
+    duration: '3:45',
+    content: `[Intro] A  E7  F#m  D  E7
+
+[Primeira Parte]
+A              E7
+ Tô numa boa, tô rindo à toa
+F#m            D       E7
+ A vida é bela e eu vou vivendo assim
+A              E7
+ Com um sorriso no meu rosto
+F#m            D       E7
+ Deixo a tristeza lá no fim
 
 [Refrão]
- D     A        Bm      G
-Glória a Deus nas alturas!
-     D        A       G      D
-E na terra paz aos homens por Ele amados!
- D     A        Bm      G
-Glória a Deus nas alturas!
-     D        A       G      D
-E na terra paz aos homens por Ele amados!
-
-[Primeira Parte]
-    Bm              F#m
-Senhor Deus, Rei dos Céus
-        G               D
-Deus Pai Todo-Poderoso
-       Bm           F#m
-Nós vos louvamos, vos bendizemos
-      G            A
-Vos adoramos e glorificamos
-
-[Segunda Parte]
-    Bm           F#m
-Senhor Jesus Cristo, Filho Unigênito
-    G               D
-Cordeiro de Deus, Filho de Deus Pai
-Bm               F#m
-Vós que tirais o pecado do mundo
-  G             A
-Tende piedade de nós!
-
-[Refrão Final]
- D     A        Bm      G
-Glória a Deus nas alturas!
-     D        A       G      D
-E na terra paz aos homens por Ele amados!
- D     A        Bm      G
-Glória a Deus nas alturas!
-     D        A       G      D
-E na terra paz aos homens por Ele amados!`
+A               E7
+ Há há há há há, mas eu tô rindo à toa
+F#m             D       E7
+ Não quero saber de nada, a vida é boa!`
   },
   {
-    id: 'senhor-tende-piedade',
-    title: 'Senhor, Tende Piedade (Kyrie Eleison)',
-    artist: 'Comunidade Recado / Litúrgico',
-    originalKey: 'Em',
-    currentKey: 'Em',
-    bpm: 65,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Ato Penitencial',
-    categories: ['Missa / Liturgia', 'Quaresma'],
-    coverGradient: 'from-slate-700 to-zinc-900',
-    tags: ['kyrie', 'ato penitencial', 'perdão', 'misericórdia'],
-    duration: '2:40',
-    content: `[Intro] Em  C  Am  B7  Em
-
-[Primeira Parte]
-Em             C
-Senhor, tende piedade de nós
-Am             B7
-Senhor, tende piedade de nós
-Em             C
-Senhor, tende piedade de nós
-Am     B7     Em
-Piedade de nós!
-
-[Segunda Parte]
-G              D
-Cristo, tende piedade de nós
-Am             Em
-Cristo, tende piedade de nós
-C              G
-Cristo, tende piedade de nós
-Am     B7     Em
-Piedade de nós!
-
-[Terceira Parte]
-Em             C
-Senhor, tende piedade de nós
-Am             B7
-Senhor, tende piedade de nós
-Em             C
-Senhor, tende piedade de nós
-Am     B7     Em
-Piedade de nós!`
-  },
-  {
-    id: 'santo-e-o-senhor',
-    title: 'Santo, Santo, Santo é o Senhor',
-    artist: 'Missionário Shalom',
-    originalKey: 'E',
-    currentKey: 'E',
-    bpm: 96,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Santo',
-    categories: ['Missa / Liturgia', 'Louvor'],
-    coverGradient: 'from-orange-600 to-red-800',
-    tags: ['santo', 'shalom', 'hosana', 'liturgia'],
-    duration: '2:30',
-    content: `[Intro] E  B  C#m  A  E  B  A  E
-
-[Refrão]
-E       B       C#m    A
-Santo, Santo, Santo é o Senhor!
-E          B            A       E
-Senhor Deus do Universo, Santo é o Senhor!
-E       B       C#m    A
-Santo, Santo, Santo é o Senhor!
-E          B            A       E
-Senhor Deus do Universo, Santo é o Senhor!
-
-[Primeira Parte]
-C#m          G#m
- O céu e a terra proclamam
-A            E
- Proclamam a vossa glória!
-C#m       G#m
- Hosana nas alturas
-A               B4   B
- Hosana ao nosso Rei!
-
-[Segunda Parte]
-C#m          G#m
- Bendito o que vem em nome
-A            E
- Em nome do Senhor!
-C#m       G#m
- Hosana nas alturas
-A               B4   B
- Hosana ao nosso Rei!
-
-[Refrão Final]
-E       B       C#m    A
-Santo, Santo, Santo é o Senhor!
-E          B            A       E
-Senhor Deus do Universo, Santo é o Senhor!`
-  },
-  {
-    id: 'cordeiro-de-deus',
-    title: 'Cordeiro de Deus',
-    artist: 'Amor e Adoração (Canção Nova)',
-    originalKey: 'G',
-    currentKey: 'G',
-    bpm: 68,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Cordeiro de Deus',
-    categories: ['Missa / Liturgia', 'Adoração'],
-    coverGradient: 'from-purple-800 to-slate-900',
-    tags: ['cordeiro', 'paz', 'canção nova', 'liturgia'],
-    duration: '2:45',
-    content: `[Intro] G  D/F#  Em  C  Am  D4  D
-
-[Primeira Parte]
-G            D/F#          Em
- Cordeiro de Deus que tirais o pecado do mundo
-C            Am            D4   D
- Tende piedade, tende piedade de nós!
-
-[Segunda Parte]
-G            D/F#          Em
- Cordeiro de Deus que tirais o pecado do mundo
-C            Am            D4   D
- Tende piedade, tende piedade de nós!
-
-[Terceira Parte]
-G            D/F#          Em
- Cordeiro de Deus que tirais o pecado do mundo
-C          D        G
- Dai-nos a paz, dai-nos a paz!
-C          D        G
- Dai-nos a vossa paz!`
-  },
-  {
-    id: 'buscai-primeiro',
-    title: 'Buscai Primeiro o Reino de Deus',
-    artist: 'Tradicional Litúrgico',
-    originalKey: 'D',
-    currentKey: 'D',
-    bpm: 78,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Salmo / Aclamação',
-    categories: ['Missa / Liturgia', 'Louvor'],
-    coverGradient: 'from-green-600 to-emerald-900',
-    tags: ['evangelho', 'aclamação', 'aleluia', 'liturgia'],
-    duration: '3:15',
-    content: `[Intro] D  A/C#  Bm  F#m  G  D  Em  A7  D
-
-[Primeira Parte]
-D       A/C#     Bm       F#m
-Buscai primeiro o Reino de Deus
-G       D         Em   A7
-E a sua justiça
-D        A/C#     Bm       F#m
-E tudo o mais vos será acrescentado
-G   D     Em  A7  D
-Aleluia, aleluia!
-
-[Refrão]
-D   A/C#  Bm  F#m  G   D   Em  A7
-A...le...lu...ia,  a...le...lu...ia!
-D   A/C#  Bm  F#m  G   D   Em  A7  D
-A...le...lu...ia,  aleluia, aleluia!
-
-[Segunda Parte]
-D         A/C#   Bm       F#m
-Não só de pão o homem viverá
-G          D        Em   A7
-Mas de toda palavra
-D          A/C#      Bm       F#m
-Que sai da boca de nosso Deus
-G   D     Em  A7  D
-Aleluia, aleluia!`
-  },
-  {
-    id: 'segura-na-mao-de-deus',
-    title: 'Segura na Mão de Deus',
-    artist: 'Nelson Ned / Pe. Marcelo Rossi',
-    originalKey: 'G',
-    currentKey: 'G',
-    bpm: 85,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Envio',
-    categories: ['Louvor', 'Missa / Liturgia', 'Cura e Libertação'],
-    coverGradient: 'from-amber-700 to-stone-900',
-    tags: ['envio', 'fé', 'esperança', 'louvor'],
-    duration: '4:15',
-    content: `[Intro] G  C  G  D7  G
-
-[Primeira Parte]
-G                   C         G
- Se as águas do mar da vida quiserem te afogar
-              Em           Am   D7
-Segura na mão de Deus e vai
-G                 C             G
- Se as tristezas desta vida quiserem te sufocar
-              D7          G   G7
-Segura na mão de Deus e vai
-
-[Refrão]
-             C                 G
-Segura na mão de Deus, segura na mão de Deus
-               Em            Am   D7
-Pois ela, ela te sustentará
-             G             C         G
-Não temas, segue em frente e não olhes para trás
-              D7          G
-Segura na mão de Deus e vai
-
-[Segunda Parte]
-G               C          G
- Se a jornada é pesada e te cansa a caminhada
-              Em           Am   D7
-Segura na mão de Deus e vai
-G               C             G
- Orando, jejuando, confiando e vigiando
-              D7          G   G7
-Segura na mão de Deus e vai
-
-[Refrão Final]
-             C                 G
-Segura na mão de Deus, segura na mão de Deus
-               Em            Am   D7
-Pois ela, ela te sustentará
-             G             C         G
-Não temas, segue em frente e não olhes para trás
-              D7          G
-Segura na mão de Deus e vai`
-  },
-  {
-    id: 'acaso-nao-sabeis',
-    title: 'Acaso Não Sabeis',
-    artist: 'Colo de Deus',
-    originalKey: 'Bm',
-    currentKey: 'Bm',
-    bpm: 72,
-    timeSignature: '4/4',
-    liturgicalMoment: 'Ação de Graças',
-    categories: ['Mariana', 'Jovem', 'Louvor'],
-    coverGradient: 'from-indigo-600 to-violet-900',
-    tags: ['colo de deus', 'maria', 'consagração', 'jovem'],
-    duration: '4:40',
-    content: `[Intro] Bm  G  D  A (2x)
-
-[Primeira Parte]
-Bm                   G
- Eu me consagro a Ti, Mãe de Deus e minha
-D                   A
- Eu me entrego a Ti, Rainha do meu coração
-Bm                   G
- Tu és o meu refúgio, porta do céu
-D                   A
- Guia os meus passos até Jesus
-
-[Refrão]
-Bm                  G
- Acaso não sabeis que eu sou da Imaculada?
-D                   A
- Acaso não sabeis que eu tenho uma Mãe?
-Bm                  G
- Acaso não sabeis que eu sou da Imaculada?
-D                   A
- Acaso não sabeis que eu tenho uma Mãe?
-
-[Segunda Parte]
-Bm          G
- Toda Bela, sem mancha
-D           A
- Intercede por nós
-Bm          G
- Guarda a minha vida
-D           A
- No Teu manto de amor`
-  },
-  {
-    id: 'fogo-suave',
-    title: 'Fogo Suave',
-    artist: 'Comunidade Católica Shalom',
+    id: 'como-e-grande-o-meu-amor',
+    title: 'Como É Grande o Meu Amor Por Você',
+    artist: 'Roberto Carlos',
     originalKey: 'A',
     currentKey: 'A',
     bpm: 66,
     timeSignature: '4/4',
-    liturgicalMoment: 'Ação de Graças',
-    categories: ['Espírito Santo', 'Adoração', 'Louvor'],
-    coverGradient: 'from-rose-600 to-red-900',
-    tags: ['espírito santo', 'pentecostes', 'shalom', 'fogo'],
-    duration: '4:50',
-    content: `[Intro] A  E/G#  F#m  D  Bm  E4  E
+    liturgicalMoment: 'Baladas & Românticas',
+    categories: ['Romântica', 'Baladas & Românticas', 'Clássicos'],
+    coverGradient: 'from-rose-700 to-purple-950',
+    tags: ['roberto carlos', 'romantica', 'casamento', 'classico'],
+    duration: '3:30',
+    content: `[Intro] A  C#m  D  E7
 
 [Primeira Parte]
-A            E/G#        F#m
- Fogo suave, doce queimar
-D            Bm            E4   E
- Vem inflamar o meu coração
-A            E/G#       F#m
- Brisa ligeira, sopro de vida
-D            Bm            E4   E
- Vem renovar a minha alma
+A                  C#m
+ Eu tenho tanto pra lhe falar
+D                  E7
+ Mas com palavras não sei dizer
+A                  C#m
+ Como é grande o meu amor
+D         E7    A
+ Por você!
 
 [Refrão]
-            A       E/G#     F#m
-Espírito Santo, vem sobre nós
-          D      Bm         E4   E
-Enche este lugar com tua glória
-            A       E/G#     F#m
-Espírito Santo, doce Consolador
-          D      E          A
-Muda a minha vida com teu amor`
+E7              A
+ Nem mesmo o céu, nem as estrelas
+C#m            D
+ Nem mesmo o mar e o infinito
+E7             A
+ Não é maior que o meu amor
+C#m          D     E7      A
+ Nem mais bonito!`
   },
   {
-    id: 'alegres-vamos-a-casa-do-pai',
-    title: 'Alegres Vamos à Casa do Pai',
-    artist: 'Litúrgico Tradicional',
-    originalKey: 'F',
-    currentKey: 'F',
-    bpm: 105,
+    id: 'stand-by-me',
+    title: 'Stand By Me',
+    artist: 'Ben E. King',
+    originalKey: 'A',
+    currentKey: 'A',
+    capo: 2,
+    bpm: 118,
     timeSignature: '4/4',
-    liturgicalMoment: 'Entrada',
-    categories: ['Missa / Liturgia', 'Louvor'],
-    coverGradient: 'from-teal-600 to-emerald-900',
-    tags: ['entrada', 'alegria', 'casa do pai', 'missa'],
-    duration: '3:20',
-    content: `[Intro] F  Bb  C  F  Bb  C  F
-
-[Refrão]
-F            Bb       C      F
-Alegres vamos à casa do Pai
-F            Bb        C     F
-E na alegria cantar seu louvor!
-F            Bb       C      F
-Alegres vamos à casa do Pai
-F            Bb        C     F
-E na alegria cantar seu louvor!
+    liturgicalMoment: 'Acústico',
+    categories: ['Internacional', 'Acústico', 'Clássicos'],
+    coverGradient: 'from-cyan-600 to-blue-900',
+    tags: ['internacional', 'classico', 'acustico', 'soul', 'capo'],
+    duration: '3:00',
+    content: `[Capotraste na 2ª casa]
+[Intro] G  Em  C  D7  G
 
 [Primeira Parte]
-F            C7          F
- Em sua casa somos todos irmãos
-Bb           F            C7
- Unidos na fé, num só coração
-F           C7          F
- Vamos ouvir a Palavra de luz
-Bb           F            C7
- Que nos ensina o caminho de Jesus
+G
+ When the night has come
+Em
+ And the land is dark
+        C          D7              G
+And the moon is the only light we'll see
 
-[Refrão Final]
-F            Bb       C      F
-Alegres vamos à casa do Pai
-F            Bb        C     F
-E na alegria cantar seu louvor!`
+[Segunda Parte]
+G
+ No I won't be afraid,
+Em
+ Oh, I won't be afraid
+        C            D7           G
+Just as long as you stand, stand by me
+
+[Refrão]
+             G
+So darling, darling, stand by me,
+Em
+ Oh, stand by me
+    C      D7        G
+Oh, stand, stand by me, stand by me`
   }
 ];
 
-export const INITIAL_SETLISTS = [
+export const INITIAL_SETLISTS: Setlist[] = [
   {
-    id: 'missa-domingo-19h',
-    title: 'Missa de Domingo 19h',
-    description: 'Repertório litúrgico completo para o 21º Domingo do Tempo Comum',
-    date: '2026-08-30',
-    targetEvent: 'Missa Paroquial',
-    createdAt: '2026-08-24T18:00:00.000Z',
-    updatedAt: '2026-08-24T20:30:00.000Z',
+    id: 'show-sexta-acustico',
+    title: 'Show de Sexta - Barzinho Acústico',
+    description: 'Setlist completo para voz e violão com grandes sucessos nacionais e internacionais.',
+    date: 'Sexta-feira 21:00',
+    targetEvent: 'Barzinho / Voz e Violão',
     items: [
-      { songId: 'vem-eu-te-mostrarei', customKey: 'D', notes: 'Entrada animada', order: 1 },
-      { songId: 'senhor-tende-piedade', customKey: 'Em', notes: 'Kyrie solene', order: 2 },
-      { songId: 'gloria-a-deus-nas-alturas', customKey: 'D', notes: 'Glória com palmas', order: 3 },
-      { songId: 'buscai-primeiro', customKey: 'D', notes: 'Salmo / Aclamação', order: 4 },
-      { songId: 'ofertas-singelas', customKey: 'G', notes: 'Procissão das ofertas', order: 5 },
-      { songId: 'santo-e-o-senhor', customKey: 'E', notes: 'Santo vibrante', order: 6 },
-      { songId: 'cordeiro-de-deus', customKey: 'G', notes: 'Fraqueza e paz', order: 7 },
-      { songId: 'sacramento-da-comunhao', customKey: 'G', notes: 'Comunhão 1', order: 8 },
-      { songId: 'como-es-lindo', customKey: 'D', notes: 'Comunhão 2', order: 9 },
-      { songId: 'consagracao-a-nossa-senhora', customKey: 'F', notes: 'Ação de Graças', order: 10 },
-      { songId: 'segura-na-mao-de-deus', customKey: 'G', notes: 'Envio alegre', order: 11 }
-    ]
+      { songId: 'anunciacao', customKey: 'C', order: 1, notes: 'Abertura animada com violão e percussão' },
+      { songId: 'tempo-perdido', customKey: 'C', order: 2, notes: 'Entrada com dinâmica crescente' },
+      { songId: 'gostava-tanto-de-voce', customKey: 'D', order: 3, notes: 'Momento romântico' },
+      { songId: 'sozinho', customKey: 'G', order: 4, notes: 'Voz suave e violão' },
+      { songId: 'primeiros-erros', customKey: 'G', order: 5, notes: 'Refrão com o público cantando junto' },
+      { songId: 'stand-by-me', customKey: 'A', order: 6, notes: 'Bis e encerramento' }
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isCloudSynced: true
   },
   {
-    id: 'noite-louvor-adoracao',
-    title: 'Noite de Louvor & Adoração',
-    description: 'Grupo de Oração Semanal com momento forte de intercessão e cura',
-    date: '2026-08-27',
-    targetEvent: 'Grupo de Oração',
-    createdAt: '2026-08-24T15:00:00.000Z',
-    updatedAt: '2026-08-24T19:00:00.000Z',
+    id: 'noite-pop-rock',
+    title: 'Noite de Pop Rock & Hits',
+    description: 'Repertório com clássicos do rock nacional e músicas de alta energia para a banda.',
+    date: 'Sábado 22:00',
+    targetEvent: 'Show / Apresentação',
     items: [
-      { songId: 'fogo-suave', customKey: 'A', notes: 'Invocação do Espírito Santo', order: 1 },
-      { songId: 'ninguem-te-ama-como-eu', customKey: 'C', notes: 'Adoração ao Santíssimo', order: 2 },
-      { songId: 'sonda-me', customKey: 'A', notes: 'Oração de Cura Interior', order: 3 },
-      { songId: 'noites-traicoeiras', customKey: 'E', notes: 'Palavra e Esperança', order: 4 },
-      { songId: 'acaso-nao-sabeis', customKey: 'Bm', notes: 'Bênção Mariana final', order: 5 }
-    ]
+      { songId: 'tempo-perdido', customKey: 'C', order: 1, notes: 'Intro marcante na bateria e guitarra' },
+      { songId: 'lanterna-dos-afogados', customKey: 'Em', order: 2, notes: 'Balada rock com dinâmica' },
+      { songId: 'primeiros-erros', customKey: 'G', order: 3, notes: 'Solo de guitarra no final' },
+      { songId: 'whisky-a-go-go', customKey: 'C', order: 4, notes: 'Ponto alto do show - agitar o público!' },
+      { songId: 'evidencias', customKey: 'E', order: 5, notes: 'Hino nacional do palco!' }
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isCloudSynced: true
+  },
+  {
+    id: 'roda-de-samba-pagode',
+    title: 'Roda de Samba & Pagode Acústico',
+    description: 'Repertório com o melhor do samba de raiz, pagode e clássicos para animar.',
+    date: 'Domingo 16:00',
+    targetEvent: 'Festa / Evento',
+    items: [
+      { songId: 'pe-na-areia', customKey: 'G', order: 1, notes: 'Clima descontraído de praia' },
+      { songId: 'deixa-acontecer', customKey: 'F', order: 2, notes: 'Roda cantando junto' },
+      { songId: 'ta-escrito', customKey: 'C', order: 3, notes: 'Mensagem de positividade e animação' }
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isCloudSynced: true
   }
 ];

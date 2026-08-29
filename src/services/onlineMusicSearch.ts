@@ -1,4 +1,5 @@
-import { OnlineSongResult, Song, LiturgicalMoment, CategoryTag } from '../types';
+import { OnlineSongResult, Song, MusicGenre, CategoryTag } from '../types';
+import { detectCapoInText } from '../utils/chordEngine';
 
 /**
  * Searches online global tracks (Apple / iTunes public catalog)
@@ -114,21 +115,21 @@ export function harmonizeLyricsIntoCifra(
 G                  D/F#
   ${title} - ${artist}
 Em7                C9
-  Tu estás presente em nosso meio, Senhor
+  Todos os dias quando acordo
 G                  D/F#
-  Ouvimos tua voz e sentimos teu amor
+  Temos todo o tempo do mundo
 Em7                C9
-  Nos prostramos diante do Teu santo altar
+  Para cantar e tocar esta canção
 
 [Refrão]
 G                  D/F#
-  Aleluia, Santo é o Senhor!
+  Este é o refrão marcante do show
 Em7                C9
-  Teu amor não tem fim, Teu poder nos renova
+  Onde todo o público canta junto
 G                  D/F#
-  Aleluia, bendito Salvador!
+  Aumente o som da guitarra e do violão
 Em7        D/F#     C9
-  Canto a Ti este louvor`;
+  Vamos tocar até o final!`;
   }
 
   // Define Harmonic Progressions by Key
@@ -170,94 +171,122 @@ Em7        D/F#     C9
     }
   };
 
-  const scheme = PROGRESSIONS[originalKey] || PROGRESSIONS['G'];
-  let result = `[Tom: ${originalKey}]\n[Intro] ${scheme.intro}\n\n`;
+  const keyProg = PROGRESSIONS[originalKey] || PROGRESSIONS['G'];
 
-  // Split into stanzas
-  const paragraphs = plainLyrics
-    .split(/\n\s*\n/)
-    .map(p => p.trim())
-    .filter(p => p.length > 0);
+  // Split plain lyrics into lines and filter out empty headers
+  const rawLines = plainLyrics
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => !l.startsWith('[') && !l.startsWith('(') && l.length > 0);
 
-  paragraphs.forEach((stanza, sIdx) => {
-    const lines = stanza.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    if (lines.length === 0) return;
+  if (rawLines.length === 0) {
+    return `[Intro] ${keyProg.intro}\n\n[Primeira Parte]\n${title} - ${artist}`;
+  }
 
-    let sectionLabel = '[Primeira Parte]';
-    let chordSet = scheme.verseChords;
+  // Chunk into sections (Intro, Primeira Parte, Segunda Parte, Refrão, Ponte, Refrão Final)
+  const sections: { title: string; lines: string[]; chords: string[] }[] = [];
+  const chunkSize = Math.max(4, Math.min(8, Math.ceil(rawLines.length / 4)));
 
-    if (sIdx === 0) {
-      sectionLabel = '[Primeira Parte]';
-      chordSet = scheme.verseChords;
-    } else if (sIdx === 1 || (sIdx % 2 === 1)) {
-      sectionLabel = '[Refrão]';
-      chordSet = scheme.chorusChords;
-    } else if (sIdx === paragraphs.length - 1) {
-      sectionLabel = '[Refrão Final]';
-      chordSet = scheme.chorusChords;
-    } else if (sIdx === 2) {
-      sectionLabel = '[Segunda Parte]';
-      chordSet = scheme.verseChords;
-    } else {
-      sectionLabel = '[Ponte / Momento de Oração]';
-      chordSet = scheme.bridgeChords;
+  let currentChunk: string[] = [];
+  let sectionIndex = 0;
+
+  const sectionNames = [
+    'Primeira Parte',
+    'Segunda Parte',
+    'Refrão',
+    'Ponte',
+    'Refrão Final',
+    'Encerramento'
+  ];
+
+  for (let i = 0; i < rawLines.length; i++) {
+    currentChunk.push(rawLines[i]);
+    if (currentChunk.length >= chunkSize || i === rawLines.length - 1) {
+      const secName = sectionNames[sectionIndex] || `Parte ${sectionIndex + 1}`;
+      const isChorus = secName.toLowerCase().includes('refrão');
+      const isBridge = secName.toLowerCase().includes('ponte');
+
+      const chordsToUse = isChorus
+        ? keyProg.chorusChords
+        : isBridge
+        ? keyProg.bridgeChords
+        : keyProg.verseChords;
+
+      sections.push({
+        title: secName,
+        lines: [...currentChunk],
+        chords: chordsToUse
+      });
+
+      currentChunk = [];
+      sectionIndex++;
     }
+  }
 
-    result += `${sectionLabel}\n`;
+  // Build the complete cifra
+  let output = `[Intro] ${keyProg.intro}\n\n`;
 
-    lines.forEach((line, lIdx) => {
-      const chord1 = chordSet[(lIdx * 2) % chordSet.length];
-      const chord2 = chordSet[(lIdx * 2 + 1) % chordSet.length];
+  sections.forEach((sec) => {
+    output += `[${sec.title}]\n`;
 
-      const half = Math.max(12, Math.floor(line.length / 2));
-      const chordLine = `${chord1.padEnd(half, ' ')}${chord2}`;
+    sec.lines.forEach((line, lineIdx) => {
+      // Place 2 chords above each line with spacing
+      const chord1 = sec.chords[(lineIdx * 2) % sec.chords.length];
+      const chord2 = sec.chords[(lineIdx * 2 + 1) % sec.chords.length];
 
-      result += `${chordLine}\n${line}\n`;
+      const spaceCount = Math.max(12, Math.floor(line.length / 2));
+      const spaces = ' '.repeat(Math.min(spaceCount, 25));
+
+      output += `${chord1}${spaces}${chord2}\n`;
+      output += ` ${line}\n`;
     });
 
-    result += '\n';
+    output += '\n';
   });
 
-  return result.trim();
+  return output.trim();
 }
 
 /**
- * Converts an online song search result into a playable, transposable Song in CifraSync
+ * Converts iTunes search result into a full Song object with real lyrics
  */
 export async function convertOnlineTrackToSongWithRealLyrics(track: OnlineSongResult): Promise<Song> {
   const durationMin = track.trackTimeMillis
     ? `${Math.floor(track.trackTimeMillis / 60000)}:${String(Math.floor((track.trackTimeMillis % 60000) / 1000)).padStart(2, '0')}`
-    : '3:30';
+    : '3:45';
 
-  // Smart liturgical moment categorization
+  const genreName = (track.primaryGenreName || '').toLowerCase();
   const titleLower = track.trackName.toLowerCase();
-  let liturgicalMoment: LiturgicalMoment = 'Geral';
-  let categories: CategoryTag[] = ['Louvor'];
+  const artistLower = track.artistName.toLowerCase();
 
-  if (titleLower.includes('comunh') || titleLower.includes('pão') || titleLower.includes('corpo') || titleLower.includes('altar') || titleLower.includes('ceia')) {
-    liturgicalMoment = 'Comunhão';
-    categories = ['Adoração', 'Missa / Liturgia'];
-  } else if (titleLower.includes('glória') || titleLower.includes('gloria')) {
-    liturgicalMoment = 'Glória';
-    categories = ['Louvor', 'Missa / Liturgia'];
-  } else if (titleLower.includes('maria') || titleLower.includes('senhora') || titleLower.includes('mãe') || titleLower.includes('aparecida') || titleLower.includes('consagra')) {
-    liturgicalMoment = 'Ação de Graças';
-    categories = ['Mariana', 'Adoração'];
-  } else if (titleLower.includes('espírito') || titleLower.includes('fogo') || titleLower.includes('vento') || titleLower.includes('pentecostes')) {
-    liturgicalMoment = 'Ação de Graças';
-    categories = ['Espírito Santo', 'Adoração'];
-  } else if (titleLower.includes('oferta') || titleLower.includes('ofert') || titleLower.includes('singelas') || titleLower.includes('pão e vinho')) {
-    liturgicalMoment = 'Ofertório';
-    categories = ['Missa / Liturgia'];
-  } else if (titleLower.includes('santo') || titleLower.includes('hosana')) {
-    liturgicalMoment = 'Santo';
-    categories = ['Missa / Liturgia', 'Louvor'];
-  } else if (titleLower.includes('entrada') || titleLower.includes('vem') || titleLower.includes('vamos') || titleLower.includes('reunidos')) {
-    liturgicalMoment = 'Entrada';
-    categories = ['Missa / Liturgia', 'Louvor'];
-  } else if (titleLower.includes('piedade') || titleLower.includes('kyrie') || titleLower.includes('perdão') || titleLower.includes('misericórdia')) {
-    liturgicalMoment = 'Ato Penitencial';
-    categories = ['Missa / Liturgia', 'Quaresma'];
+  let liturgicalMoment: MusicGenre = 'Pop Rock';
+  let categories: CategoryTag[] = ['Ao Vivo', 'Hits do Show'];
+
+  // Smart Genre Assignment
+  if (genreName.includes('rock') || genreName.includes('metal') || genreName.includes('punk')) {
+    liturgicalMoment = 'Pop Rock';
+    categories = ['Pop Rock', 'Clássicos'];
+  } else if (genreName.includes('mpb') || genreName.includes('brazilian') || genreName.includes('bossa')) {
+    liturgicalMoment = 'MPB';
+    categories = ['MPB', 'Acústico'];
+  } else if (genreName.includes('sertanejo') || genreName.includes('country')) {
+    liturgicalMoment = 'Sertanejo';
+    categories = ['Sertanejo', 'Ao Vivo'];
+  } else if (genreName.includes('samba') || genreName.includes('pagode')) {
+    liturgicalMoment = 'Pagode & Samba';
+    categories = ['Pagode', 'Ao Vivo'];
+  } else if (genreName.includes('gospel') || genreName.includes('christian') || genreName.includes('religioso') || titleLower.includes('louvor') || titleLower.includes('jesus') || titleLower.includes('deus')) {
+    liturgicalMoment = 'Gospel & Louvor';
+    categories = ['Gospel', 'Louvor', 'Adoração'];
+  } else if (genreName.includes('forró') || genreName.includes('forro') || genreName.includes('regional')) {
+    liturgicalMoment = 'Forró & Piseiro';
+    categories = ['Forró', 'Ao Vivo'];
+  } else if (genreName.includes('acoustic') || genreName.includes('folk')) {
+    liturgicalMoment = 'Acústico';
+    categories = ['Acústico', 'Romântica'];
+  } else if (genreName.includes('pop')) {
+    liturgicalMoment = 'Hits do Show';
+    categories = ['Hits do Show', 'Ao Vivo'];
   }
 
   // Dynamic gradient based on title hash
@@ -275,6 +304,9 @@ export async function convertOnlineTrackToSongWithRealLyrics(track: OnlineSongRe
   // Fetch real lyrics from online open database
   const realLyrics = await fetchRealLyrics(track.trackName, track.artistName);
 
+  // Detect Capo in lyrics or title if specified
+  const detectedCapo = (realLyrics ? detectCapoInText(realLyrics) : null) || detectCapoInText(track.trackName) || undefined;
+
   // Harmonize into formatted cifra
   const originalKey = 'G';
   const content = harmonizeLyricsIntoCifra(track.trackName, track.artistName, realLyrics, originalKey);
@@ -285,7 +317,8 @@ export async function convertOnlineTrackToSongWithRealLyrics(track: OnlineSongRe
     artist: track.artistName,
     originalKey,
     currentKey: originalKey,
-    bpm: 75,
+    capo: detectedCapo,
+    bpm: 110,
     timeSignature: '4/4',
     liturgicalMoment,
     categories,
@@ -317,11 +350,11 @@ export function convertOnlineTrackToSong(track: OnlineSongResult): Song {
     artist: track.artistName,
     originalKey,
     currentKey: originalKey,
-    bpm: 75,
+    bpm: 110,
     timeSignature: '4/4',
-    liturgicalMoment: 'Geral',
-    categories: ['Louvor'],
-    coverGradient: 'from-emerald-600 to-teal-900',
+    liturgicalMoment: 'Pop Rock',
+    categories: ['Ao Vivo'],
+    coverGradient: 'from-blue-600 to-indigo-900',
     tags: [track.trackName.toLowerCase(), track.artistName.toLowerCase(), 'online'],
     content,
     duration: durationMin,

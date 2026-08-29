@@ -1,27 +1,37 @@
-export type LiturgicalMoment =
-  | 'Entrada'
-  | 'Ato Penitencial'
-  | 'Glória'
-  | 'Salmo / Aclamação'
-  | 'Ofertório'
-  | 'Santo'
-  | 'Cordeiro de Deus'
-  | 'Comunhão'
-  | 'Ação de Graças'
-  | 'Envio'
+export type MusicGenre =
+  | 'Pop Rock'
+  | 'MPB'
+  | 'Sertanejo'
+  | 'Pagode & Samba'
+  | 'Gospel & Louvor'
+  | 'Forró & Piseiro'
+  | 'Hits do Show'
+  | 'Acústico'
+  | 'Baladas & Românticas'
+  | 'Abertura & Encerramento'
   | 'Geral';
 
+// Type alias to maintain backwards-compatibility across components
+export type LiturgicalMoment = MusicGenre;
+
 export type CategoryTag =
+  | 'Pop Rock'
+  | 'MPB'
+  | 'Sertanejo'
+  | 'Pagode'
+  | 'Gospel'
+  | 'Forró'
+  | 'Anos 80/90'
+  | 'Acústico'
+  | 'Romântica'
+  | 'Baladas & Românticas'
+  | 'Hits do Show'
+  | 'Ao Vivo'
+  | 'Internacional'
+  | 'Clássicos'
   | 'Adoração'
   | 'Louvor'
-  | 'Missa / Liturgia'
-  | 'Mariana'
-  | 'Espírito Santo'
-  | 'Cura e Libertação'
-  | 'Quaresma'
-  | 'Páscoa'
-  | 'Natal'
-  | 'Jovem';
+  | 'Geral';
 
 export interface ChordLine {
   type: 'chords-lyrics' | 'lyrics-only' | 'section-header' | 'chords-only' | 'comment';
@@ -40,7 +50,7 @@ export interface Song {
   bpm: number;
   timeSignature: string; // '4/4', '3/4', '6/8', etc.
   capo?: number;
-  liturgicalMoment: LiturgicalMoment;
+  liturgicalMoment: MusicGenre; // Represents the MusicGenre / Show Block
   categories: CategoryTag[];
   coverGradient: string;
   tags: string[];
@@ -52,6 +62,9 @@ export interface Song {
   audioPreviewUrl?: string;
   albumName?: string;
   coverUrl?: string;
+  privacy?: 'private' | 'unlisted' | 'public';
+  parentSongId?: string;
+  versionName?: string;
 }
 
 export interface OnlineSongResult {
@@ -153,3 +166,38 @@ export type StageTheme = 'dark-stage' | 'oled' | 'sepia' | 'light-contrast';
 export type FontScale = 'sm' | 'base' | 'lg' | 'xl' | '2xl';
 
 export type ColumnMode = '1-col' | '2-col';
+
+export type InstrumentKey =
+  | 'guitar'
+  | 'keyboard'
+  | 'ukulele'
+  | 'cavaquinho'
+  | 'bass'
+  | 'sax_alto'
+  | 'trumpet'
+  | 'flute'
+  | 'vocals'
+  | 'drums';
+
+export interface InstrumentOption {
+  id: InstrumentKey;
+  label: string;
+  tuning: string;
+  transpositionSemitones: number;
+  isTransposing: boolean;
+  category: 'Cordas' | 'Teclas' | 'Sopros' | 'Ritmo e Voz';
+  icon: string;
+}
+
+export const INSTRUMENT_OPTIONS: InstrumentOption[] = [
+  { id: 'guitar', label: 'Violão / Guitarra', tuning: 'Afinação Padrão (E A D G B E)', transpositionSemitones: 0, isTransposing: false, category: 'Cordas', icon: '🎸' },
+  { id: 'keyboard', label: 'Teclado / Piano', tuning: 'Padrão em Dó (C)', transpositionSemitones: 0, isTransposing: false, category: 'Teclas', icon: '🎹' },
+  { id: 'ukulele', label: 'Ukulele', tuning: 'Afinação G C E A', transpositionSemitones: 0, isTransposing: false, category: 'Cordas', icon: '🏝️' },
+  { id: 'cavaquinho', label: 'Cavaquinho', tuning: 'Afinação D G B D', transpositionSemitones: 0, isTransposing: false, category: 'Cordas', icon: '🪕' },
+  { id: 'bass', label: 'Contrabaixo', tuning: 'Afinação E A D G (Foco em Tônicas)', transpositionSemitones: 0, isTransposing: false, category: 'Cordas', icon: '🎸' },
+  { id: 'sax_alto', label: 'Sax Alto / Barítono (Eb)', tuning: 'Instrumento Transpositor em Mib (Eb)', transpositionSemitones: -3, isTransposing: true, category: 'Sopros', icon: '🎷' },
+  { id: 'trumpet', label: 'Trompete / Sax Tenor (Bb)', tuning: 'Instrumento Transpositor em Sib (Bb)', transpositionSemitones: 2, isTransposing: true, category: 'Sopros', icon: '🎺' },
+  { id: 'flute', label: 'Flauta / Violino', tuning: 'Padrão em Dó (C)', transpositionSemitones: 0, isTransposing: false, category: 'Sopros', icon: '🎼' },
+  { id: 'vocals', label: 'Vocal / Voz', tuning: 'Melodia e Letra', transpositionSemitones: 0, isTransposing: false, category: 'Ritmo e Voz', icon: '🎤' },
+  { id: 'drums', label: 'Bateria / Percussão', tuning: 'Andamento (BPM) e Dinâmica', transpositionSemitones: 0, isTransposing: false, category: 'Ritmo e Voz', icon: '🥁' }
+];

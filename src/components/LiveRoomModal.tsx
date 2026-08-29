@@ -59,7 +59,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
   const { isPro } = useAuth();
   const [activeTab, setActiveTab] = useState<'status' | 'join' | 'create'>(isInRoom ? 'status' : 'join');
   const [pinInput, setPinInput] = useState('');
-  const [roomNameInput, setRoomNameInput] = useState('Ensaio Paroquial');
+  const [roomNameInput, setRoomNameInput] = useState('Ensaio da Banda');
   const [nameInput, setNameInput] = useState(currentMember?.name || 'Músico');
   const [selectedInstrument, setSelectedInstrument] = useState(currentMember?.instrument || 'Violão');
   const [customAlertInput, setCustomAlertInput] = useState('');
@@ -383,7 +383,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                   type="text"
                   value={roomNameInput}
                   onChange={(e) => setRoomNameInput(e.target.value)}
-                  placeholder="Ex: Missa de Domingo 19h"
+                  placeholder="Ex: Show de Sexta / Ensaio da Banda"
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
                   required
                 />

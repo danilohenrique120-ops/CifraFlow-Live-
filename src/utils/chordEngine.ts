@@ -100,7 +100,7 @@ export function transposeSongContent(content: string, semitones: number, targetK
       // If intro has chords in brackets like [Intro: C G Am F], transpose inside
       if (line.toLowerCase().includes('intro') || line.toLowerCase().includes('solo') || line.toLowerCase().includes('passagem')) {
         return line.replace(/([A-G][#b]?[a-zA-Z0-9(b#+)/º-]*)/g, (match) => {
-          if (['Intro', 'Solo', 'Tom', 'BPM', 'Capo'].includes(match)) return match;
+          if (['Intro', 'Solo', 'Tom', 'BPM', 'Capo', 'Capotraste'].includes(match)) return match;
           return transposeSingleChord(match, semitones, preferFlats);
         });
       }
@@ -110,6 +110,7 @@ export function transposeSongContent(content: string, semitones: number, targetK
     if (isChordLine(line)) {
       // Transpose tokens preserving exact spacing
       return line.replace(/([A-G][#b]?[a-zA-Z0-9(b#+)/º-]*)/g, (match) => {
+        if (['Capo', 'Capotraste', 'Tom', 'BPM'].includes(match)) return match;
         return transposeSingleChord(match, semitones, preferFlats);
       });
     }
@@ -117,6 +118,7 @@ export function transposeSongContent(content: string, semitones: number, targetK
     // Also check if line has inline chords like [C] [G] [Am] [F]
     if (line.includes('[') && line.includes(']')) {
       return line.replace(/\[([A-G][#b]?[a-zA-Z0-9(b#+)/º-]*)\]/g, (_match, chord) => {
+        if (['Capo', 'Capotraste', 'Tom', 'BPM'].includes(chord)) return `[${chord}]`;
         return '[' + transposeSingleChord(chord, semitones, preferFlats) + ']';
       });
     }
@@ -125,6 +127,21 @@ export function transposeSongContent(content: string, semitones: number, targetK
   });
 
   return transposedLines.join('\n');
+}
+
+/**
+ * Detects Capo position from text header or lyrics (e.g. "[Capo: 2]", "Capotraste na 3ª casa", "Capo 2")
+ */
+export function detectCapoInText(text: string): number | null {
+  if (!text) return null;
+  const match = text.match(/(?:\[|\b)(?:capo|capotraste)(?:\s*(?:na|em|:)?\s*)(\d{1,2})(?:ª|º|\s*casa|\s*fret)?/i);
+  if (match && match[1]) {
+    const fret = parseInt(match[1], 10);
+    if (fret >= 1 && fret <= 11) {
+      return fret;
+    }
+  }
+  return null;
 }
 
 /**
@@ -160,70 +177,85 @@ export function getSemitoneDifference(fromKey: string, toKey: string): number {
 export interface ChordDiagramData {
   chord: string;
   guitarFrets: string; // e.g. "x 3 2 0 1 0" for C
-  guitarFingers?: string; // e.g. "- 3 2 - 1 -"
-  keyboardNotes: string[]; // e.g. ["C4", "E4", "G4"]
+  guitarFingers?: string;
+  ukuleleFrets?: string; // e.g. "0 0 0 3" for C (G C E A)
+  cavaquinhoFrets?: string; // e.g. "2 0 1 2" for C (D G B D)
+  bassNote?: string; // e.g. "C2" or "3ª casa corda A"
+  keyboardNotes: string[]; // e.g. ["C", "E", "G"]
   barre?: number;
 }
 
+export function getInstrumentTranspositionOffset(instrument: string): number {
+  if (!instrument) return 0;
+  const lower = instrument.toLowerCase();
+  if (lower.includes('sax alto') || lower.includes('barítono') || lower.includes('baritono') || lower.includes('(eb)') || lower.includes('mib')) {
+    return -3; // Eb instruments: Tom C -> leem em A (-3 semitons / +9)
+  }
+  if (lower.includes('trompete') || lower.includes('sax tenor') || lower.includes('clarinete') || lower.includes('(bb)') || lower.includes('sib')) {
+    return 2; // Bb instruments: Tom C -> leem em D (+2 semitons)
+  }
+  return 0;
+}
+
 export const CHORD_DIAGRAMS: Record<string, ChordDiagramData> = {
-  'C': { chord: 'C', guitarFrets: 'x 3 2 0 1 0', keyboardNotes: ['C', 'E', 'G'] },
-  'Cm': { chord: 'Cm', guitarFrets: 'x 3 5 5 4 3', barre: 3, keyboardNotes: ['C', 'D#', 'G'] },
-  'C7': { chord: 'C7', guitarFrets: 'x 3 2 3 1 0', keyboardNotes: ['C', 'E', 'G', 'A#'] },
-  'C7M': { chord: 'C7M', guitarFrets: 'x 3 2 0 0 0', keyboardNotes: ['C', 'E', 'G', 'B'] },
-  'C9': { chord: 'C9', guitarFrets: 'x 3 2 0 3 0', keyboardNotes: ['C', 'E', 'G', 'D'] },
-  'C#': { chord: 'C#', guitarFrets: 'x 4 6 6 6 4', barre: 4, keyboardNotes: ['C#', 'F', 'G#'] },
-  'C#m': { chord: 'C#m', guitarFrets: 'x 4 6 6 5 4', barre: 4, keyboardNotes: ['C#', 'E', 'G#'] },
-  'C#m7': { chord: 'C#m7', guitarFrets: 'x 4 6 4 5 4', barre: 4, keyboardNotes: ['C#', 'E', 'G#', 'B'] },
-  'Db': { chord: 'Db', guitarFrets: 'x 4 6 6 6 4', barre: 4, keyboardNotes: ['Db', 'F', 'Ab'] },
-  'D': { chord: 'D', guitarFrets: 'x x 0 2 3 2', keyboardNotes: ['D', 'F#', 'A'] },
-  'Dm': { chord: 'Dm', guitarFrets: 'x x 0 2 3 1', keyboardNotes: ['D', 'F', 'A'] },
-  'D7': { chord: 'D7', guitarFrets: 'x x 0 2 1 2', keyboardNotes: ['D', 'F#', 'A', 'C'] },
-  'D7M': { chord: 'D7M', guitarFrets: 'x x 0 2 2 2', keyboardNotes: ['D', 'F#', 'A', 'C#'] },
-  'D9': { chord: 'D9', guitarFrets: 'x x 0 2 3 0', keyboardNotes: ['D', 'F#', 'A', 'E'] },
-  'D/F#': { chord: 'D/F#', guitarFrets: '2 x 0 2 3 2', keyboardNotes: ['F#', 'D', 'A'] },
-  'D#': { chord: 'D#', guitarFrets: 'x 6 8 8 8 6', barre: 6, keyboardNotes: ['D#', 'G', 'A#'] },
-  'D#m': { chord: 'D#m', guitarFrets: 'x 6 8 8 7 6', barre: 6, keyboardNotes: ['D#', 'F#', 'A#'] },
-  'Eb': { chord: 'Eb', guitarFrets: 'x 6 8 8 8 6', barre: 6, keyboardNotes: ['Eb', 'G', 'Bb'] },
-  'E': { chord: 'E', guitarFrets: '0 2 2 1 0 0', keyboardNotes: ['E', 'G#', 'B'] },
-  'Em': { chord: 'Em', guitarFrets: '0 2 2 0 0 0', keyboardNotes: ['E', 'G', 'B'] },
-  'E7': { chord: 'E7', guitarFrets: '0 2 0 1 0 0', keyboardNotes: ['E', 'G#', 'B', 'D'] },
-  'E7M': { chord: 'E7M', guitarFrets: '0 2 1 1 0 0', keyboardNotes: ['E', 'G#', 'B', 'D#'] },
-  'Em7': { chord: 'Em7', guitarFrets: '0 2 2 0 3 0', keyboardNotes: ['E', 'G', 'B', 'D'] },
-  'E/G#': { chord: 'E/G#', guitarFrets: '4 x 2 4 5 x', keyboardNotes: ['G#', 'E', 'B'] },
-  'F': { chord: 'F', guitarFrets: '1 3 3 2 1 1', barre: 1, keyboardNotes: ['F', 'A', 'C'] },
-  'Fm': { chord: 'Fm', guitarFrets: '1 3 3 1 1 1', barre: 1, keyboardNotes: ['F', 'G#', 'C'] },
-  'F7': { chord: 'F7', guitarFrets: '1 3 1 2 1 1', barre: 1, keyboardNotes: ['F', 'A', 'C', 'D#'] },
-  'F7M': { chord: 'F7M', guitarFrets: 'x x 3 2 1 0', keyboardNotes: ['F', 'A', 'C', 'E'] },
-  'F#': { chord: 'F#', guitarFrets: '2 4 4 3 2 2', barre: 2, keyboardNotes: ['F#', 'A#', 'C#'] },
-  'F#m': { chord: 'F#m', guitarFrets: '2 4 4 2 2 2', barre: 2, keyboardNotes: ['F#', 'A', 'C#'] },
-  'F#m7': { chord: 'F#m7', guitarFrets: '2 4 2 2 2 2', barre: 2, keyboardNotes: ['F#', 'A', 'C#', 'E'] },
-  'F#7': { chord: 'F#7', guitarFrets: '2 4 2 3 2 2', barre: 2, keyboardNotes: ['F#', 'A#', 'C#', 'E'] },
-  'Gb': { chord: 'Gb', guitarFrets: '2 4 4 3 2 2', barre: 2, keyboardNotes: ['Gb', 'Bb', 'Db'] },
-  'G': { chord: 'G', guitarFrets: '3 2 0 0 0 3', keyboardNotes: ['G', 'B', 'D'] },
-  'Gm': { chord: 'Gm', guitarFrets: '3 5 5 3 3 3', barre: 3, keyboardNotes: ['G', 'A#', 'D'] },
-  'G7': { chord: 'G7', guitarFrets: '3 2 0 0 0 1', keyboardNotes: ['G', 'B', 'D', 'F'] },
-  'G7M': { chord: 'G7M', guitarFrets: '3 x 0 0 0 2', keyboardNotes: ['G', 'B', 'D', 'F#'] },
-  'G/B': { chord: 'G/B', guitarFrets: 'x 2 0 0 3 3', keyboardNotes: ['B', 'G', 'D'] },
-  'G#': { chord: 'G#', guitarFrets: '4 6 6 5 4 4', barre: 4, keyboardNotes: ['G#', 'C', 'D#'] },
-  'G#m': { chord: 'G#m', guitarFrets: '4 6 6 4 4 4', barre: 4, keyboardNotes: ['G#', 'B', 'D#'] },
-  'Ab': { chord: 'Ab', guitarFrets: '4 6 6 5 4 4', barre: 4, keyboardNotes: ['Ab', 'C', 'Eb'] },
-  'A': { chord: 'A', guitarFrets: 'x 0 2 2 2 0', keyboardNotes: ['A', 'C#', 'E'] },
-  'Am': { chord: 'Am', guitarFrets: 'x 0 2 2 1 0', keyboardNotes: ['A', 'C', 'E'] },
-  'A7': { chord: 'A7', guitarFrets: 'x 0 2 0 2 0', keyboardNotes: ['A', 'C#', 'E', 'G'] },
-  'A7M': { chord: 'A7M', guitarFrets: 'x 0 2 1 2 0', keyboardNotes: ['A', 'C#', 'E', 'G#'] },
-  'Am7': { chord: 'Am7', guitarFrets: 'x 0 2 0 1 0', keyboardNotes: ['A', 'C', 'E', 'G'] },
-  'A9': { chord: 'A9', guitarFrets: 'x 0 2 2 0 0', keyboardNotes: ['A', 'C#', 'E', 'B'] },
-  'A/C#': { chord: 'A/C#', guitarFrets: 'x 4 2 2 2 0', keyboardNotes: ['C#', 'A', 'E'] },
-  'A#': { chord: 'A#', guitarFrets: 'x 1 3 3 3 1', barre: 1, keyboardNotes: ['A#', 'D', 'F'] },
-  'A#m': { chord: 'A#m', guitarFrets: 'x 1 3 3 2 1', barre: 1, keyboardNotes: ['A#', 'C#', 'F'] },
-  'Bb': { chord: 'Bb', guitarFrets: 'x 1 3 3 3 1', barre: 1, keyboardNotes: ['Bb', 'D', 'F'] },
-  'Bbm': { chord: 'Bbm', guitarFrets: 'x 1 3 3 2 1', barre: 1, keyboardNotes: ['Bb', 'Db', 'F'] },
-  'Bb7M': { chord: 'Bb7M', guitarFrets: 'x 1 3 2 3 1', barre: 1, keyboardNotes: ['Bb', 'D', 'F', 'A'] },
-  'B': { chord: 'B', guitarFrets: 'x 2 4 4 4 2', barre: 2, keyboardNotes: ['B', 'D#', 'F#'] },
-  'Bm': { chord: 'Bm', guitarFrets: 'x 2 4 4 3 2', barre: 2, keyboardNotes: ['B', 'D', 'F#'] },
-  'B7': { chord: 'B7', guitarFrets: 'x 2 1 2 0 2', keyboardNotes: ['B', 'D#', 'F#', 'A'] },
-  'B7M': { chord: 'B7M', guitarFrets: 'x 2 4 3 4 2', barre: 2, keyboardNotes: ['B', 'D#', 'F#', 'A#'] },
-  'Bm7': { chord: 'Bm7', guitarFrets: 'x 2 4 2 3 2', barre: 2, keyboardNotes: ['B', 'D', 'F#', 'A'] },
+  'C': { chord: 'C', guitarFrets: 'x 3 2 0 1 0', ukuleleFrets: '0 0 0 3', cavaquinhoFrets: '2 0 1 2', bassNote: 'C (3ª casa corda A)', keyboardNotes: ['C', 'E', 'G'] },
+  'Cm': { chord: 'Cm', guitarFrets: 'x 3 5 5 4 3', ukuleleFrets: '0 3 3 3', cavaquinhoFrets: '1 0 1 1', bassNote: 'C (3ª casa corda A)', barre: 3, keyboardNotes: ['C', 'D#', 'G'] },
+  'C7': { chord: 'C7', guitarFrets: 'x 3 2 3 1 0', ukuleleFrets: '0 0 0 1', cavaquinhoFrets: '2 3 1 2', bassNote: 'C (3ª casa corda A)', keyboardNotes: ['C', 'E', 'G', 'A#'] },
+  'C7M': { chord: 'C7M', guitarFrets: 'x 3 2 0 0 0', ukuleleFrets: '0 0 0 2', cavaquinhoFrets: '2 0 0 2', bassNote: 'C (3ª casa corda A)', keyboardNotes: ['C', 'E', 'G', 'B'] },
+  'C9': { chord: 'C9', guitarFrets: 'x 3 2 0 3 0', ukuleleFrets: '0 2 0 3', cavaquinhoFrets: '2 0 3 0', bassNote: 'C (3ª casa corda A)', keyboardNotes: ['C', 'E', 'G', 'D'] },
+  'C#': { chord: 'C#', guitarFrets: 'x 4 6 6 6 4', ukuleleFrets: '1 1 1 4', cavaquinhoFrets: '3 1 2 3', bassNote: 'C# (4ª casa corda A)', barre: 4, keyboardNotes: ['C#', 'F', 'G#'] },
+  'C#m': { chord: 'C#m', guitarFrets: 'x 4 6 6 5 4', ukuleleFrets: '1 4 4 4', cavaquinhoFrets: '2 1 2 2', bassNote: 'C# (4ª casa corda A)', barre: 4, keyboardNotes: ['C#', 'E', 'G#'] },
+  'C#m7': { chord: 'C#m7', guitarFrets: 'x 4 6 4 5 4', ukuleleFrets: '1 1 0 2', cavaquinhoFrets: '2 4 2 2', bassNote: 'C# (4ª casa corda A)', barre: 4, keyboardNotes: ['C#', 'E', 'G#', 'B'] },
+  'Db': { chord: 'Db', guitarFrets: 'x 4 6 6 6 4', ukuleleFrets: '1 1 1 4', cavaquinhoFrets: '3 1 2 3', bassNote: 'Db (4ª casa corda A)', barre: 4, keyboardNotes: ['Db', 'F', 'Ab'] },
+  'D': { chord: 'D', guitarFrets: 'x x 0 2 3 2', ukuleleFrets: '2 2 2 0', cavaquinhoFrets: '0 2 3 4', bassNote: 'D (corda D solta / 5ª A)', keyboardNotes: ['D', 'F#', 'A'] },
+  'Dm': { chord: 'Dm', guitarFrets: 'x x 0 2 3 1', ukuleleFrets: '2 2 1 0', cavaquinhoFrets: '0 2 3 3', bassNote: 'D (corda D solta)', keyboardNotes: ['D', 'F', 'A'] },
+  'D7': { chord: 'D7', guitarFrets: 'x x 0 2 1 2', ukuleleFrets: '2 2 2 3', cavaquinhoFrets: '0 2 1 0', bassNote: 'D (corda D solta)', keyboardNotes: ['D', 'F#', 'A', 'C'] },
+  'D7M': { chord: 'D7M', guitarFrets: 'x x 0 2 2 2', ukuleleFrets: '2 2 2 4', cavaquinhoFrets: '0 2 2 0', bassNote: 'D (corda D solta)', keyboardNotes: ['D', 'F#', 'A', 'C#'] },
+  'D9': { chord: 'D9', guitarFrets: 'x x 0 2 3 0', ukuleleFrets: '2 2 0 0', cavaquinhoFrets: '0 2 3 2', bassNote: 'D (corda D solta)', keyboardNotes: ['D', 'F#', 'A', 'E'] },
+  'D/F#': { chord: 'D/F#', guitarFrets: '2 x 0 2 3 2', ukuleleFrets: '2 2 2 0', cavaquinhoFrets: '4 2 3 0', bassNote: 'F# (2ª casa corda E)', keyboardNotes: ['F#', 'D', 'A'] },
+  'D#': { chord: 'D#', guitarFrets: 'x 6 8 8 8 6', ukuleleFrets: '3 3 3 1', cavaquinhoFrets: '1 3 4 1', bassNote: 'Eb (6ª casa corda A)', barre: 6, keyboardNotes: ['D#', 'G', 'A#'] },
+  'D#m': { chord: 'D#m', guitarFrets: 'x 6 8 8 7 6', ukuleleFrets: '3 3 2 1', cavaquinhoFrets: '1 3 4 4', bassNote: 'Eb (6ª casa corda A)', barre: 6, keyboardNotes: ['D#', 'F#', 'A#'] },
+  'Eb': { chord: 'Eb', guitarFrets: 'x 6 8 8 8 6', ukuleleFrets: '3 3 3 1', cavaquinhoFrets: '1 3 4 1', bassNote: 'Eb (6ª casa corda A)', barre: 6, keyboardNotes: ['Eb', 'G', 'Bb'] },
+  'E': { chord: 'E', guitarFrets: '0 2 2 1 0 0', ukuleleFrets: '4 4 4 2', cavaquinhoFrets: '2 1 0 2', bassNote: 'E (corda E solta / 7ª A)', keyboardNotes: ['E', 'G#', 'B'] },
+  'Em': { chord: 'Em', guitarFrets: '0 2 2 0 0 0', ukuleleFrets: '0 4 3 2', cavaquinhoFrets: '2 0 0 2', bassNote: 'E (corda E solta)', keyboardNotes: ['E', 'G', 'B'] },
+  'E7': { chord: 'E7', guitarFrets: '0 2 0 1 0 0', ukuleleFrets: '1 2 0 2', cavaquinhoFrets: '2 1 3 2', bassNote: 'E (corda E solta)', keyboardNotes: ['E', 'G#', 'B', 'D'] },
+  'E7M': { chord: 'E7M', guitarFrets: '0 2 1 1 0 0', ukuleleFrets: '1 3 0 2', cavaquinhoFrets: '2 1 4 2', bassNote: 'E (corda E solta)', keyboardNotes: ['E', 'G#', 'B', 'D#'] },
+  'Em7': { chord: 'Em7', guitarFrets: '0 2 2 0 3 0', ukuleleFrets: '0 2 0 2', cavaquinhoFrets: '2 0 3 0', bassNote: 'E (corda E solta)', keyboardNotes: ['E', 'G', 'B', 'D'] },
+  'E/G#': { chord: 'E/G#', guitarFrets: '4 x 2 4 5 x', ukuleleFrets: '4 4 4 2', cavaquinhoFrets: '1 1 0 2', bassNote: 'G# (4ª casa corda E)', keyboardNotes: ['G#', 'E', 'B'] },
+  'F': { chord: 'F', guitarFrets: '1 3 3 2 1 1', ukuleleFrets: '2 0 1 0', cavaquinhoFrets: '3 2 1 3', bassNote: 'F (1ª casa corda E)', barre: 1, keyboardNotes: ['F', 'A', 'C'] },
+  'Fm': { chord: 'Fm', guitarFrets: '1 3 3 1 1 1', ukuleleFrets: '1 0 1 3', cavaquinhoFrets: '3 1 1 3', bassNote: 'F (1ª casa corda E)', barre: 1, keyboardNotes: ['F', 'G#', 'C'] },
+  'F7': { chord: 'F7', guitarFrets: '1 3 1 2 1 1', ukuleleFrets: '2 3 1 0', cavaquinhoFrets: '3 2 4 3', bassNote: 'F (1ª casa corda E)', barre: 1, keyboardNotes: ['F', 'A', 'C', 'D#'] },
+  'F7M': { chord: 'F7M', guitarFrets: 'x x 3 2 1 0', ukuleleFrets: '2 4 1 0', cavaquinhoFrets: '3 2 1 2', bassNote: 'F (1ª casa corda E)', keyboardNotes: ['F', 'A', 'C', 'E'] },
+  'F#': { chord: 'F#', guitarFrets: '2 4 4 3 2 2', ukuleleFrets: '3 1 2 1', cavaquinhoFrets: '4 3 2 4', bassNote: 'F# (2ª casa corda E)', barre: 2, keyboardNotes: ['F#', 'A#', 'C#'] },
+  'F#m': { chord: 'F#m', guitarFrets: '2 4 4 2 2 2', ukuleleFrets: '2 1 2 0', cavaquinhoFrets: '4 2 2 4', bassNote: 'F# (2ª casa corda E)', barre: 2, keyboardNotes: ['F#', 'A', 'C#'] },
+  'F#m7': { chord: 'F#m7', guitarFrets: '2 4 2 2 2 2', ukuleleFrets: '2 4 2 4', cavaquinhoFrets: '4 2 2 2', bassNote: 'F# (2ª casa corda E)', barre: 2, keyboardNotes: ['F#', 'A', 'C#', 'E'] },
+  'F#7': { chord: 'F#7', guitarFrets: '2 4 2 3 2 2', ukuleleFrets: '3 4 2 4', cavaquinhoFrets: '4 3 2 2', bassNote: 'F# (2ª casa corda E)', barre: 2, keyboardNotes: ['F#', 'A#', 'C#', 'E'] },
+  'Gb': { chord: 'Gb', guitarFrets: '2 4 4 3 2 2', ukuleleFrets: '3 1 2 1', cavaquinhoFrets: '4 3 2 4', bassNote: 'Gb (2ª casa corda E)', barre: 2, keyboardNotes: ['Gb', 'Bb', 'Db'] },
+  'G': { chord: 'G', guitarFrets: '3 2 0 0 0 3', ukuleleFrets: '0 2 3 2', cavaquinhoFrets: '0 0 0 0', bassNote: 'G (3ª casa corda E)', keyboardNotes: ['G', 'B', 'D'] },
+  'Gm': { chord: 'Gm', guitarFrets: '3 5 5 3 3 3', ukuleleFrets: '0 2 3 1', cavaquinhoFrets: '0 3 3 0', bassNote: 'G (3ª casa corda E)', barre: 3, keyboardNotes: ['G', 'A#', 'D'] },
+  'G7': { chord: 'G7', guitarFrets: '3 2 0 0 0 1', ukuleleFrets: '0 2 1 2', cavaquinhoFrets: '0 0 0 3', bassNote: 'G (3ª casa corda E)', keyboardNotes: ['G', 'B', 'D', 'F'] },
+  'G7M': { chord: 'G7M', guitarFrets: '3 x 0 0 0 2', ukuleleFrets: '0 2 2 2', cavaquinhoFrets: '0 0 0 4', bassNote: 'G (3ª casa corda E)', keyboardNotes: ['G', 'B', 'D', 'F#'] },
+  'G/B': { chord: 'G/B', guitarFrets: 'x 2 0 0 3 3', ukuleleFrets: '0 2 3 2', cavaquinhoFrets: '0 0 0 0', bassNote: 'B (2ª casa corda A)', keyboardNotes: ['B', 'G', 'D'] },
+  'G#': { chord: 'G#', guitarFrets: '4 6 6 5 4 4', ukuleleFrets: '5 3 4 3', cavaquinhoFrets: '1 1 1 1', bassNote: 'G# (4ª casa corda E)', barre: 4, keyboardNotes: ['G#', 'C', 'D#'] },
+  'G#m': { chord: 'G#m', guitarFrets: '4 6 6 4 4 4', ukuleleFrets: '4 3 4 2', cavaquinhoFrets: '1 4 4 1', bassNote: 'G# (4ª casa corda E)', barre: 4, keyboardNotes: ['G#', 'B', 'D#'] },
+  'Ab': { chord: 'Ab', guitarFrets: '4 6 6 5 4 4', ukuleleFrets: '5 3 4 3', cavaquinhoFrets: '1 1 1 1', bassNote: 'Ab (4ª casa corda E)', barre: 4, keyboardNotes: ['Ab', 'C', 'Eb'] },
+  'A': { chord: 'A', guitarFrets: 'x 0 2 2 2 0', ukuleleFrets: '2 1 0 0', cavaquinhoFrets: '2 2 2 2', bassNote: 'A (corda A solta / 5ª E)', keyboardNotes: ['A', 'C#', 'E'] },
+  'Am': { chord: 'Am', guitarFrets: 'x 0 2 2 1 0', ukuleleFrets: '2 0 0 0', cavaquinhoFrets: '2 2 1 2', bassNote: 'A (corda A solta)', keyboardNotes: ['A', 'C', 'E'] },
+  'A7': { chord: 'A7', guitarFrets: 'x 0 2 0 2 0', ukuleleFrets: '0 1 0 0', cavaquinhoFrets: '2 0 2 2', bassNote: 'A (corda A solta)', keyboardNotes: ['A', 'C#', 'E', 'G'] },
+  'A7M': { chord: 'A7M', guitarFrets: 'x 0 2 1 2 0', ukuleleFrets: '1 1 0 0', cavaquinhoFrets: '2 1 2 2', bassNote: 'A (corda A solta)', keyboardNotes: ['A', 'C#', 'E', 'G#'] },
+  'Am7': { chord: 'Am7', guitarFrets: 'x 0 2 0 1 0', ukuleleFrets: '0 0 0 0', cavaquinhoFrets: '2 0 1 2', bassNote: 'A (corda A solta)', keyboardNotes: ['A', 'C', 'E', 'G'] },
+  'A9': { chord: 'A9', guitarFrets: 'x 0 2 2 0 0', ukuleleFrets: '2 1 2 2', cavaquinhoFrets: '2 2 0 2', bassNote: 'A (corda A solta)', keyboardNotes: ['A', 'C#', 'E', 'B'] },
+  'A/C#': { chord: 'A/C#', guitarFrets: 'x 4 2 2 2 0', ukuleleFrets: '2 1 0 0', cavaquinhoFrets: '2 2 2 2', bassNote: 'C# (4ª casa corda A)', keyboardNotes: ['C#', 'A', 'E'] },
+  'A#': { chord: 'A#', guitarFrets: 'x 1 3 3 3 1', ukuleleFrets: '3 2 1 1', cavaquinhoFrets: '3 3 3 3', bassNote: 'Bb (1ª casa corda A)', barre: 1, keyboardNotes: ['A#', 'D', 'F'] },
+  'A#m': { chord: 'A#m', guitarFrets: 'x 1 3 3 2 1', ukuleleFrets: '3 1 1 1', cavaquinhoFrets: '3 3 2 3', bassNote: 'Bb (1ª casa corda A)', barre: 1, keyboardNotes: ['A#', 'C#', 'F'] },
+  'Bb': { chord: 'Bb', guitarFrets: 'x 1 3 3 3 1', ukuleleFrets: '3 2 1 1', cavaquinhoFrets: '3 3 3 3', bassNote: 'Bb (1ª casa corda A)', barre: 1, keyboardNotes: ['Bb', 'D', 'F'] },
+  'Bbm': { chord: 'Bbm', guitarFrets: 'x 1 3 3 2 1', ukuleleFrets: '3 1 1 1', cavaquinhoFrets: '3 3 2 3', bassNote: 'Bb (1ª casa corda A)', barre: 1, keyboardNotes: ['Bb', 'Db', 'F'] },
+  'Bb7M': { chord: 'Bb7M', guitarFrets: 'x 1 3 2 3 1', ukuleleFrets: '3 2 1 0', cavaquinhoFrets: '3 2 3 3', bassNote: 'Bb (1ª casa corda A)', barre: 1, keyboardNotes: ['Bb', 'D', 'F', 'A'] },
+  'B': { chord: 'B', guitarFrets: 'x 2 4 4 4 2', ukuleleFrets: '4 3 2 2', cavaquinhoFrets: '4 4 4 4', bassNote: 'B (2ª casa corda A)', barre: 2, keyboardNotes: ['B', 'D#', 'F#'] },
+  'Bm': { chord: 'Bm', guitarFrets: 'x 2 4 4 3 2', ukuleleFrets: '4 2 2 2', cavaquinhoFrets: '4 4 3 4', bassNote: 'B (2ª casa corda A)', barre: 2, keyboardNotes: ['B', 'D', 'F#'] },
+  'B7': { chord: 'B7', guitarFrets: 'x 2 1 2 0 2', ukuleleFrets: '2 3 2 2', cavaquinhoFrets: '1 2 0 1', bassNote: 'B (2ª casa corda A)', keyboardNotes: ['B', 'D#', 'F#', 'A'] },
+  'B7M': { chord: 'B7M', guitarFrets: 'x 2 4 3 4 2', ukuleleFrets: '4 3 2 1', cavaquinhoFrets: '4 3 4 4', bassNote: 'B (2ª casa corda A)', barre: 2, keyboardNotes: ['B', 'D#', 'F#', 'A#'] },
+  'Bm7': { chord: 'Bm7', guitarFrets: 'x 2 4 2 3 2', ukuleleFrets: '2 2 2 2', cavaquinhoFrets: '4 2 3 0', bassNote: 'B (2ª casa corda A)', barre: 2, keyboardNotes: ['B', 'D', 'F#', 'A'] },
 };
 
 export function getChordDiagram(chordName: string): ChordDiagramData | null {

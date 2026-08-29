@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Song, Setlist, LiturgicalMoment } from './types';
-import { INITIAL_SONGS, INITIAL_SETLISTS } from './data/songsData';
+import { INITIAL_SONGS, INITIAL_SETLISTS, CATALOG_VERSION } from './data/songsData';
 import { LiveRoomProvider, useLiveRoom } from './context/LiveRoomContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
@@ -24,6 +24,9 @@ const MainAppContent: React.FC = () => {
   // User-isolated songs and setlists state
   const [songs, setSongs] = useState<Song[]>(() => {
     if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_SONGS;
+    const userCatalogVerKey = `cifrasync_catalog_ver_${userProfile.uid}`;
+    const savedVer = localStorage.getItem(userCatalogVerKey);
+    if (savedVer !== CATALOG_VERSION) return INITIAL_SONGS;
     const saved = localStorage.getItem(`cifrasync_songs_${userProfile.uid}`);
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
@@ -33,6 +36,9 @@ const MainAppContent: React.FC = () => {
 
   const [setlists, setSetlists] = useState<Setlist[]>(() => {
     if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_SETLISTS;
+    const userCatalogVerKey = `cifrasync_catalog_ver_${userProfile.uid}`;
+    const savedVer = localStorage.getItem(userCatalogVerKey);
+    if (savedVer !== CATALOG_VERSION) return INITIAL_SETLISTS;
     const saved = localStorage.getItem(`cifrasync_setlists_${userProfile.uid}`);
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
@@ -45,9 +51,29 @@ const MainAppContent: React.FC = () => {
     if (userProfile?.uid) {
       const userSongsKey = `cifrasync_songs_${userProfile.uid}`;
       const userSetlistsKey = `cifrasync_setlists_${userProfile.uid}`;
+      const userCatalogVerKey = `cifrasync_catalog_ver_${userProfile.uid}`;
 
+      const savedVer = localStorage.getItem(userCatalogVerKey);
       const savedSongs = localStorage.getItem(userSongsKey);
-      if (savedSongs) {
+
+      // If version changed (e.g. platform pivot to multi-genre), automatically refresh catalog
+      if (savedVer !== CATALOG_VERSION) {
+        let customSongs: Song[] = [];
+        if (savedSongs) {
+          try {
+            const parsed = JSON.parse(savedSongs);
+            if (Array.isArray(parsed)) {
+              customSongs = parsed.filter((s: Song) => s.isCustom);
+            }
+          } catch (e) {}
+        }
+        const freshSongs = [...INITIAL_SONGS, ...customSongs];
+        setSongs(freshSongs);
+        setSetlists(INITIAL_SETLISTS);
+        localStorage.setItem(userSongsKey, JSON.stringify(freshSongs));
+        localStorage.setItem(userSetlistsKey, JSON.stringify(INITIAL_SETLISTS));
+        localStorage.setItem(userCatalogVerKey, CATALOG_VERSION);
+      } else if (savedSongs) {
         try {
           setSongs(JSON.parse(savedSongs));
         } catch (e) {
@@ -57,15 +83,17 @@ const MainAppContent: React.FC = () => {
         setSongs(INITIAL_SONGS);
       }
 
-      const savedSetlists = localStorage.getItem(userSetlistsKey);
-      if (savedSetlists) {
-        try {
-          setSetlists(JSON.parse(savedSetlists));
-        } catch (e) {
+      if (savedVer === CATALOG_VERSION) {
+        const savedSetlists = localStorage.getItem(userSetlistsKey);
+        if (savedSetlists) {
+          try {
+            setSetlists(JSON.parse(savedSetlists));
+          } catch (e) {
+            setSetlists(INITIAL_SETLISTS);
+          }
+        } else {
           setSetlists(INITIAL_SETLISTS);
         }
-      } else {
-        setSetlists(INITIAL_SETLISTS);
       }
     } else {
       setSongs(INITIAL_SONGS);
@@ -180,8 +208,8 @@ const MainAppContent: React.FC = () => {
   };
 
   const handleCreateSetlist = (title: string, description: string, targetEvent: string) => {
-    if (!isPro && setlists.length >= 2) {
-      handleOpenPricingWithReason('Usuários gratuitos podem criar até 2 repertórios. Faça upgrade para o Plano Pro para repertórios ilimitados na nuvem.');
+    if (!isPro && setlists.length >= 3) {
+      handleOpenPricingWithReason('Usuários gratuitos podem criar até 3 repertórios. Faça upgrade para o Plano Pro para repertórios ilimitados na nuvem.');
       return;
     }
 
@@ -252,7 +280,7 @@ const MainAppContent: React.FC = () => {
         return { ...s, liturgicalMoment: moment };
       }
       if (songIdsToRemove.includes(s.id)) {
-        return { ...s, liturgicalMoment: 'Ação de Graças' };
+        return { ...s, liturgicalMoment: 'Hits do Show' };
       }
       return s;
     }));
@@ -336,6 +364,12 @@ const MainAppContent: React.FC = () => {
               onDeleteSetlist={handleDeleteSetlist}
               onUpdateSetlist={handleUpdateSetlist}
               onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
+              activeSetlistId={activeSetlist?.id}
+              onSelectSetlistId={(id) => {
+                const sl = setlists.find(s => s.id === id);
+                if (sl) setActiveSetlist(sl);
+              }}
+              onOpenPricing={handleOpenPricingWithReason}
             />
           )}
         </div>
@@ -350,6 +384,8 @@ const MainAppContent: React.FC = () => {
           onNavigateSetlist={handleNavigateSetlist}
           onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
           onOpenMetronome={() => setIsMetronomeOpen(true)}
+          onOpenPricing={handleOpenPricingWithReason}
+          onSaveCustomSong={handleSaveCustomSong}
         />
       )}
 

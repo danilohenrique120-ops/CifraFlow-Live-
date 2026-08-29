@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Setlist, Song } from '../types';
 import { useLiveRoom } from '../context/LiveRoomContext';
+import { useAuth } from '../context/AuthContext';
+import { ExportSetlistPdfModal } from './ExportSetlistPdfModal';
 import {
   ListMusic,
   Plus,
@@ -19,7 +21,9 @@ import {
   Sparkles,
   Flame,
   Radio,
-  Clock
+  Clock,
+  Search,
+  Lock
 } from 'lucide-react';
 
 interface SetlistsManagerProps {
@@ -30,17 +34,19 @@ interface SetlistsManagerProps {
   onDeleteSetlist: (id: string) => void;
   onUpdateSetlist: (setlist: Setlist) => void;
   onOpenLiveRoomModal: () => void;
+  activeSetlistId?: string | null;
+  onSelectSetlistId?: (id: string) => void;
+  onOpenPricing?: (reason?: string) => void;
 }
 
 const SETLIST_THEMES: Record<string, { gradient: string; iconColor: string; badge: string }> = {
-  'Missa': { gradient: 'from-amber-600 to-orange-800', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
-  'Missa Paroquial': { gradient: 'from-amber-600 to-orange-800', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
-  'Missa de Domingo': { gradient: 'from-amber-600 to-orange-800', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
-  'Grupo de Oração': { gradient: 'from-emerald-600 to-teal-800', iconColor: 'text-emerald-200', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
-  'Adoração ao Santíssimo': { gradient: 'from-violet-600 to-purple-900', iconColor: 'text-violet-200', badge: 'bg-violet-500/20 text-violet-300 border-violet-500/40' },
-  'Noite de Louvor & Adoração': { gradient: 'from-violet-600 to-purple-900', iconColor: 'text-violet-200', badge: 'bg-violet-500/20 text-violet-300 border-violet-500/40' },
-  'Casamento': { gradient: 'from-rose-600 to-pink-900', iconColor: 'text-rose-200', badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
-  'Retiro / Encontro': { gradient: 'from-cyan-600 to-blue-900', iconColor: 'text-cyan-200', badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' }
+  'Show / Apresentação': { gradient: 'from-purple-600 to-indigo-900', iconColor: 'text-purple-200', badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
+  'Barzinho / Voz e Violão': { gradient: 'from-amber-600 to-orange-800', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+  'Casamento / Cerimônia': { gradient: 'from-rose-600 to-pink-900', iconColor: 'text-rose-200', badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
+  'Ensaio Geral': { gradient: 'from-blue-600 to-cyan-900', iconColor: 'text-blue-200', badge: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  'Celebração / Louvor': { gradient: 'from-emerald-600 to-teal-800', iconColor: 'text-emerald-200', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+  'Festa / Evento': { gradient: 'from-yellow-600 to-amber-900', iconColor: 'text-yellow-200', badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
+  'Geral': { gradient: 'from-zinc-700 to-zinc-900', iconColor: 'text-zinc-200', badge: 'bg-zinc-700/30 text-zinc-300 border-zinc-700' }
 };
 
 const DEFAULT_GRADIENTS = [
@@ -58,19 +64,58 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
   onCreateSetlist,
   onDeleteSetlist,
   onUpdateSetlist,
-  onOpenLiveRoomModal
+  onOpenLiveRoomModal,
+  activeSetlistId,
+  onSelectSetlistId,
+  onOpenPricing
 }) => {
   const { isInRoom, isHost, selectSong, setActiveSetlist } = useLiveRoom();
+  const { isPro } = useAuth();
 
-  const [selectedSetlistId, setSelectedSetlistId] = useState<string>(setlists[0]?.id || '');
+  const [internalSelectedId, setInternalSelectedId] = useState<string>(activeSetlistId || setlists[0]?.id || '');
   const [isCreating, setIsCreating] = useState(false);
+  const [isExportPdfOpen, setIsExportPdfOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
-  const [newEvent, setNewEvent] = useState('Missa Paroquial');
+  const [newEvent, setNewEvent] = useState('Show / Apresentação');
   const [editingNotesSongId, setEditingNotesSongId] = useState<string | null>(null);
   const [notesInput, setNotesInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
+  // Keep in sync with external selection from sidebar
+  React.useEffect(() => {
+    if (activeSetlistId) {
+      setInternalSelectedId(activeSetlistId);
+    }
+  }, [activeSetlistId]);
+
+  const selectedSetlistId = activeSetlistId || internalSelectedId || setlists[0]?.id || '';
   const currentSetlist = setlists.find(s => s.id === selectedSetlistId) || setlists[0];
+
+  // Filter songs within current setlist by title, artist, genre, tone or notes
+  const filteredSetlistItems = React.useMemo(() => {
+    if (!currentSetlist) return [];
+    if (!searchQuery.trim()) return currentSetlist.items;
+    const q = searchQuery.toLowerCase().trim();
+    return currentSetlist.items.filter(item => {
+      const song = songs.find(s => s.id === item.songId);
+      if (!song) return false;
+      return (
+        song.title.toLowerCase().includes(q) ||
+        song.artist.toLowerCase().includes(q) ||
+        song.liturgicalMoment.toLowerCase().includes(q) ||
+        (item.notes && item.notes.toLowerCase().includes(q)) ||
+        (item.customKey && item.customKey.toLowerCase().includes(q)) ||
+        song.originalKey.toLowerCase().includes(q)
+      );
+    });
+  }, [currentSetlist, searchQuery, songs]);
+
+  const handleCardClick = (id: string) => {
+    setInternalSelectedId(id);
+    onSelectSetlistId?.(id);
+    setSearchQuery('');
+  };
 
   const getSetlistTheme = (setlist: Setlist, index: number) => {
     if (setlist.targetEvent && SETLIST_THEMES[setlist.targetEvent]) {
@@ -220,7 +265,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
             return (
               <div
                 key={setlist.id}
-                onClick={() => setSelectedSetlistId(setlist.id)}
+                onClick={() => handleCardClick(setlist.id)}
                 className={`group relative p-4 rounded-3xl border transition-all cursor-pointer overflow-hidden shadow-xl flex flex-col justify-between ${
                   isSelected
                     ? 'bg-zinc-900 border-emerald-500 ring-2 ring-emerald-500/40 scale-[1.01]'
@@ -233,7 +278,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${theme.badge}`}>
-                      {setlist.targetEvent || 'Missa'}
+                      {setlist.targetEvent || 'Show'}
                     </span>
                     <span className="text-xs text-zinc-400 font-mono font-bold flex items-center gap-1">
                       <Music className="w-3.5 h-3.5 text-emerald-400" />
@@ -246,7 +291,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                       {setlist.title}
                     </h3>
                     <p className="text-xs text-zinc-400 line-clamp-2 mt-1 leading-relaxed">
-                      {setlist.description || 'Repertório litúrgico personalizado para apresentação.'}
+                      {setlist.description || 'Repertório personalizado para show e apresentação.'}
                     </p>
                   </div>
                 </div>
@@ -311,10 +356,33 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
               <div className="flex flex-wrap items-center gap-2.5">
                 <button
                   onClick={handleStartLiveSetlist}
-                  className="px-6 py-3 rounded-2xl bg-white hover:bg-zinc-100 text-zinc-950 font-black text-xs sm:text-sm shadow-xl transition flex items-center gap-2 transform hover:scale-105"
+                  className="px-5 py-3 rounded-2xl bg-white hover:bg-zinc-100 text-zinc-950 font-black text-xs sm:text-sm shadow-xl transition flex items-center gap-2 transform hover:scale-105"
                 >
                   <Play className="w-4 h-4 fill-current ml-0.5" />
-                  <span>Iniciar no Palco / Ensaio</span>
+                  <span>Iniciar no Palco</span>
+                </button>
+
+                {/* 📄 Exportar PDF / Imprimir (Plano Pro) */}
+                <button
+                  onClick={() => {
+                    if (!isPro) {
+                      if (onOpenPricing) {
+                        onOpenPricing('A exportação de repertórios e cifras em PDF diagramado para impressão e WhatsApp é exclusiva do Plano Pro.');
+                      }
+                      return;
+                    }
+                    setIsExportPdfOpen(true);
+                  }}
+                  className={`px-4 py-3 rounded-2xl font-black text-xs sm:text-sm shadow-xl transition flex items-center gap-2 border ${
+                    isPro
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 border-emerald-400'
+                      : 'bg-black/40 hover:bg-black/60 text-white border-white/20'
+                  }`}
+                  title={isPro ? "Exportar Repertório em PDF para Impressão" : "Exportar em PDF (Exclusivo Pro)"}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Exportar PDF</span>
+                  {!isPro && <Lock className="w-3.5 h-3.5 text-amber-400 ml-0.5" />}
                 </button>
 
                 <button
@@ -330,20 +398,48 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
 
           {/* Songs in Setlist Table/List */}
           <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                <Music className="w-4 h-4 text-emerald-400" />
-                Ordem das Músicas no Palco
-              </h3>
-              <span className="text-xs text-zinc-400">
-                Use as setas ↑ ↓ para reordenar a sequência
-              </span>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-1 border-b border-zinc-800/50">
+              <div>
+                <h3 className="text-base font-black text-white flex items-center gap-2">
+                  <Music className="w-4 h-4 text-emerald-400" />
+                  Músicas no Repertório ({currentSetlist.items.length})
+                </h3>
+                <span className="text-xs text-zinc-400">
+                  {searchQuery.trim()
+                    ? `Exibindo ${filteredSetlistItems.length} de ${currentSetlist.items.length} músicas encontradas`
+                    : 'Use as setas ↑ ↓ para reordenar a sequência'}
+                </span>
+              </div>
+
+              {/* 🔍 Search bar inside setlist */}
+              {currentSetlist.items.length > 0 && (
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar música por título, artista ou tom..."
+                    className="w-full bg-zinc-950/80 border border-zinc-700/80 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-white"
+                      title="Limpar busca"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2.5">
-              {currentSetlist.items.map((item, index) => {
+              {filteredSetlistItems.map((item, index) => {
                 const song = songs.find(s => s.id === item.songId);
                 if (!song) return null;
+                const originalIndex = currentSetlist.items.findIndex(it => it.songId === item.songId);
 
                 return (
                   <div
@@ -352,7 +448,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                   >
                     <div className="flex items-center gap-3">
                       <span className="w-8 h-8 rounded-xl bg-zinc-850 text-emerald-400 font-mono text-xs font-black flex items-center justify-center border border-zinc-750">
-                        {index + 1}
+                        {originalIndex + 1}
                       </span>
 
                       <div
@@ -412,25 +508,27 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                         </button>
                       )}
 
-                      {/* Reorder Buttons */}
-                      <div className="flex items-center gap-1">
-                        <button
-                          disabled={index === 0}
-                          onClick={() => handleMoveSong(index, 'up')}
-                          className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 disabled:opacity-30 transition border border-zinc-800"
-                          title="Mover para cima"
-                        >
-                          <ArrowUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          disabled={index === currentSetlist.items.length - 1}
-                          onClick={() => handleMoveSong(index, 'down')}
-                          className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 disabled:opacity-30 transition border border-zinc-800"
-                          title="Mover para baixo"
-                        >
-                          <ArrowDown className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      {/* Reorder Buttons (only active when not filtering) */}
+                      {!searchQuery && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            disabled={originalIndex === 0}
+                            onClick={() => handleMoveSong(originalIndex, 'up')}
+                            className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 disabled:opacity-30 transition border border-zinc-800"
+                            title="Mover para cima"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            disabled={originalIndex === currentSetlist.items.length - 1}
+                            onClick={() => handleMoveSong(originalIndex, 'down')}
+                            className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 disabled:opacity-30 transition border border-zinc-800"
+                            title="Mover para baixo"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
 
                       {/* Play / Open in Stage */}
                       <button
@@ -453,6 +551,21 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                   </div>
                 );
               })}
+
+              {/* Empty Search Result */}
+              {filteredSetlistItems.length === 0 && searchQuery.trim() && (
+                <div className="text-center py-10 rounded-2xl bg-zinc-950/40 border border-dashed border-zinc-800 text-zinc-400 text-xs space-y-2">
+                  <Search className="w-6 h-6 mx-auto text-zinc-600" />
+                  <p className="font-bold text-white">Nenhuma música encontrada para "{searchQuery}"</p>
+                  <p className="text-zinc-500 text-[11px]">Verifique a digitação ou tente buscar pelo nome do artista.</p>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="px-3 py-1 rounded-lg bg-zinc-800 text-zinc-200 text-xs hover:bg-zinc-700 font-semibold transition"
+                  >
+                    Limpar Pesquisa
+                  </button>
+                </div>
+              )}
 
               {currentSetlist.items.length === 0 && (
                 <div className="text-center py-12 rounded-2xl bg-zinc-950/40 border border-dashed border-zinc-800 text-zinc-500 text-xs space-y-2">
@@ -489,7 +602,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="Ex: Missa de Domingo 19h"
+                  placeholder="Ex: Show de Sexta / Ensaio da Banda"
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
                   required
                 />
@@ -502,11 +615,12 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                   onChange={(e) => setNewEvent(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
                 >
-                  <option value="Missa Paroquial">Missa Paroquial</option>
-                  <option value="Grupo de Oração">Grupo de Oração</option>
-                  <option value="Adoração ao Santíssimo">Adoração ao Santíssimo</option>
-                  <option value="Casamento">Casamento</option>
-                  <option value="Retiro / Encontro">Retiro / Encontro</option>
+                  <option value="Show / Apresentação">Show / Apresentação</option>
+                  <option value="Barzinho / Voz e Violão">Barzinho / Voz e Violão</option>
+                  <option value="Casamento / Cerimônia">Casamento / Cerimônia</option>
+                  <option value="Ensaio Geral">Ensaio Geral</option>
+                  <option value="Celebração / Louvor">Celebração / Louvor</option>
+                  <option value="Festa / Evento">Festa / Evento</option>
                   <option value="Geral">Geral</option>
                 </select>
               </div>
@@ -541,6 +655,16 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* 📄 Modal de Exportação em PDF do Repertório */}
+      {isExportPdfOpen && currentSetlist && (
+        <ExportSetlistPdfModal
+          isOpen={isExportPdfOpen}
+          onClose={() => setIsExportPdfOpen(false)}
+          setlist={currentSetlist}
+          songs={songs}
+        />
       )}
     </div>
   );

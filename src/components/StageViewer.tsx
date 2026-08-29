@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Song, StageTheme, FontScale, ColumnMode, Setlist } from '../types';
-import { isChordLine, transposeSongContent, calculateNewKey } from '../utils/chordEngine';
+import { Song, StageTheme, FontScale, ColumnMode, Setlist, INSTRUMENT_OPTIONS } from '../types';
+import { isChordLine, transposeSongContent, calculateNewKey, detectCapoInText, getInstrumentTranspositionOffset } from '../utils/chordEngine';
 import { useLiveRoom } from '../context/LiveRoomContext';
+import { useAuth } from '../context/AuthContext';
 import { ChordModal } from './ChordTooltip';
+import { ReviseSongModal } from './ReviseSongModal';
 import {
   Play,
   Pause,
@@ -28,7 +30,10 @@ import {
   Tv,
   Plus,
   Minus,
-  FastForward
+  FastForward,
+  Lock,
+  Edit3,
+  Check
 } from 'lucide-react';
 
 interface StageViewerProps {
@@ -38,6 +43,8 @@ interface StageViewerProps {
   onNavigateSetlist?: (direction: 'prev' | 'next') => void;
   onOpenLiveRoomModal?: () => void;
   onOpenMetronome?: () => void;
+  onOpenPricing?: (reason?: string) => void;
+  onSaveCustomSong?: (newSong: Song) => void;
 }
 
 export const StageViewer: React.FC<StageViewerProps> = ({
@@ -46,8 +53,13 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   activeSetlist,
   onNavigateSetlist,
   onOpenLiveRoomModal,
-  onOpenMetronome
+  onOpenMetronome,
+  onOpenPricing,
+  onSaveCustomSong
 }) => {
+  const { userProfile, isPro } = useAuth();
+  const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
+  const [versionSavedFeedback, setVersionSavedFeedback] = useState(false);
   const {
     isInRoom,
     isHost,
@@ -69,8 +81,6 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   const [fontScale, setFontScale] = useState<FontScale>('base');
   const [columnMode, setColumnMode] = useState<ColumnMode>('1-col');
   const [isCleanStage, setIsCleanStage] = useState<boolean>(false);
-  const [showCapo, setShowCapo] = useState<boolean>(false);
-  const [capoFret, setCapoFret] = useState<number>(0);
 
   // Auto-scroll state & responsive speed ref
   const [isScrolling, setIsScrolling] = useState<boolean>(false);
@@ -171,15 +181,60 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     };
   }, [requestWakeLock, releaseWakeLock]);
 
-  // Key calculation
+  // Initial capo detected from song.capo or embedded inside song.content
+  const detectedInitialCapo = useMemo(() => {
+    if (song.capo !== undefined && song.capo > 0) return song.capo;
+    const fromText = detectCapoInText(song.content);
+    return fromText || 0;
+  }, [song.capo, song.content]);
+
+  const [capoFret, setCapoFret] = useState<number>(detectedInitialCapo);
+  const [isCapoPopoverOpen, setIsCapoPopoverOpen] = useState(false);
+
+  // Active instrument state
+  const [activeInstrument, setActiveInstrument] = useState<string>(userProfile?.instrument || 'Violão / Guitarra');
+  const [isInstrumentPopoverOpen, setIsInstrumentPopoverOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (userProfile?.instrument) {
+      setActiveInstrument(userProfile.instrument);
+    }
+  }, [userProfile?.instrument]);
+
+  useEffect(() => {
+    setCapoFret(detectedInitialCapo);
+  }, [detectedInitialCapo, song.id]);
+
+  // Instrument transposition offset (Eb = -3 / +9, Bb = +2, C = 0)
+  const instrumentOffset = useMemo(() => {
+    return isPro ? getInstrumentTranspositionOffset(activeInstrument) : 0;
+  }, [activeInstrument, isPro]);
+
+  const isTransposingInstrument = isPro && instrumentOffset !== 0;
+
+  // Real Sounding Key (Tom Real ouvido pela banda)
   const currentKey = useMemo(() => {
     return calculateNewKey(song.originalKey, semitoneShift);
   }, [song.originalKey, semitoneShift]);
 
-  // Transposed song text
+  // Shape Key (Formato visual dos acordes digitados com os dedos, considerando Capo e Instrumento)
+  const shapeKey = useMemo(() => {
+    const effectiveCapoShift = capoFret - detectedInitialCapo;
+    const totalChordShift = semitoneShift - effectiveCapoShift + instrumentOffset;
+    return calculateNewKey(song.originalKey, totalChordShift);
+  }, [song.originalKey, semitoneShift, capoFret, detectedInitialCapo, instrumentOffset]);
+
+  // Transposed song text according to pitch shift, active Capo fret, and instrument offset
   const transposedContent = useMemo(() => {
-    return transposeSongContent(song.content, semitoneShift, currentKey);
-  }, [song.content, semitoneShift, currentKey]);
+    const effectiveCapoShift = capoFret - detectedInitialCapo;
+    const totalChordShift = semitoneShift - effectiveCapoShift + instrumentOffset;
+    return transposeSongContent(song.content, totalChordShift, shapeKey);
+  }, [song.content, semitoneShift, capoFret, detectedInitialCapo, instrumentOffset, shapeKey]);
+
+  // Selected instrument metadata object
+  const selectedInstrumentObj = useMemo(() => {
+    return INSTRUMENT_OPTIONS.find(i => i.label === activeInstrument) || INSTRUMENT_OPTIONS[0];
+  }, [activeInstrument]);
 
   // Handlers for transposition
   const handleSemitoneChange = (delta: number) => {
@@ -477,6 +532,29 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               <Music className="w-5 h-5" />
             </button>
 
+            {/* ✏️ Criar Minha Versão / Revisar Cifra */}
+            <button
+              onClick={() => {
+                if (!isPro) {
+                  if (onOpenPricing) {
+                    onOpenPricing('A personalização de arranjos e criação de versões próprias de cifras é exclusiva do Plano Pro.');
+                  }
+                  return;
+                }
+                setIsReviseModalOpen(true);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
+                isPro
+                  ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border-amber-500/40'
+                  : 'bg-zinc-800/80 text-zinc-400 hover:text-white border-zinc-700 hover:border-amber-500/40'
+              }`}
+              title={isPro ? "Revisar acordes, letra e salvar sua própria versão" : "Criar Minha Versão (Exclusivo Pro)"}
+            >
+              <Edit3 className={`w-3.5 h-3.5 ${isPro ? 'text-amber-400' : 'text-zinc-400'}`} />
+              <span className="hidden sm:inline">Criar Minha Versão</span>
+              {!isPro && <Lock className="w-3 h-3 text-amber-400 ml-0.5" />}
+            </button>
+
             {/* Stage Fullscreen Clean Trigger */}
             <button
               onClick={() => setIsCleanStage(true)}
@@ -516,9 +594,28 @@ export const StageViewer: React.FC<StageViewerProps> = ({
           {/* Song Header & Key Info inside Stage View */}
           <div className="mb-6 pb-4 border-b border-zinc-800/40 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white mb-1">
-                {song.title}
-              </h2>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
+                  {song.title}
+                </h2>
+                {song.parentSongId && (
+                  <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    {song.versionName || 'Minha Versão'}
+                  </span>
+                )}
+                {song.privacy && (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    song.privacy === 'private'
+                      ? 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                      : song.privacy === 'unlisted'
+                      ? 'bg-blue-950/60 text-blue-300 border-blue-500/40'
+                      : 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
+                  }`}>
+                    {song.privacy === 'private' ? '🔒 Privada' : song.privacy === 'unlisted' ? '🔗 Não Listada' : '🌍 Pública'}
+                  </span>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-400">
                 <span>{song.artist}</span>
                 <span>•</span>
@@ -557,7 +654,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               )}
 
               <div className="px-4 py-2 rounded-2xl bg-zinc-900/90 border border-zinc-700/80 text-center shadow-lg">
-                <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">Tom Atual</span>
+                <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">Tom Real</span>
                 <span className="text-2xl font-black text-emerald-400 font-mono">{currentKey}</span>
               </div>
 
@@ -568,12 +665,183 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 </div>
               )}
 
-              {song.capo && (
-                <div className="px-3 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center">
-                  <span className="text-[10px] uppercase font-bold text-amber-400 block">Capotraste</span>
-                  <span className="text-sm font-extrabold text-amber-300">{song.capo}ª casa</span>
-                </div>
-              )}
+              {/* Interactive Capotraste Selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsCapoPopoverOpen(prev => !prev)}
+                  className={`px-4 py-2 rounded-2xl border transition-all text-center shadow-lg flex items-center gap-2.5 ${
+                    capoFret > 0
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 hover:bg-amber-500/30'
+                      : 'bg-zinc-900/90 text-zinc-400 border-zinc-700 hover:border-amber-500/60 hover:text-white'
+                  }`}
+                  title="Clique para adicionar ou alterar o Capotraste"
+                >
+                  <Sliders className="w-4 h-4 text-amber-400 flex-none" />
+                  <div className="text-left">
+                    <span className="text-[10px] uppercase font-bold text-zinc-400 block leading-tight">
+                      Capotraste
+                    </span>
+                    <span className={`text-sm font-black ${capoFret > 0 ? 'text-amber-300' : 'text-zinc-300'}`}>
+                      {capoFret > 0 ? `${capoFret}ª casa` : 'Sem Capo'}
+                    </span>
+                  </div>
+                </button>
+
+                {/* Capo Popover Modal */}
+                {isCapoPopoverOpen && (
+                  <div className="absolute left-0 sm:right-0 top-full mt-2 w-64 p-3 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl z-40 animate-in fade-in">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800">
+                      <div className="flex items-center gap-1.5">
+                        <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-xs font-black uppercase text-zinc-200">Capotraste</span>
+                      </div>
+                      <button
+                        onClick={() => setIsCapoPopoverOpen(false)}
+                        className="text-xs text-zinc-400 hover:text-white px-1.5 py-0.5 rounded hover:bg-zinc-800"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-zinc-400 mb-2 leading-tight">
+                      Escolha a casa onde prender o capotraste no braço do instrumento:
+                    </p>
+
+                    <div className="grid grid-cols-4 gap-1.5 max-h-48 overflow-y-auto pr-0.5">
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((fret) => (
+                        <button
+                          key={fret}
+                          onClick={() => {
+                            setCapoFret(fret);
+                            setIsCapoPopoverOpen(false);
+                          }}
+                          className={`py-1.5 px-1 rounded-xl text-xs font-bold transition text-center ${
+                            capoFret === fret
+                              ? 'bg-amber-500 text-zinc-950 font-black shadow-md'
+                              : 'bg-zinc-800/90 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                          }`}
+                        >
+                          {fret === 0 ? 'Nenhum' : `${fret}ª`}
+                        </button>
+                      ))}
+                    </div>
+
+                    {capoFret > 0 && (
+                      <div className="mt-2.5 pt-2 border-t border-zinc-800 text-[11px] text-zinc-300 flex items-center justify-between">
+                        <span>Formato dos acordes:</span>
+                        <strong className="text-amber-400 font-mono font-bold text-xs">{shapeKey}</strong>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Interactive Instrument Adaptor (Violão, Teclado, Ukulele, Cavaco, Sax Eb, Trompete Bb) */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsInstrumentPopoverOpen(prev => !prev)}
+                  className={`px-4 py-2 rounded-2xl border transition-all text-center shadow-lg flex items-center gap-2.5 ${
+                    isTransposingInstrument || activeInstrument !== 'Violão / Guitarra'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 hover:bg-emerald-500/30'
+                      : 'bg-zinc-900/90 text-zinc-400 border-zinc-700 hover:border-emerald-500/60 hover:text-white'
+                  }`}
+                  title="Adaptação inteligente de cifras por instrumento"
+                >
+                  <span className="text-base">{selectedInstrumentObj.icon}</span>
+                  <div className="text-left">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] uppercase font-bold text-zinc-400 block leading-tight">
+                        Instrumento
+                      </span>
+                      {!isPro && <Lock className="w-2.5 h-2.5 text-amber-400" />}
+                    </div>
+                    <span className="text-xs font-black text-emerald-300 truncate max-w-[120px] block">
+                      {activeInstrument.split('/')[0].trim()}
+                    </span>
+                  </div>
+                </button>
+
+                {/* Instrument Popover Modal */}
+                {isInstrumentPopoverOpen && (
+                  <div className="absolute left-0 sm:right-0 top-full mt-2 w-72 p-3.5 rounded-3xl bg-zinc-900 border border-zinc-700 shadow-2xl z-40 animate-in fade-in space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base">{selectedInstrumentObj.icon}</span>
+                        <span className="text-xs font-black uppercase text-zinc-200">Adaptar Cifra ao Instrumento</span>
+                      </div>
+                      <button
+                        onClick={() => setIsInstrumentPopoverOpen(false)}
+                        className="text-xs text-zinc-400 hover:text-white px-1.5 py-0.5 rounded hover:bg-zinc-800"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-zinc-400 leading-tight">
+                      Adapta diagramas, digitações e transpõe automaticamente para instrumentos em Eb / Bb:
+                    </p>
+
+                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
+                      {INSTRUMENT_OPTIONS.map((inst) => {
+                        const isSelected = activeInstrument === inst.label;
+                        const isLocked = inst.label !== 'Violão / Guitarra' && !isPro;
+
+                        return (
+                          <button
+                            key={inst.id}
+                            onClick={() => {
+                              if (isLocked) {
+                                if (onOpenPricing) {
+                                  onOpenPricing(`A adaptação inteligente de cifras para ${inst.label} é exclusiva do Plano Pro.`);
+                                }
+                                return;
+                              }
+                              setActiveInstrument(inst.label);
+                              setIsInstrumentPopoverOpen(false);
+                            }}
+                            className={`w-full p-2 rounded-2xl border text-left transition flex items-center justify-between gap-2 ${
+                              isSelected
+                                ? 'bg-emerald-500/20 border-emerald-500/60 text-white'
+                                : 'bg-zinc-950/70 border-zinc-800 text-zinc-300 hover:bg-zinc-800/80 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-lg flex-none">{inst.icon}</span>
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold block truncate">{inst.label}</span>
+                                <span className="text-[10px] text-zinc-500 block truncate">{inst.tuning}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 flex-none">
+                              {inst.isTransposing && (
+                                <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[9px] font-mono font-bold">
+                                  {inst.transpositionSemitones > 0 ? `+${inst.transpositionSemitones}` : inst.transpositionSemitones}st
+                                </span>
+                              )}
+                              {isLocked ? (
+                                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                              ) : isSelected ? (
+                                <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                              ) : null}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {isTransposingInstrument && (
+                      <div className="pt-2 border-t border-zinc-800 text-[11px] text-emerald-300 bg-emerald-950/40 p-2 rounded-xl border border-emerald-500/30">
+                        <span>Transposição aplicada ao seu instrumento: </span>
+                        <strong>{instrumentOffset > 0 ? `+${instrumentOffset}` : instrumentOffset} semitons</strong>
+                        <div className="text-[10px] text-zinc-400 mt-0.5">
+                          Tom Visual: <strong className="text-white font-mono">{shapeKey}</strong> (Tom Real Banda: {currentKey})
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -597,40 +865,74 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       {/* 🎛️ Floating Stage HUD / Controls */}
       <footer className="flex-none p-3 sm:p-4 bg-zinc-950/95 border-t border-zinc-800/90 backdrop-blur-lg z-30">
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          {/* Left: Transpose Controller (+ / - semitones) */}
-          <div className="flex items-center gap-1.5 bg-zinc-900/90 border border-zinc-700/80 p-1 rounded-2xl shadow-inner">
-            <span className="text-xs font-bold text-zinc-400 px-2 font-mono">TOM</span>
-            <button
-              onClick={() => handleSemitoneChange(-1)}
-              className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
-              title="Diminuir meio-tom (-1 semitom)"
-            >
-              -
-            </button>
-            <div className="px-2 text-center min-w-[50px]">
-              <span className="text-base font-black text-emerald-400 font-mono">{currentKey}</span>
+          {/* Left: Pitch & Capo Controllers */}
+          <div className="flex items-center gap-2">
+            {/* Transpose Controller (+ / - semitones) */}
+            <div className="flex items-center gap-1.5 bg-zinc-900/90 border border-zinc-700/80 p-1 rounded-2xl shadow-inner">
+              <span className="text-xs font-bold text-zinc-400 px-2 font-mono">TOM</span>
+              <button
+                onClick={() => handleSemitoneChange(-1)}
+                className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
+                title="Diminuir meio-tom (-1 semitom)"
+              >
+                -
+              </button>
+              <div className="px-2 text-center min-w-[50px]">
+                <span className="text-base font-black text-emerald-400 font-mono">{currentKey}</span>
+                {semitoneShift !== 0 && (
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {semitoneShift > 0 ? `+${semitoneShift}` : semitoneShift}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => handleSemitoneChange(1)}
+                className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
+                title="Aumentar meio-tom (+1 semitom)"
+              >
+                +
+              </button>
               {semitoneShift !== 0 && (
-                <span className="text-[10px] text-zinc-400 block font-mono">
-                  {semitoneShift > 0 ? `+${semitoneShift}` : semitoneShift}
-                </span>
+                <button
+                  onClick={handleResetKey}
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition text-xs"
+                  title="Restaurar Tom Original"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
               )}
             </div>
-            <button
-              onClick={() => handleSemitoneChange(1)}
-              className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
-              title="Aumentar meio-tom (+1 semitom)"
-            >
-              +
-            </button>
-            {semitoneShift !== 0 && (
+
+            {/* Quick Capotraste Controller */}
+            <div className="flex items-center gap-1.5 bg-zinc-900/90 border border-zinc-700/80 p-1 rounded-2xl shadow-inner">
+              <span className="text-xs font-bold text-amber-400 px-2 font-mono flex items-center gap-1">
+                <Sliders className="w-3 h-3" />
+                CAPO
+              </span>
               <button
-                onClick={handleResetKey}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition text-xs"
-                title="Restaurar Tom Original"
+                onClick={() => setCapoFret(prev => Math.max(0, prev - 1))}
+                className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
+                title="Diminuir casa do capotraste"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
+                -
               </button>
-            )}
+              <div
+                onClick={() => setIsCapoPopoverOpen(prev => !prev)}
+                className="px-2 text-center min-w-[42px] cursor-pointer hover:bg-zinc-800 rounded-lg py-0.5 transition"
+                title="Clique para abrir seletor de capotraste"
+              >
+                <span className={`text-sm font-black font-mono ${capoFret > 0 ? 'text-amber-400' : 'text-zinc-400'}`}>
+                  {capoFret > 0 ? `${capoFret}ª` : '0'}
+                </span>
+              </div>
+              <button
+                onClick={() => setCapoFret(prev => Math.min(11, prev + 1))}
+                className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
+                title="Aumentar casa do capotraste"
+              >
+                +
+              </button>
+            </div>
           </div>
 
           {/* Center: Dynamic Auto-Scroll Controller with Live Multiplier & Stepper */}
@@ -818,7 +1120,36 @@ export const StageViewer: React.FC<StageViewerProps> = ({
         <ChordModal
           chord={selectedChord}
           onClose={() => setSelectedChord(null)}
+          userInstrument={activeInstrument}
+          isPro={isPro}
+          onOpenPricing={onOpenPricing}
         />
+      )}
+
+      {/* ✏️ Modal Criar Minha Versão / Revisar Cifra */}
+      {isReviseModalOpen && (
+        <ReviseSongModal
+          isOpen={isReviseModalOpen}
+          onClose={() => setIsReviseModalOpen(false)}
+          song={song}
+          onSaveVersion={(newVersion) => {
+            if (onSaveCustomSong) {
+              onSaveCustomSong(newVersion);
+            }
+            setVersionSavedFeedback(true);
+            setTimeout(() => setVersionSavedFeedback(false), 3500);
+          }}
+        />
+      )}
+
+      {/* Version Saved Notification Toast */}
+      {versionSavedFeedback && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4">
+          <div className="px-5 py-3 rounded-2xl bg-amber-500 text-zinc-950 font-black shadow-2xl flex items-center gap-2 text-xs sm:text-sm">
+            <Check className="w-5 h-5" />
+            <span>Sua versão personalizada foi salva com sucesso no catálogo!</span>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -685,20 +685,20 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                 </div>
               )}
 
-              {/* Liturgical Moments */}
+              {/* Music Genres & Show Blocks */}
               {(activeFilter === 'all' || activeFilter === 'liturgical') && localResults.liturgicalList.length > 0 && (
                 <div>
                   <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-2">
-                    Momentos da Celebração
+                    Estilos Musicais & Blocos de Show
                   </span>
                   <div className="flex flex-wrap gap-2">
-                    {localResults.liturgicalList.map((moment) => (
+                    {localResults.liturgicalList.map((genre) => (
                       <button
-                        key={moment}
-                        onClick={() => setSearchTerm(moment)}
+                        key={genre}
+                        onClick={() => setSearchTerm(genre)}
                         className="px-3 py-1.5 rounded-xl bg-zinc-950/80 border border-zinc-800 hover:border-emerald-500 hover:bg-emerald-500/10 text-xs font-semibold text-zinc-300 transition"
                       >
-                        {moment}
+                        {genre}
                       </button>
                     ))}
                   </div>

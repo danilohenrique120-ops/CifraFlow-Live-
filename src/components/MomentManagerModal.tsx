@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Song, LiturgicalMoment } from '../types';
+import { Song, MusicGenre } from '../types';
 import {
   X,
   Plus,
@@ -16,24 +16,24 @@ import {
 interface MomentManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  moment: LiturgicalMoment;
+  moment: MusicGenre;
   allSongs: Song[];
-  onUpdateSongMoment: (songId: string, newMoment: LiturgicalMoment) => void;
-  onBatchUpdateMoments: (songIdsToAdd: string[], songIdsToRemove: string[], moment: LiturgicalMoment) => void;
-  onOpenUploadModal: (presetMoment?: LiturgicalMoment) => void;
+  onUpdateSongMoment: (songId: string, newMoment: MusicGenre) => void;
+  onBatchUpdateMoments: (songIdsToAdd: string[], songIdsToRemove: string[], moment: MusicGenre) => void;
+  onOpenUploadModal: (presetMoment?: MusicGenre) => void;
 }
 
-const ALL_MOMENTS: LiturgicalMoment[] = [
-  'Entrada',
-  'Ato Penitencial',
-  'Glória',
-  'Salmo / Aclamação',
-  'Ofertório',
-  'Santo',
-  'Cordeiro de Deus',
-  'Comunhão',
-  'Ação de Graças',
-  'Envio'
+const ALL_GENRES: MusicGenre[] = [
+  'Pop Rock',
+  'MPB',
+  'Sertanejo',
+  'Pagode & Samba',
+  'Gospel & Louvor',
+  'Forró & Piseiro',
+  'Hits do Show',
+  'Acústico',
+  'Baladas & Românticas',
+  'Abertura & Encerramento'
 ];
 
 export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
@@ -50,12 +50,12 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
   const [selectedToAdd, setSelectedToAdd] = useState<string[]>([]);
   const [selectedToRemove, setSelectedToRemove] = useState<string[]>([]);
 
-  // Current songs assigned to this moment
+  // Current songs assigned to this genre/moment
   const currentSongs = useMemo(() => {
     return allSongs.filter(s => s.liturgicalMoment === moment);
   }, [allSongs, moment]);
 
-  // Songs from other moments available to be added
+  // Songs from other genres available to be added
   const otherSongs = useMemo(() => {
     return allSongs.filter(s => s.liturgicalMoment !== moment);
   }, [allSongs, moment]);
@@ -90,8 +90,8 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
     onClose();
   };
 
-  const handleQuickMove = (songId: string, targetMoment: LiturgicalMoment) => {
-    onUpdateSongMoment(songId, targetMoment);
+  const handleQuickMove = (songId: string, targetGenre: MusicGenre) => {
+    onUpdateSongMoment(songId, targetGenre);
   };
 
   return (
@@ -105,13 +105,13 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black uppercase tracking-wider mb-1">
               <Layers className="w-3.5 h-3.5 text-emerald-400" />
-              Personalizar Momento Litúrgico
+              Gerenciador de Estilos & Blocos
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white">
-              Momento: <span className="text-emerald-400">{moment}</span>
+              Estilo / Bloco: <span className="text-emerald-400">{moment}</span>
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Adicione, remova ou reatribua as músicas deste momento da celebração.
+              Adicione, remova ou organize as músicas que compõem este gênero musical ou bloco do seu show.
             </p>
           </div>
 
@@ -158,11 +158,11 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {activeTab === 'current' ? (
-            /* CURRENT SONGS IN THIS MOMENT */
+            /* CURRENT SONGS IN THIS GENRE */
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                  {currentSongs.length} {currentSongs.length === 1 ? 'música cadastrada' : 'músicas cadastradas'} neste momento:
+                  {currentSongs.length} {currentSongs.length === 1 ? 'música cadastrada' : 'músicas cadastradas'} neste estilo:
                 </span>
 
                 <button
@@ -180,7 +180,7 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
               {currentSongs.length === 0 ? (
                 <div className="p-8 text-center rounded-2xl bg-zinc-950/60 border border-zinc-800 text-zinc-400 space-y-2">
                   <Music className="w-8 h-8 text-zinc-600 mx-auto" />
-                  <p className="text-sm font-semibold">Nenhuma música atribuída a este momento ainda.</p>
+                  <p className="text-sm font-semibold">Nenhuma música atribuída a este estilo ainda.</p>
                   <p className="text-xs text-zinc-500">
                     Clique na aba <strong>"Adicionar Músicas do Catálogo"</strong> acima para incluir músicas.
                   </p>
@@ -210,19 +210,19 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
                       <div className="flex items-center gap-2">
                         <select
                           value={song.liturgicalMoment}
-                          onChange={(e) => handleQuickMove(song.id, e.target.value as LiturgicalMoment)}
+                          onChange={(e) => handleQuickMove(song.id, e.target.value as MusicGenre)}
                           className="bg-zinc-900 border border-zinc-700 text-xs font-semibold rounded-xl px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-emerald-500"
-                          title="Mover para outro momento"
+                          title="Mover para outro estilo"
                         >
-                          {ALL_MOMENTS.map((m) => (
+                          {ALL_GENRES.map((m) => (
                             <option key={m} value={m}>{m}</option>
                           ))}
                         </select>
 
                         <button
-                          onClick={() => handleQuickMove(song.id, 'Ação de Graças')}
+                          onClick={() => handleQuickMove(song.id, 'Hits do Show')}
                           className="p-2 rounded-xl bg-zinc-900 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 border border-zinc-800 transition"
-                          title="Remover deste momento (mover para Ação de Graças)"
+                          title="Remover deste estilo"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -233,7 +233,7 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
               )}
             </div>
           ) : (
-            /* ADD OTHER SONGS TO THIS MOMENT */
+            /* ADD OTHER SONGS TO THIS GENRE */
             <div className="space-y-4">
               {/* Search input */}
               <div className="relative">
@@ -307,7 +307,7 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
               className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 transition flex items-center gap-2"
             >
               <Check className="w-4 h-4" />
-              <span>Adicionar ({selectedToAdd.length}) ao momento {moment}</span>
+              <span>Adicionar ({selectedToAdd.length}) ao estilo {moment}</span>
             </button>
           )}
         </div>

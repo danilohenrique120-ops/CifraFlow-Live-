@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Song, LiturgicalMoment, CategoryTag, Setlist } from '../types';
+import { Song, MusicGenre, CategoryTag, Setlist } from '../types';
 import { MomentManagerModal } from './MomentManagerModal';
 import {
   Music,
@@ -26,35 +26,39 @@ interface DiscoveryHubProps {
   onSelectSong: (song: Song) => void;
   onOpenLiveRoomModal: () => void;
   onOpenSearch: () => void;
-  onOpenUploadModal: (presetMoment?: LiturgicalMoment) => void;
+  onOpenUploadModal: (presetMoment?: MusicGenre) => void;
   setlists: Setlist[];
   onAddToSetlist: (songId: string, setlistId: string) => void;
-  onUpdateSongMoment: (songId: string, newMoment: LiturgicalMoment) => void;
-  onBatchUpdateMoments: (songIdsToAdd: string[], songIdsToRemove: string[], moment: LiturgicalMoment) => void;
+  onUpdateSongMoment: (songId: string, newMoment: MusicGenre) => void;
+  onBatchUpdateMoments: (songIdsToAdd: string[], songIdsToRemove: string[], moment: MusicGenre) => void;
 }
 
-const LITURGICAL_MOMENTS: { moment: LiturgicalMoment; color: string; desc: string }[] = [
-  { moment: 'Entrada', color: 'from-amber-600 to-orange-800', desc: 'Acolhida e procissão inicial' },
-  { moment: 'Ato Penitencial', color: 'from-slate-700 to-zinc-900', desc: 'Kyrie Eleison e perdão' },
-  { moment: 'Glória', color: 'from-yellow-500 to-amber-700', desc: 'Hino de louvor litúrgico' },
-  { moment: 'Salmo / Aclamação', color: 'from-emerald-600 to-teal-800', desc: 'Meditação da Palavra e Aleluia' },
-  { moment: 'Ofertório', color: 'from-amber-700 to-yellow-900', desc: 'Apresentação dos dons e ofertas' },
-  { moment: 'Santo', color: 'from-orange-600 to-red-800', desc: 'Aclamação dos anjos e querubins' },
-  { moment: 'Cordeiro de Deus', color: 'from-purple-800 to-slate-900', desc: 'Agnus Dei e pedido de paz' },
-  { moment: 'Comunhão', color: 'from-blue-600 to-indigo-900', desc: 'Alimento eucarístico sagrado' },
-  { moment: 'Ação de Graças', color: 'from-violet-700 to-fuchsia-900', desc: 'Intimidade e adoração ao Senhor' },
-  { moment: 'Envio', color: 'from-cyan-600 to-blue-800', desc: 'Bênção e missão no mundo' }
+export const MUSIC_GENRES: { genre: MusicGenre; color: string; desc: string }[] = [
+  { genre: 'Pop Rock', color: 'from-blue-600 to-indigo-900', desc: 'Clássicos e hits do rock nacional e internacional' },
+  { genre: 'MPB', color: 'from-amber-600 to-orange-800', desc: 'Voz e violão, samba e canções da música brasileira' },
+  { genre: 'Sertanejo', color: 'from-amber-700 to-yellow-900', desc: 'Sertanejo clássico, universitário e modas de viola' },
+  { genre: 'Pagode & Samba', color: 'from-emerald-600 to-teal-900', desc: 'Roda de samba, partido alto e pagode acústico' },
+  { genre: 'Gospel & Louvor', color: 'from-purple-700 to-indigo-950', desc: 'Canções cristãs, adoração e louvor' },
+  { genre: 'Forró & Piseiro', color: 'from-orange-600 to-red-800', desc: 'Xote, baião, forró tradicional e piseiro' },
+  { genre: 'Hits do Show', color: 'from-rose-600 to-pink-900', desc: 'Ponto alto e músicas mais pedidas pelo público' },
+  { genre: 'Acústico', color: 'from-cyan-600 to-blue-900', desc: 'Arranjos intimistas para voz, violão e percussão' },
+  { genre: 'Baladas & Românticas', color: 'from-violet-700 to-fuchsia-950', desc: 'Músicas calmas, românticas e lentas' },
+  { genre: 'Abertura & Encerramento', color: 'from-slate-700 to-zinc-900', desc: 'Músicas para começar com energia ou fechar com bis' }
 ];
 
 const CATEGORIES: CategoryTag[] = [
-  'Adoração',
-  'Louvor',
-  'Missa / Liturgia',
-  'Mariana',
-  'Espírito Santo',
-  'Cura e Libertação',
-  'Quaresma',
-  'Jovem'
+  'Pop Rock',
+  'MPB',
+  'Sertanejo',
+  'Pagode',
+  'Gospel',
+  'Forró',
+  'Anos 80/90',
+  'Acústico',
+  'Romântica',
+  'Ao Vivo',
+  'Internacional',
+  'Clássicos'
 ];
 
 export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
@@ -69,14 +73,14 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
   onBatchUpdateMoments
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedMoment, setSelectedMoment] = useState<LiturgicalMoment | 'all'>('all');
+  const [selectedGenre, setSelectedGenre] = useState<MusicGenre | 'all'>('all');
   const [addToSetlistSongId, setAddToSetlistSongId] = useState<string | null>(null);
   const [feedbackAdded, setFeedbackAdded] = useState<string | null>(null);
-  const [activeMomentForModal, setActiveMomentForModal] = useState<LiturgicalMoment | null>(null);
+  const [activeGenreForModal, setActiveGenreForModal] = useState<MusicGenre | null>(null);
 
   // Filter songs
   const filteredSongs = songs.filter(s => {
-    if (selectedMoment !== 'all' && s.liturgicalMoment !== selectedMoment) return false;
+    if (selectedGenre !== 'all' && s.liturgicalMoment !== selectedGenre) return false;
     if (selectedCategory !== 'all' && !s.categories.includes(selectedCategory as CategoryTag)) return false;
     return true;
   });
@@ -103,7 +107,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
           </h1>
 
           <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
-            Navegue pelo catálogo litúrgico, personalize as músicas de cada momento da missa, busque músicas online e guie toda a banda em tempo real.
+            Navegue pelo catálogo de músicas, organize repertórios completos por show, ajuste tons em tempo real e guie toda a banda no palco sem desafinar.
           </p>
 
           <div className="pt-2 flex flex-wrap gap-3">
@@ -143,10 +147,10 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
           <button
             onClick={() => {
               setSelectedCategory('all');
-              setSelectedMoment('all');
+              setSelectedGenre('all');
             }}
             className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition flex-none ${
-              selectedCategory === 'all' && selectedMoment === 'all'
+              selectedCategory === 'all' && selectedGenre === 'all'
                 ? 'bg-emerald-500 text-zinc-950 shadow-md'
                 : 'bg-zinc-900/90 text-zinc-300 hover:text-white border border-zinc-800 hover:bg-zinc-800'
             }`}
@@ -159,7 +163,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
               key={cat}
               onClick={() => {
                 setSelectedCategory(cat);
-                setSelectedMoment('all');
+                setSelectedGenre('all');
               }}
               className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition flex-none ${
                 selectedCategory === cat
@@ -173,42 +177,42 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
         </div>
       </div>
 
-      {/* ⛪ Liturgical Moments Navigator */}
+      {/* 🎸 Music Genres & Show Blocks Navigator */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
               <Layers className="w-5 h-5 text-emerald-400" />
-              Momentos da Santa Missa
+              Gêneros & Estilos Musicais
             </h2>
             <p className="text-xs text-zinc-400">
-              Clique em qualquer momento para filtrar ou personalizar suas próprias músicas
+              Clique em qualquer estilo para filtrar ou personalizar as músicas do seu show
             </p>
           </div>
-          {selectedMoment !== 'all' && (
+          {selectedGenre !== 'all' && (
             <button
-              onClick={() => setSelectedMoment('all')}
+              onClick={() => setSelectedGenre('all')}
               className="text-xs font-bold text-emerald-400 hover:underline"
             >
-              Ver todos os momentos
+              Ver todos os estilos
             </button>
           )}
         </div>
 
-        {/* 10 Liturgical Moment Cards */}
+        {/* 10 Music Genre Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {LITURGICAL_MOMENTS.map((item) => {
-            const count = songs.filter(s => s.liturgicalMoment === item.moment).length;
-            const isSelected = selectedMoment === item.moment;
+          {MUSIC_GENRES.map((item) => {
+            const count = songs.filter(s => s.liturgicalMoment === item.genre).length;
+            const isSelected = selectedGenre === item.genre;
 
             return (
               <div
-                key={item.moment}
+                key={item.genre}
                 className="relative group"
               >
                 <button
                   onClick={() => {
-                    setSelectedMoment(isSelected ? 'all' : item.moment);
+                    setSelectedGenre(isSelected ? 'all' : item.genre);
                     setSelectedCategory('all');
                   }}
                   className={`w-full p-4 rounded-2xl bg-gradient-to-br ${item.color} text-left transition-all relative overflow-hidden border shadow-lg ${
@@ -225,7 +229,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                     </div>
 
                     <h3 className="text-base font-black text-white mt-1 leading-snug">
-                      {item.moment}
+                      {item.genre}
                     </h3>
                     <p className="text-[11px] text-white/80 line-clamp-1 mt-1">
                       {item.desc}
@@ -237,8 +241,8 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
           })}
         </div>
 
-        {/* Dedicated Focused Moment Customization Banner */}
-        {selectedMoment !== 'all' && (
+        {/* Dedicated Focused Genre Customization Banner */}
+        {selectedGenre !== 'all' && (
           <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-zinc-900 to-zinc-950 border border-emerald-500/40 flex flex-wrap items-center justify-between gap-3 shadow-xl animate-in fade-in">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
@@ -246,29 +250,29 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider block">
-                  Momento Selecionado
+                  Estilo Selecionado
                 </span>
                 <h3 className="text-lg font-black text-white">
-                  {selectedMoment} ({filteredSongs.length} músicas)
+                  {selectedGenre} ({filteredSongs.length} músicas)
                 </h3>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <button
-                onClick={() => setActiveMomentForModal(selectedMoment)}
+                onClick={() => setActiveGenreForModal(selectedGenre)}
                 className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 transition flex items-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
-                <span>Personalizar Músicas do Momento</span>
+                <span>Personalizar Músicas do Estilo</span>
               </button>
 
               <button
-                onClick={() => onOpenUploadModal(selectedMoment)}
+                onClick={() => onOpenUploadModal(selectedGenre)}
                 className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-bold transition flex items-center gap-1.5"
               >
                 <Upload className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Subir Cifra para {selectedMoment}</span>
+                <span>Subir Cifra para {selectedGenre}</span>
               </button>
             </div>
           </div>
@@ -281,11 +285,11 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
               <Flame className="w-5 h-5 text-amber-400" />
-              {selectedMoment !== 'all'
-                ? `Músicas de: ${selectedMoment}`
+              {selectedGenre !== 'all'
+                ? `Músicas de: ${selectedGenre}`
                 : selectedCategory !== 'all'
                 ? `Músicas de ${selectedCategory}`
-                : 'Catálogo de Cifras e Louvores'}
+                : 'Catálogo Geral de Cifras'}
             </h2>
             <p className="text-xs text-zinc-400">
               {filteredSongs.length} músicas prontas com transposição e diagrama de acordes
@@ -293,18 +297,18 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {selectedMoment !== 'all' && (
+            {selectedGenre !== 'all' && (
               <button
-                onClick={() => setActiveMomentForModal(selectedMoment)}
+                onClick={() => setActiveGenreForModal(selectedGenre)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition hover:bg-emerald-500/30"
               >
                 <Settings2 className="w-3.5 h-3.5" />
-                <span>Gerenciar este Momento</span>
+                <span>Gerenciar este Estilo</span>
               </button>
             )}
 
             <button
-              onClick={() => onOpenUploadModal(selectedMoment !== 'all' ? selectedMoment : undefined)}
+              onClick={() => onOpenUploadModal(selectedGenre !== 'all' ? selectedGenre : undefined)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-emerald-400 border border-zinc-800 hover:border-emerald-500/50 text-xs font-bold transition"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -340,18 +344,36 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                     </div>
                   </div>
 
-                  {/* Moment Tag Pill with quick reassign */}
+                  {/* Genre Tag Pill */}
                   <span
-                    className="absolute top-2 left-2 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-emerald-300 border border-emerald-500/30"
-                    title={`Momento Litúrgico: ${song.liturgicalMoment}`}
+                    className={`absolute top-2 left-2 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full backdrop-blur-md border ${
+                      song.liturgicalMoment === 'Pop Rock'
+                        ? 'bg-blue-950/80 text-blue-300 border-blue-500/40'
+                        : song.liturgicalMoment === 'MPB'
+                        ? 'bg-amber-950/80 text-amber-300 border-amber-500/40'
+                        : song.liturgicalMoment === 'Sertanejo'
+                        ? 'bg-yellow-950/80 text-yellow-300 border-yellow-500/40'
+                        : song.liturgicalMoment === 'Pagode & Samba'
+                        ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
+                        : song.liturgicalMoment === 'Gospel & Louvor'
+                        ? 'bg-purple-950/80 text-purple-300 border-purple-500/40'
+                        : song.liturgicalMoment === 'Forró & Piseiro'
+                        ? 'bg-orange-950/80 text-orange-300 border-orange-500/40'
+                        : song.liturgicalMoment === 'Hits do Show'
+                        ? 'bg-rose-950/80 text-rose-300 border-rose-500/40'
+                        : song.liturgicalMoment === 'Acústico'
+                        ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/40'
+                        : 'bg-zinc-950/80 text-zinc-300 border-zinc-700'
+                    }`}
+                    title={`Estilo Musical: ${song.liturgicalMoment}`}
                   >
                     {song.liturgicalMoment}
                   </span>
 
-                  {/* Custom Upload Badge */}
+                  {/* Custom Upload Badge / Version */}
                   {song.isCustom && (
                     <span className="absolute top-2 right-2 text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-zinc-950 shadow-md">
-                      Própria
+                      {song.parentSongId ? 'Minha Versão' : 'Própria'}
                     </span>
                   )}
                 </div>
@@ -360,30 +382,35 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                   <h3 className="text-base font-extrabold text-white group-hover:text-emerald-400 transition truncate">
                     {song.title}
                   </h3>
-                  <p className="text-xs text-zinc-400 truncate">{song.artist}</p>
+                  <p className="text-xs text-zinc-400 truncate mt-0.5">{song.artist}</p>
                 </div>
               </div>
 
               {/* Card Footer / Metadata */}
               <div className="pt-3 mt-3 border-t border-zinc-800/60 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-emerald-300 font-mono font-bold border border-zinc-700">
                     Tom {song.originalKey}
                   </span>
+                  {song.capo && song.capo > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-300 font-mono font-bold border border-amber-500/30 text-[10px]" title={`Tocar com Capotraste na ${song.capo}ª casa`}>
+                      Capo {song.capo}ª
+                    </span>
+                  )}
                   <span className="text-zinc-500 font-mono">{song.bpm} BPM</span>
                 </div>
 
                 {/* Actions */}
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                  {/* Reassign moment quick button */}
+                  {/* Reassign genre quick button */}
                   <select
                     value={song.liturgicalMoment}
-                    onChange={(e) => onUpdateSongMoment(song.id, e.target.value as LiturgicalMoment)}
+                    onChange={(e) => onUpdateSongMoment(song.id, e.target.value as MusicGenre)}
                     className="bg-zinc-950 border border-zinc-700 text-[10px] font-bold rounded-lg px-2 py-1 text-zinc-300 focus:outline-none focus:border-emerald-500"
-                    title="Alterar o momento litúrgico desta música"
+                    title="Alterar o estilo/bloco desta música"
                   >
-                    {LITURGICAL_MOMENTS.map((m) => (
-                      <option key={m.moment} value={m.moment}>{m.moment}</option>
+                    {MUSIC_GENRES.map((m) => (
+                      <option key={m.genre} value={m.genre}>{m.genre}</option>
                     ))}
                   </select>
 
@@ -426,12 +453,12 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
         </div>
       </section>
 
-      {/* Moment Manager Modal */}
-      {activeMomentForModal && (
+      {/* Genre & Block Manager Modal */}
+      {activeGenreForModal && (
         <MomentManagerModal
-          isOpen={Boolean(activeMomentForModal)}
-          onClose={() => setActiveMomentForModal(null)}
-          moment={activeMomentForModal}
+          isOpen={Boolean(activeGenreForModal)}
+          onClose={() => setActiveGenreForModal(null)}
+          moment={activeGenreForModal}
           allSongs={songs}
           onUpdateSongMoment={onUpdateSongMoment}
           onBatchUpdateMoments={onBatchUpdateMoments}

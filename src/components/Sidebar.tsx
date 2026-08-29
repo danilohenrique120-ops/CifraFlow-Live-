@@ -38,14 +38,13 @@ interface SidebarProps {
 }
 
 const SETLIST_THEMES: Record<string, { gradient: string; iconColor: string; badge: string }> = {
-  'Missa': { gradient: 'from-amber-500 to-orange-700', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
-  'Missa Paroquial': { gradient: 'from-amber-500 to-orange-700', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
-  'Missa de Domingo': { gradient: 'from-amber-500 to-orange-700', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
-  'Grupo de Oração': { gradient: 'from-emerald-500 to-teal-800', iconColor: 'text-emerald-200', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
-  'Adoração ao Santíssimo': { gradient: 'from-violet-600 to-purple-900', iconColor: 'text-violet-200', badge: 'bg-violet-500/20 text-violet-300 border-violet-500/40' },
-  'Noite de Louvor & Adoração': { gradient: 'from-violet-600 to-purple-900', iconColor: 'text-violet-200', badge: 'bg-violet-500/20 text-violet-300 border-violet-500/40' },
-  'Casamento': { gradient: 'from-rose-500 to-pink-800', iconColor: 'text-rose-200', badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
-  'Retiro / Encontro': { gradient: 'from-cyan-500 to-blue-800', iconColor: 'text-cyan-200', badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' }
+  'Show / Apresentação': { gradient: 'from-purple-600 to-indigo-900', iconColor: 'text-purple-200', badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
+  'Barzinho / Voz e Violão': { gradient: 'from-amber-500 to-orange-700', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+  'Casamento / Cerimônia': { gradient: 'from-rose-500 to-pink-800', iconColor: 'text-rose-200', badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
+  'Ensaio Geral': { gradient: 'from-blue-600 to-cyan-900', iconColor: 'text-blue-200', badge: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  'Celebração / Louvor': { gradient: 'from-emerald-500 to-teal-800', iconColor: 'text-emerald-200', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+  'Festa / Evento': { gradient: 'from-yellow-500 to-amber-800', iconColor: 'text-yellow-200', badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
+  'Geral': { gradient: 'from-zinc-700 to-zinc-900', iconColor: 'text-zinc-200', badge: 'bg-zinc-700/30 text-zinc-300 border-zinc-700' }
 };
 
 const DEFAULT_GRADIENTS = [
@@ -322,7 +321,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className="p-3.5 rounded-2xl border-2 border-dashed border-zinc-800 hover:border-emerald-500/50 text-center cursor-pointer transition bg-zinc-950/40"
                 >
                   <p className="text-xs font-bold text-zinc-400">+ Criar Primeiro Repertório</p>
-                  <p className="text-[10px] text-zinc-600 mt-0.5">Monte listas personalizadas para sua missa</p>
+                  <p className="text-[10px] text-zinc-600 mt-0.5">Monte listas personalizadas para seus shows e ensaios</p>
                 </div>
               )}
             </div>
@@ -346,7 +345,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-xs font-bold text-white truncate block">
                   {userProfile.displayName}
                 </span>
-                <span className="text-[10px] text-zinc-500 block truncate">{userProfile.instrument}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-zinc-500 block truncate">{userProfile.instrument}</span>
+                  {isPro ? (
+                    <span className="text-[8px] font-black uppercase px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      PRO
+                    </span>
+                  ) : (
+                    <span className="text-[8px] font-bold text-zinc-500">
+                      • Gratuito
+                    </span>
+                  )}
+                </div>
               </div>
             </button>
           )}

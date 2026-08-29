@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { INSTRUMENT_OPTIONS } from '../types';
 import {
   X,
   User,
@@ -27,6 +28,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   if (!isOpen || !userProfile) return null;
 
   const handleSaveInstrument = async () => {
+    if (selectedInstrument !== 'Violão / Guitarra' && !isPro) {
+      onClose();
+      onOpenPricing();
+      return;
+    }
     await updateUserInstrument(selectedInstrument);
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
@@ -106,21 +112,62 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
         {/* Instrument preference */}
         <div>
-          <label className="text-xs font-bold text-zinc-300 block mb-1.5">Seu Instrumento Principal</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-bold text-zinc-300">Seu Instrumento Principal</label>
+            <span className="text-[10px] text-zinc-500 font-medium">Adapta diagramas e transposições</span>
+          </div>
+
           <div className="flex gap-2">
-            <input
-              type="text"
+            <select
               value={selectedInstrument}
               onChange={(e) => setSelectedInstrument(e.target.value)}
               className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-            />
-            <button
-              onClick={handleSaveInstrument}
-              className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 font-bold text-xs text-white transition flex items-center gap-1"
             >
-              {isSaved ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : 'Salvar'}
-            </button>
+              {INSTRUMENT_OPTIONS.map((inst) => (
+                <option key={inst.id} value={inst.label}>
+                  {inst.icon} {inst.label} {inst.isTransposing ? '(Transpositor)' : ''}
+                </option>
+              ))}
+            </select>
+
+            {!isPro && selectedInstrument !== 'Violão / Guitarra' && selectedInstrument !== 'Violão' ? (
+              <button
+                onClick={handleSaveInstrument}
+                className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs transition flex items-center gap-1.5 shadow-md shadow-amber-950 flex-none whitespace-nowrap"
+                title="Desbloquear instrumento no Plano Pro"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Liberar no Pro</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleSaveInstrument}
+                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition flex items-center gap-1 shadow-md shadow-emerald-950 flex-none"
+              >
+                {isSaved ? <Check className="w-3.5 h-3.5" /> : 'Salvar'}
+              </button>
+            )}
           </div>
+
+          {selectedInstrument !== 'Violão / Guitarra' && selectedInstrument !== 'Violão' && !isPro && (
+            <div
+              onClick={() => {
+                onClose();
+                onOpenPricing();
+              }}
+              className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold mt-2 cursor-pointer hover:bg-amber-500/20 transition flex items-center justify-between gap-2"
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400 flex-none" />
+                <span className="text-[11px] leading-tight">
+                  A adaptação de cifras para <strong>{selectedInstrument}</strong> é liberada com o <strong>Plano Pro</strong>.
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded-md bg-amber-500 text-zinc-950 text-[10px] font-black uppercase flex-none">
+                Ver Planos
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Logout */}

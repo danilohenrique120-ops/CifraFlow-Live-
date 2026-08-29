@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Song, LiturgicalMoment, CategoryTag } from '../types';
+import { Song, MusicGenre, CategoryTag } from '../types';
+import { detectCapoInText } from '../utils/chordEngine';
 import {
   X,
   Upload,
@@ -17,37 +18,40 @@ interface UploadSongModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaveSong: (newSong: Song) => void;
-  initialMoment?: LiturgicalMoment;
+  initialMoment?: MusicGenre;
 }
 
-const LITURGICAL_MOMENTS: LiturgicalMoment[] = [
-  'Entrada',
-  'Ato Penitencial',
-  'Glória',
-  'Salmo / Aclamação',
-  'Ofertório',
-  'Santo',
-  'Cordeiro de Deus',
-  'Comunhão',
-  'Ação de Graças',
-  'Envio',
+const MUSIC_GENRES: MusicGenre[] = [
+  'Pop Rock',
+  'MPB',
+  'Sertanejo',
+  'Pagode & Samba',
+  'Gospel & Louvor',
+  'Forró & Piseiro',
+  'Hits do Show',
+  'Acústico',
+  'Baladas & Românticas',
+  'Abertura & Encerramento',
   'Geral'
 ];
 
 const CATEGORIES: CategoryTag[] = [
-  'Adoração',
-  'Louvor',
-  'Missa / Liturgia',
-  'Mariana',
-  'Espírito Santo',
-  'Cura e Libertação',
-  'Quaresma',
-  'Páscoa',
-  'Natal',
-  'Jovem'
+  'Pop Rock',
+  'MPB',
+  'Sertanejo',
+  'Pagode',
+  'Gospel',
+  'Forró',
+  'Anos 80/90',
+  'Acústico',
+  'Romântica',
+  'Ao Vivo',
+  'Internacional',
+  'Clássicos',
+  'Adoração'
 ];
 
-const KEYS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B', 'Am', 'Bm', 'Cm', 'Dm', 'Em', 'Fm', 'Gm', 'F#m', 'C#m', 'G#m'];
+const KEYS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B', 'Am', 'Em', 'Dm', 'Bm', 'F#m', 'C#m', 'G#m'];
 
 const EXAMPLE_TEMPLATE = `[Intro] G  D/F#  Em  C
 
@@ -65,11 +69,11 @@ Em                 C
 G                  D/F#
   Este é o refrão poderoso e marcante
 Em                 C
-  Onde toda a assembleia canta em uníssono
+  Onde todo o público canta em uníssono
 G                  D/F#
-  Aleluia, louvado seja o Senhor
+  O som que toca o coração da galera
 Em        D/F#     C          G
-  Para sempre e todo o sempre, amém`;
+  Vamos cantar juntos até o amanhecer!`;
 
 export const UploadSongModal: React.FC<UploadSongModalProps> = ({
   isOpen,
@@ -80,10 +84,11 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [originalKey, setOriginalKey] = useState('G');
-  const [bpm, setBpm] = useState(75);
+  const [capo, setCapo] = useState<number>(0);
+  const [bpm, setBpm] = useState(120);
   const [timeSignature, setTimeSignature] = useState('4/4');
-  const [liturgicalMoment, setLiturgicalMoment] = useState<LiturgicalMoment>(initialMoment || 'Comunhão');
-  const [selectedCategories, setSelectedCategories] = useState<CategoryTag[]>(['Adoração', 'Louvor']);
+  const [liturgicalMoment, setLiturgicalMoment] = useState<MusicGenre>(initialMoment || 'Pop Rock');
+  const [selectedCategories, setSelectedCategories] = useState<CategoryTag[]>(['Pop Rock', 'Ao Vivo']);
   const [content, setContent] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -112,6 +117,10 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
       const text = event.target?.result as string;
       if (text) {
         setContent(text);
+        const detectedCapo = detectCapoInText(text);
+        if (detectedCapo) {
+          setCapo(detectedCapo);
+        }
       }
     };
     reader.readAsText(file);
@@ -140,10 +149,10 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
   };
 
   const handleLoadExample = () => {
-    setTitle('Meu Louvor Inédito');
-    setArtist('Ministério Local');
+    setTitle('Meu Sucesso Inédito');
+    setArtist('Banda Nova');
     setOriginalKey('G');
-    setBpm(78);
+    setBpm(120);
     setContent(EXAMPLE_TEMPLATE);
   };
 
@@ -169,14 +178,15 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
       artist: artist.trim() || 'Artista Próprio',
       originalKey,
       currentKey: originalKey,
-      bpm: Number(bpm) || 75,
+      capo: capo > 0 ? capo : undefined,
+      bpm: Number(bpm) || 120,
       timeSignature,
       liturgicalMoment,
-      categories: selectedCategories.length > 0 ? selectedCategories : ['Louvor'],
+      categories: selectedCategories.length > 0 ? selectedCategories : ['Ao Vivo'],
       coverGradient,
       tags: [title.toLowerCase(), artist.toLowerCase(), liturgicalMoment.toLowerCase(), 'minha cifra'],
       content: content.trim(),
-      duration: '4:00',
+      duration: '3:45',
       isCustom: true
     };
 
@@ -190,73 +200,43 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
         className="relative w-full max-w-3xl rounded-3xl bg-zinc-900 border border-zinc-700/80 shadow-2xl text-white overflow-hidden flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex-none p-5 border-b border-zinc-800 bg-zinc-950/70 flex items-center justify-between">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800 flex-none bg-zinc-950/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
               <Upload className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                Adicionar Minha Própria Cifra / Upload
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                  NOVO
-                </span>
-              </h2>
-              <p className="text-xs text-zinc-400">
-                Suba letras e cifras em arquivo .txt, .cifra ou digite diretamente
-              </p>
+              <h2 className="text-base sm:text-lg font-black text-white">Adicionar Cifra ao Catálogo</h2>
+              <p className="text-xs text-zinc-400">Importe seu arquivo TXT/PDF ou cole sua cifra personalizada</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* Quick File Import Drop Area */}
-          <div className="p-4 rounded-2xl bg-zinc-950/70 border-2 border-dashed border-zinc-800 hover:border-emerald-500/60 transition flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-            <div className="flex items-center gap-3">
-              <FolderOpen className="w-8 h-8 text-emerald-400 flex-none" />
-              <div>
-                <span className="text-xs font-bold text-white block">
-                  {fileName ? `Arquivo: ${fileName}` : 'Importar Arquivo de Texto ou Cifra (.txt, .cifra, .cho)'}
-                </span>
-                <span className="text-[11px] text-zinc-500">
-                  O conteúdo do arquivo será carregado automaticamente no editor abaixo.
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <label className="cursor-pointer px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white border border-zinc-700 transition flex items-center gap-1.5">
-                <Upload className="w-3.5 h-3.5" />
-                <span>Escolher Arquivo</span>
-                <input
-                  type="file"
-                  accept=".txt,.cifra,.cho,.chordpro,.doc"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </label>
-
-              <button
-                type="button"
-                onClick={handleLoadExample}
-                className="px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-[11px] text-zinc-400 hover:text-zinc-200 border border-zinc-800 transition"
-              >
-                Usar Exemplo
-              </button>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+          <div className="relative border-2 border-dashed border-zinc-700/80 hover:border-emerald-500/60 rounded-2xl p-4 bg-zinc-950/40 text-center transition cursor-pointer group">
+            <input
+              type="file"
+              accept=".txt,.cifra,.chordpro"
+              onChange={handleFileUpload}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div className="flex flex-col items-center gap-1.5 pointer-events-none">
+              <FolderOpen className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <p className="text-xs font-bold text-zinc-200">
+                {fileName ? `Arquivo carregado: ${fileName}` : 'Clique para carregar arquivo TXT/Cifra ou arraste aqui'}
+              </p>
+              <p className="text-[10px] text-zinc-500">Auto-detectamos título, andamento, tom e capotraste</p>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Song Metadata Grid */}
+          <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-bold text-zinc-300 block mb-1">Título da Música *</label>
@@ -264,32 +244,31 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: No Teu Altar"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                  placeholder="Ex: Tempo Perdido"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-zinc-300 block mb-1">Artista / Compositor</label>
+                <label className="text-xs font-bold text-zinc-300 block mb-1">Artista / Banda</label>
                 <input
                   type="text"
                   value={artist}
                   onChange={(e) => setArtist(e.target.value)}
-                  placeholder="Ex: Banda / Compositor Local"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                  placeholder="Ex: Legião Urbana"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
 
-            {/* Musical parameters (Key, BPM, Signature, Liturgical Moment) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div>
                 <label className="text-xs font-bold text-zinc-300 block mb-1">Tom Original</label>
                 <select
                   value={originalKey}
                   onChange={(e) => setOriginalKey(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
                 >
                   {KEYS.map((k) => (
                     <option key={k} value={k}>{k}</option>
@@ -298,7 +277,21 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-zinc-300 block mb-1">BPM (Andamento)</label>
+                <label className="text-xs font-bold text-amber-400 block mb-1">Capotraste</label>
+                <select
+                  value={capo}
+                  onChange={(e) => setCapo(Number(e.target.value))}
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-amber-300 font-mono focus:outline-none focus:border-amber-500"
+                >
+                  <option value={0}>Sem Capo</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((fret) => (
+                    <option key={fret} value={fret}>{fret}ª casa</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-zinc-300 block mb-1">BPM</label>
                 <input
                   type="number"
                   min="40"
@@ -323,21 +316,22 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                 </select>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-zinc-300 block mb-1">Momento Litúrgico</label>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-xs font-bold text-zinc-300 block mb-1">Estilo / Bloco</label>
                 <select
                   value={liturgicalMoment}
-                  onChange={(e) => setLiturgicalMoment(e.target.value as LiturgicalMoment)}
+                  onChange={(e) => setLiturgicalMoment(e.target.value as MusicGenre)}
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                 >
-                  {LITURGICAL_MOMENTS.map((m) => (
+                  {MUSIC_GENRES.map((m) => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
               </div>
             </div>
+          </div>
 
-            {/* Categories Multi-Select Chips */}
+          {/* Categories Multi-Select Chips */}
             <div>
               <label className="text-xs font-bold text-zinc-300 block mb-1.5">Categorias / Tags</label>
               <div className="flex flex-wrap gap-1.5">
@@ -399,7 +393,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder={`Cole aqui sua cifra completa.\n\nExemplo:\n[Intro] G  D/F#  Em  C\n\nG                  D/F#\nMinha oração se eleva ao Teu altar...`}
+                  placeholder={`Cole aqui sua cifra completa.\n\nExemplo:\n[Intro] G  D/F#  Em  C\n\nG                  D/F#\nTodos os dias quando acordo...`}
                   rows={9}
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl p-3.5 font-mono text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-500 leading-relaxed"
                   required
@@ -428,6 +422,5 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
           </form>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
