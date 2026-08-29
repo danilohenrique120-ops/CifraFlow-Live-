@@ -22,6 +22,7 @@ interface AuthContextType {
   signUpWithEmail: (email: string, pass: string, name: string, instrument?: string) => Promise<void>;
   signOutUser: () => Promise<void>;
   updateUserInstrument: (instrument: string) => Promise<void>;
+  verifyStripeSubscription: (targetEmail?: string) => Promise<boolean>;
   isDemoMode: boolean;
 }
 
@@ -37,7 +38,7 @@ const DEFAULT_FREE_SUBSCRIPTION: UserSubscription = {
 const DEFAULT_PRO_SUBSCRIPTION: UserSubscription = {
   status: 'active',
   tier: 'pro_band',
-  planName: 'Plano Pro (Anual)',
+  planName: 'Plano Pro (Ativo)',
   currentPeriodEnd: Date.now() + 365 * 24 * 60 * 60 * 1000 // 1 year
 };
 
@@ -66,38 +67,74 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [userProfile]);
 
+  // Function to verify Stripe subscription by email and upgrade in Firestore
+  const verifyStripeSubscription = async (targetEmail?: string): Promise<boolean> => {
+    const emailToVerify = targetEmail || userProfile?.email || currentUser?.email;
+    if (!emailToVerify) return false;
+
+    try {
+      const response = await fetch('/api/check-subscription-by-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToVerify })
+      });
+      const data = await response.json();
+
+      if (data.hasActiveSubscription) {
+        const upgradedSubscription: UserSubscription = {
+          status: 'active',
+          tier: 'pro_band',
+          planName: data.planName || 'Plano Pro',
+          currentPeriodEnd: data.currentPeriodEnd || Date.now() + 365 * 24 * 60 * 60 * 1000
+        };
+
+        const targetUid = currentUser?.uid || userProfile?.uid;
+        if (targetUid && isFirebaseConfigured) {
+          await setDoc(
+            doc(db, 'users', targetUid),
+            { role: 'pro', subscription: upgradedSubscription },
+            { merge: true }
+          );
+        }
+
+        setUserProfile((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            role: 'pro',
+            subscription: upgradedSubscription
+          };
+        });
+
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Error verifying Stripe subscription:', err);
+      return false;
+    }
+  };
+
   // Handle Stripe redirect query parameters (e.g. ?payment_success=true)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('payment_success') === 'true') {
-        const tier = params.get('tier') || 'pro_band';
-        const upgradedSubscription: UserSubscription = {
-          status: 'active',
-          tier: tier as any,
-          planName: tier === 'pro_musician' ? 'Pro Músico Solo' : 'Plano Pro',
-          currentPeriodEnd: Date.now() + 365 * 24 * 60 * 60 * 1000
-        };
+      const isSuccess = params.get('payment_success') === 'true';
+      const sessionId = params.get('session_id');
+      const tier = params.get('tier') || 'pro_band';
 
-        setUserProfile((prev) => {
-          if (!prev) return null;
-          const updated = {
-            ...prev,
-            role: 'pro' as const,
-            subscription: upgradedSubscription
-          };
-          if (currentUser && isFirebaseConfigured) {
-            setDoc(doc(db, 'users', currentUser.uid), updated, { merge: true });
-          }
-          return updated;
-        });
+      if (isSuccess || sessionId) {
+        sessionStorage.setItem(
+          'cifraflow_pending_stripe_session',
+          JSON.stringify({ sessionId, tier, isSuccess: true, timestamp: Date.now() })
+        );
 
         // Clean up URL without reload
         const newUrl = window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
       }
     }
-  }, [currentUser]);
+  }, []);
 
   // Listen to Firebase Auth state if configured
   useEffect(() => {
@@ -131,11 +168,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const special = SPECIAL_PRO_ACCOUNTS[userEmail];
         const isSpecialPro = Boolean(special);
 
+        // Check if there is a pending Stripe payment return in this session
+        const pendingRaw = sessionStorage.getItem('cifraflow_pending_stripe_session');
+        let hasPendingSuccess = false;
+        if (pendingRaw) {
+          try {
+            const parsed = JSON.parse(pendingRaw);
+            if (parsed.isSuccess || parsed.sessionId) {
+              hasPendingSuccess = true;
+              sessionStorage.removeItem('cifraflow_pending_stripe_session');
+            }
+          } catch (e) {}
+        }
+
         // Listen to live updates on user's subscription in Firestore
         unsubscribeProfile = onSnapshot(userRef, async (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data() as UserProfile;
-            // Se for conta de sócio/admin, garantir que sempre tenha role pro
+            
+            // 1. Se for conta de sócio/admin, garantir que sempre tenha role pro
             if (isSpecialPro && data.role !== 'pro') {
               const fixed: UserProfile = {
                 ...data,
@@ -144,19 +195,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               };
               await setDoc(userRef, fixed, { merge: true });
               setUserProfile(fixed);
-            } else {
+            } 
+            // 2. Se retornou de um checkout Stripe com sucesso recente
+            else if (hasPendingSuccess && data.role !== 'pro') {
+              const upgraded: UserProfile = {
+                ...data,
+                role: 'pro',
+                subscription: DEFAULT_PRO_SUBSCRIPTION
+              };
+              await setDoc(userRef, upgraded, { merge: true });
+              setUserProfile(upgraded);
+              hasPendingSuccess = false;
+            } 
+            else {
               setUserProfile(data);
+
+              // 3. Se o usuário estiver como gratuito, fazer checagem de fundo no Stripe para recuperar compras
+              if (data.role === 'free' && userEmail) {
+                verifyStripeSubscription(userEmail);
+              }
             }
           } else {
+            const isInitialPro = isSpecialPro || hasPendingSuccess;
             const newProfile: UserProfile = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
               displayName: firebaseUser.displayName || (special ? special.name : 'Músico'),
               photoURL: firebaseUser.photoURL,
-              role: isSpecialPro ? 'pro' : 'free',
+              role: isInitialPro ? 'pro' : 'free',
               instrument: 'Violão',
               avatarColor: special ? special.avatar : 'bg-blue-500',
-              subscription: isSpecialPro ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
+              subscription: isInitialPro ? DEFAULT_PRO_SUBSCRIPTION : DEFAULT_FREE_SUBSCRIPTION,
               createdAt: Date.now(),
               lastLoginAt: Date.now()
             };
@@ -339,6 +408,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUpWithEmail,
         signOutUser,
         updateUserInstrument,
+        verifyStripeSubscription,
         isDemoMode
       }}
     >

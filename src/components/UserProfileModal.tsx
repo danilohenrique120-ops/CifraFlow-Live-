@@ -7,7 +7,8 @@ import {
   ShieldCheck,
   Sparkles,
   LogOut,
-  Check
+  Check,
+  RefreshCw
 } from 'lucide-react';
 
 interface UserProfileModalProps {
@@ -21,11 +22,30 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onClose,
   onOpenPricing
 }) => {
-  const { userProfile, isPro, signOutUser, updateUserInstrument } = useAuth();
+  const { userProfile, isPro, signOutUser, updateUserInstrument, verifyStripeSubscription } = useAuth();
   const [selectedInstrument, setSelectedInstrument] = useState(userProfile?.instrument || 'Violão');
   const [isSaved, setIsSaved] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState<'success' | 'not_found' | 'error' | null>(null);
 
   if (!isOpen || !userProfile) return null;
+
+  const handleVerifySubscription = async () => {
+    setIsVerifying(true);
+    setVerifyMsg(null);
+    try {
+      const active = await verifyStripeSubscription();
+      if (active) {
+        setVerifyMsg('success');
+      } else {
+        setVerifyMsg('not_found');
+      }
+    } catch (e) {
+      setVerifyMsg('error');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const handleSaveInstrument = async () => {
     if (selectedInstrument !== 'Violão / Guitarra' && !isPro) {
@@ -92,16 +112,45 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
 
           {!isPro ? (
-            <button
-              onClick={() => {
-                onClose();
-                onOpenPricing();
-              }}
-              className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider transition shadow-lg shadow-emerald-950 flex items-center justify-center gap-2"
-            >
-              <Sparkles className="w-4 h-4" />
-              Fazer Upgrade para Pro
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenPricing();
+                }}
+                className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider transition shadow-lg shadow-emerald-950 flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                Fazer Upgrade para Pro
+              </button>
+
+              <button
+                type="button"
+                onClick={handleVerifySubscription}
+                disabled={isVerifying}
+                className="w-full py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white text-[11px] font-semibold transition flex items-center justify-center gap-1.5 border border-zinc-800"
+                title="Consulte o Stripe para atualizar sua assinatura"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isVerifying ? 'animate-spin text-emerald-400' : 'text-zinc-400'}`} />
+                <span>{isVerifying ? 'Consultando Stripe...' : 'Já realizou o pagamento? Sincronizar Pro'}</span>
+              </button>
+
+              {verifyMsg === 'success' && (
+                <p className="text-[11px] text-emerald-400 font-bold text-center animate-in fade-in py-1">
+                  🎉 Assinatura Pro confirmada e ativada com sucesso!
+                </p>
+              )}
+              {verifyMsg === 'not_found' && (
+                <p className="text-[11px] text-amber-400/90 text-center leading-tight py-1">
+                  Nenhuma assinatura ativa encontrada para este e-mail ({userProfile.email}) no Stripe. Se você pagou usando outro e-mail, entre em contato com o suporte.
+                </p>
+              )}
+              {verifyMsg === 'error' && (
+                <p className="text-[11px] text-rose-400 text-center leading-tight py-1">
+                  Erro ao conectar com o servidor. Tente novamente em instantes.
+                </p>
+              )}
+            </div>
           ) : (
             <div className="text-[11px] text-zinc-400 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
