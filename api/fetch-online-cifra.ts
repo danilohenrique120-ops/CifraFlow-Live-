@@ -21,6 +21,8 @@ function decodeHtml(html: string): string {
     .replace(/&Ecirc;/g, 'Ê')
     .replace(/&ocirc;/g, 'ô')
     .replace(/&Ocirc;/g, 'Ô')
+    .replace(/&ordm;/g, 'º')
+    .replace(/&ordf;/g, 'ª')
     .replace(/&#039;/g, "'")
     .replace(/&quot;/g, '"')
     .replace(/&amp;/g, '&')
@@ -33,7 +35,7 @@ function detectKeyFromCifra(cifra: string): string {
   const tomMatch = cifra.match(/(?:Tom|Key):\s*([A-G][b#]?(?:m)?)/i);
   if (tomMatch) return tomMatch[1];
 
-  const chordMatch = cifra.match(/\b([A-G][b#]?(?:m|maj|M|7|9|4|sus|dim)?)\b/);
+  const chordMatch = cifra.match(/\b([A-G][#b]?(?:m|maj|M|7|9|4|sus|dim)?)\b/);
   if (chordMatch) return chordMatch[1].replace(/[^A-G#b]/g, '');
   return 'G';
 }
@@ -50,51 +52,6 @@ function cleanSlug(s: string): string {
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-');
-}
-
-async function fetchFromCifrasBr(artist: string, song: string) {
-  const artistSlug = cleanSlug(artist);
-  const songSlug = cleanSlug(song);
-
-  const urls = [
-    `https://www.cifras.com.br/cifra/${artistSlug}/${songSlug}`,
-    `https://www.cifras.com.br/cifra/${artistSlug.replace(/-e-/g, '-')}/${songSlug}`,
-    `https://www.cifras.com.br/cifra/${artistSlug.replace(/&/g, 'e')}/${songSlug}`,
-    `https://www.cifras.com.br/cifra/${songSlug}`
-  ];
-
-  for (const url of urls) {
-    try {
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
-      });
-      if (res.ok) {
-        const html = await res.text();
-        const preMatch = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
-        if (preMatch) {
-          let text = preMatch[1]
-            .replace(/<span[^>]*data-chord="([^"]+)"[^>]*>.*?<\/span>/gi, '$1')
-            .replace(/<b[^>]*>(.*?)<\/b>/gi, '$1')
-            .replace(/<i[^>]*>(.*?)<\/i>/gi, '$1')
-            .replace(/<div class=['"]tabs component-tabs[\s\S]*?<\/div>\s*<\/div>/gi, '')
-            .replace(/<[^>]+>/g, '');
-
-          text = decodeHtml(text).trim();
-          if (text.length > 50) {
-            return {
-              cifra: text,
-              key: detectKeyFromCifra(text),
-              capo: detectCapoFromCifra(text),
-              source: 'cifras.com.br'
-            };
-          }
-        }
-      }
-    } catch (e) {}
-  }
-  return null;
 }
 
 async function fetchFromUG(artist: string, song: string) {
@@ -145,9 +102,9 @@ async function fetchFromUG(artist: string, song: string) {
       const capo = tabData.store?.page?.data?.tab_view?.meta?.capo || detectCapoFromCifra(rawContent || '');
 
       if (rawContent && rawContent.length > 50) {
+        // IMPORTANT: Only remove the [ch], [/ch], [tab], [/tab] tags without erasing the lyrics inside!
         let clean = rawContent
           .replace(/\[ch\](.*?)\[\/ch\]/g, '$1')
-          .replace(/\[tab\][\s\S]*?\[\/tab\]/g, '')
           .replace(/\[\/?tab\]/g, '');
 
         clean = decodeHtml(clean).trim();
@@ -157,6 +114,53 @@ async function fetchFromUG(artist: string, song: string) {
           capo: capo || 0,
           source: 'ultimate-guitar'
         };
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+
+async function fetchFromCifrasBr(artist: string, song: string) {
+  const artistSlug = cleanSlug(artist);
+  const songSlug = cleanSlug(song);
+
+  const urls = [
+    `https://www.cifras.com.br/cifra/${artistSlug}/${songSlug}`,
+    `https://www.cifras.com.br/cifra/${artistSlug.replace(/-e-/g, '-')}/${songSlug}`,
+    `https://www.cifras.com.br/cifra/${artistSlug.replace(/&/g, 'e')}/${songSlug}`,
+    `https://www.cifras.com.br/cifra/${songSlug}`
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const preMatch = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
+        if (preMatch) {
+          let text = preMatch[1]
+            .replace(/<div class=['"]tabs component-tabs[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/gi, '\n')
+            .replace(/<div[\s\S]*?<\/div>/gi, '\n')
+            .replace(/<span[^>]*data-chord="([^"]+)"[^>]*>.*?<\/span>/gi, '$1')
+            .replace(/<b[^>]*>(.*?)<\/b>/gi, '$1')
+            .replace(/<i[^>]*>(.*?)<\/i>/gi, '$1')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]+>/g, '');
+
+          text = decodeHtml(text).trim();
+          if (text.length > 50) {
+            return {
+              cifra: text,
+              key: detectKeyFromCifra(text),
+              capo: detectCapoFromCifra(text),
+              source: 'cifras.com.br'
+            };
+          }
+        }
       }
     } catch (e) {}
   }
@@ -183,21 +187,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // 1. Tentar Cifras.com.br (Excelente para catálogo nacional brasileiro)
-    const cifrasBr = await fetchFromCifrasBr(artist, title);
-    if (cifrasBr) {
-      return res.status(200).json({
-        success: true,
-        title,
-        artist,
-        key: cifrasBr.key,
-        capo: cifrasBr.capo,
-        cifra: cifrasBr.cifra,
-        source: cifrasBr.source
-      });
-    }
-
-    // 2. Tentar Ultimate Guitar (Excelente para catálogo internacional e rock/pop nacional)
+    // 1. Tentar Ultimate Guitar (Excelente para catálogo nacional e internacional com acordes alinhados)
     const ug = await fetchFromUG(artist, title);
     if (ug) {
       return res.status(200).json({
@@ -211,9 +201,23 @@ export default async function handler(req: any, res: any) {
       });
     }
 
+    // 2. Tentar Cifras.com.br
+    const cifrasBr = await fetchFromCifrasBr(artist, title);
+    if (cifrasBr) {
+      return res.status(200).json({
+        success: true,
+        title,
+        artist,
+        key: cifrasBr.key,
+        capo: cifrasBr.capo,
+        cifra: cifrasBr.cifra,
+        source: cifrasBr.source
+      });
+    }
+
     return res.status(404).json({
       success: false,
-      message: 'Cifra real não localizada nas fontes públicas online.'
+      message: 'Cifra não localizada nas fontes públicas online.'
     });
   } catch (error: any) {
     console.error('Fetch online cifra error:', error);
