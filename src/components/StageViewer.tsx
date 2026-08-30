@@ -33,7 +33,8 @@ import {
   FastForward,
   Lock,
   Edit3,
-  Check
+  Check,
+  X
 } from 'lucide-react';
 
 interface StageViewerProps {
@@ -68,6 +69,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     broadcastScroll,
     toggleFollowScroll,
     sendBandAlert,
+    dismissAlert,
     recentAlert
   } = useLiveRoom();
 
@@ -464,10 +466,20 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       {/* 🚨 High Visibility Live Band Alert Banner */}
       {recentAlert && (
         <div className="fixed top-3 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-50 animate-bounce">
-          <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-amber-500 text-zinc-950 font-black shadow-2xl border-2 border-white text-base sm:text-lg uppercase tracking-wide">
-            <Zap className="w-6 h-6 animate-pulse" />
-            <span>ALERTA DA BANDA: {recentAlert.message}</span>
-            <span className="text-xs bg-black/20 px-2 py-0.5 rounded font-bold">({recentAlert.senderName})</span>
+          <div className="flex items-center gap-3 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-amber-500 text-zinc-950 font-black shadow-2xl border-2 border-white text-sm sm:text-base uppercase tracking-wide">
+            <Zap className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse flex-none" />
+            <div className="flex items-center gap-2 flex-1">
+              <span>ALERTA DA BANDA: {recentAlert.message}</span>
+              <span className="text-[11px] sm:text-xs bg-black/20 px-2 py-0.5 rounded font-bold">({recentAlert.senderName})</span>
+            </div>
+            <button
+              onClick={() => dismissAlert()}
+              className="p-1 -mr-1 rounded-full hover:bg-black/20 active:scale-90 text-zinc-950 transition flex items-center justify-center cursor-pointer flex-none"
+              title="Fechar Recado (X)"
+              aria-label="Fechar Recado"
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+            </button>
           </div>
         </div>
       )}
