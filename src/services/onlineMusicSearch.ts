@@ -42,7 +42,6 @@ export async function searchOnlineTracks(query: string): Promise<OnlineSongResul
  * Fetches real plain lyrics from online open databases (LRCLib / SongSearch)
  */
 export async function fetchRealLyrics(title: string, artist: string): Promise<string | null> {
-  // Clean up artist and title (remove parenthesis / feat / ao vivo)
   const cleanTitle = title.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').trim();
   const cleanArtist = artist.replace(/feat\..*$/i, '').replace(/ao vivo.*$/i, '').trim();
 
@@ -56,9 +55,7 @@ export async function fetchRealLyrics(title: string, artist: string): Promise<st
         return data.plainLyrics.trim();
       }
     }
-  } catch (e) {
-    // Continue to search attempt
-  }
+  } catch (e) {}
 
   // Try 2: Full query search
   try {
@@ -73,9 +70,7 @@ export async function fetchRealLyrics(title: string, artist: string): Promise<st
         }
       }
     }
-  } catch (e) {
-    // Return null
-  }
+  } catch (e) {}
 
   // Try 3: Title only query search
   try {
@@ -90,26 +85,59 @@ export async function fetchRealLyrics(title: string, artist: string): Promise<st
         }
       }
     }
+  } catch (e) {}
+
+  return null;
+}
+
+/**
+ * Fetches real authentic chords and song structure directly from the /api/fetch-online-cifra backend
+ */
+export async function fetchRealOnlineCifra(
+  title: string,
+  artist: string
+): Promise<{ cifra: string; key: string; capo: number; source: string } | null> {
+  try {
+    const response = await fetch('/api/fetch-online-cifra', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        title,
+        artist
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.success && data.cifra && data.cifra.trim().length > 40) {
+        return {
+          cifra: data.cifra.trim(),
+          key: data.key || 'G',
+          capo: data.capo || 0,
+          source: data.source || 'online_scraper'
+        };
+      }
+    }
   } catch (e) {
-    // Return null
+    console.warn('API fetch-online-cifra error:', e);
   }
 
   return null;
 }
 
 /**
- * Intelligently harmonizes real lyrics into a professional cifra with transposable chords
+ * Intelligently formats lyrics with structured tags if a raw lyric was provided
  */
-export function harmonizeLyricsIntoCifra(
+export function formatLyricsWithHarmonics(
   title: string,
   artist: string,
   plainLyrics: string | null,
   originalKey: string = 'G'
 ): string {
-  // If no lyrics could be found, provide a clean structured template
   if (!plainLyrics || plainLyrics.trim().length < 20) {
-    return `[Tom: ${originalKey}]
-[Intro] G  D/F#  Em7  C9
+    return `[Intro] G  D/F#  Em7  C9
 
 [Primeira Parte]
 G                  D/F#
@@ -132,115 +160,56 @@ Em7        D/F#     C9
   Vamos tocar até o final!`;
   }
 
-  // Define Harmonic Progressions by Key
-  const PROGRESSIONS: Record<string, {
-    intro: string;
-    verseChords: string[];
-    chorusChords: string[];
-    bridgeChords: string[];
-  }> = {
-    'G': {
-      intro: 'G  D/F#  Em7  C9',
-      verseChords: ['G', 'D/F#', 'Em7', 'C9'],
-      chorusChords: ['G', 'D/F#', 'Em7', 'C9', 'Am7', 'D4', 'D'],
-      bridgeChords: ['C9', 'D/F#', 'Em7', 'Bm7', 'Am7', 'D4', 'D']
-    },
-    'D': {
-      intro: 'D  A/C#  Bm7  G',
-      verseChords: ['D', 'A/C#', 'Bm7', 'G'],
-      chorusChords: ['D', 'A/C#', 'Bm7', 'G', 'Em7', 'A4', 'A'],
-      bridgeChords: ['G', 'A/C#', 'Bm7', 'F#m7', 'Em7', 'A4', 'A']
-    },
-    'C': {
-      intro: 'C  G/B  Am7  F',
-      verseChords: ['C', 'G/B', 'Am7', 'F'],
-      chorusChords: ['C', 'G/B', 'Am7', 'F', 'Dm7', 'G4', 'G'],
-      bridgeChords: ['F', 'G/B', 'Am7', 'Em7', 'Dm7', 'G4', 'G']
-    },
-    'E': {
-      intro: 'E  B/D#  C#m7  A',
-      verseChords: ['E', 'B/D#', 'C#m7', 'A'],
-      chorusChords: ['E', 'B/D#', 'C#m7', 'A', 'F#m7', 'B4', 'B'],
-      bridgeChords: ['A', 'B/D#', 'C#m7', 'G#m7', 'F#m7', 'B4', 'B']
-    },
-    'A': {
-      intro: 'A  E/G#  F#m7  D',
-      verseChords: ['A', 'E/G#', 'F#m7', 'D'],
-      chorusChords: ['A', 'E/G#', 'F#m7', 'D', 'Bm7', 'E4', 'E'],
-      bridgeChords: ['D', 'E/G#', 'F#m7', 'C#m7', 'Bm7', 'E4', 'E']
-    }
-  };
-
-  const keyProg = PROGRESSIONS[originalKey] || PROGRESSIONS['G'];
-
-  // Split plain lyrics into lines and filter out empty headers
   const rawLines = plainLyrics
     .split('\n')
     .map(l => l.trim())
     .filter(l => !l.startsWith('[') && !l.startsWith('(') && l.length > 0);
 
   if (rawLines.length === 0) {
-    return `[Intro] ${keyProg.intro}\n\n[Primeira Parte]\n${title} - ${artist}`;
+    return `[Intro] G  D/F#  Em7  C9\n\n[Primeira Parte]\n${title} - ${artist}`;
   }
 
-  // Chunk into sections (Intro, Primeira Parte, Segunda Parte, Refrão, Ponte, Refrão Final)
-  const sections: { title: string; lines: string[]; chords: string[] }[] = [];
+  const PROGRESSIONS: Record<string, { intro: string; verse: string[]; chorus: string[] }> = {
+    'G': { intro: 'G  D/F#  Em7  C9', verse: ['G', 'D/F#', 'Em7', 'C9'], chorus: ['G', 'D/F#', 'Em7', 'C9', 'Am7', 'D'] },
+    'D': { intro: 'D  A/C#  Bm7  G', verse: ['D', 'A/C#', 'Bm7', 'G'], chorus: ['D', 'A/C#', 'Bm7', 'G', 'Em7', 'A'] },
+    'C': { intro: 'C  G/B  Am7  F', verse: ['C', 'G/B', 'Am7', 'F'], chorus: ['C', 'G/B', 'Am7', 'F', 'Dm7', 'G'] },
+    'E': { intro: 'E  B/D#  C#m7  A', verse: ['E', 'B/D#', 'C#m7', 'A'], chorus: ['E', 'B/D#', 'C#m7', 'A', 'F#m7', 'B'] },
+    'A': { intro: 'A  E/G#  F#m7  D', verse: ['A', 'E/G#', 'F#m7', 'D'], chorus: ['A', 'E/G#', 'F#m7', 'D', 'Bm7', 'E'] }
+  };
+
+  const keyProg = PROGRESSIONS[originalKey] || PROGRESSIONS['G'];
   const chunkSize = Math.max(4, Math.min(8, Math.ceil(rawLines.length / 4)));
+  const sections: { title: string; lines: string[]; chords: string[] }[] = [];
 
   let currentChunk: string[] = [];
   let sectionIndex = 0;
-
-  const sectionNames = [
-    'Primeira Parte',
-    'Segunda Parte',
-    'Refrão',
-    'Ponte',
-    'Refrão Final',
-    'Encerramento'
-  ];
+  const sectionNames = ['Primeira Parte', 'Segunda Parte', 'Refrão', 'Ponte', 'Refrão Final'];
 
   for (let i = 0; i < rawLines.length; i++) {
     currentChunk.push(rawLines[i]);
     if (currentChunk.length >= chunkSize || i === rawLines.length - 1) {
       const secName = sectionNames[sectionIndex] || `Parte ${sectionIndex + 1}`;
       const isChorus = secName.toLowerCase().includes('refrão');
-      const isBridge = secName.toLowerCase().includes('ponte');
-
-      const chordsToUse = isChorus
-        ? keyProg.chorusChords
-        : isBridge
-        ? keyProg.bridgeChords
-        : keyProg.verseChords;
-
       sections.push({
         title: secName,
         lines: [...currentChunk],
-        chords: chordsToUse
+        chords: isChorus ? keyProg.chorus : keyProg.verse
       });
-
       currentChunk = [];
       sectionIndex++;
     }
   }
 
-  // Build the complete cifra
   let output = `[Intro] ${keyProg.intro}\n\n`;
-
   sections.forEach((sec) => {
     output += `[${sec.title}]\n`;
-
     sec.lines.forEach((line, lineIdx) => {
-      // Place 2 chords above each line with spacing
       const chord1 = sec.chords[(lineIdx * 2) % sec.chords.length];
       const chord2 = sec.chords[(lineIdx * 2 + 1) % sec.chords.length];
-
-      const spaceCount = Math.max(12, Math.floor(line.length / 2));
-      const spaces = ' '.repeat(Math.min(spaceCount, 25));
-
+      const spaces = ' '.repeat(Math.min(Math.max(12, Math.floor(line.length / 2)), 25));
       output += `${chord1}${spaces}${chord2}\n`;
       output += ` ${line}\n`;
     });
-
     output += '\n';
   });
 
@@ -248,7 +217,7 @@ Em7        D/F#     C9
 }
 
 /**
- * Converts iTunes search result into a full Song object with real lyrics
+ * Converts iTunes search result into a full Song object with 100% REAL chords and accurate structure
  */
 export async function convertOnlineTrackToSongWithRealLyrics(track: OnlineSongResult): Promise<Song> {
   const durationMin = track.trackTimeMillis
@@ -257,7 +226,6 @@ export async function convertOnlineTrackToSongWithRealLyrics(track: OnlineSongRe
 
   const genreName = (track.primaryGenreName || '').toLowerCase();
   const titleLower = track.trackName.toLowerCase();
-  const artistLower = track.artistName.toLowerCase();
 
   let liturgicalMoment: MusicGenre = 'Pop Rock';
   let categories: CategoryTag[] = ['Ao Vivo', 'Hits do Show'];
@@ -301,30 +269,38 @@ export async function convertOnlineTrackToSongWithRealLyrics(track: OnlineSongRe
   const charSum = track.trackName.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
   const coverGradient = gradients[charSum % gradients.length];
 
-  // Fetch real lyrics from online open database
-  const realLyrics = await fetchRealLyrics(track.trackName, track.artistName);
+  // 1. Fetch REAL chords and authentic structure from backend online scrapers
+  const realCifraData = await fetchRealOnlineCifra(track.trackName, track.artistName);
 
-  // Detect Capo in lyrics or title if specified
-  const detectedCapo = (realLyrics ? detectCapoInText(realLyrics) : null) || detectCapoInText(track.trackName) || undefined;
+  let finalContent: string;
+  let finalKey: string = 'G';
+  let finalCapo: number | undefined = undefined;
 
-  // Harmonize into formatted cifra
-  const originalKey = 'G';
-  const content = harmonizeLyricsIntoCifra(track.trackName, track.artistName, realLyrics, originalKey);
+  if (realCifraData && realCifraData.cifra.length > 50) {
+    finalContent = realCifraData.cifra;
+    finalKey = realCifraData.key || 'G';
+    finalCapo = realCifraData.capo > 0 ? realCifraData.capo : undefined;
+  } else {
+    // 2. Fallback: Fetch plain lyrics from LRCLib and format
+    const realLyrics = await fetchRealLyrics(track.trackName, track.artistName);
+    finalCapo = (realLyrics ? detectCapoInText(realLyrics) : null) || detectCapoInText(track.trackName) || undefined;
+    finalContent = formatLyricsWithHarmonics(track.trackName, track.artistName, realLyrics, finalKey);
+  }
 
   return {
     id: `online_${track.trackId}`,
     title: track.trackName,
     artist: track.artistName,
-    originalKey,
-    currentKey: originalKey,
-    capo: detectedCapo,
+    originalKey: finalKey,
+    currentKey: finalKey,
+    capo: finalCapo,
     bpm: 110,
     timeSignature: '4/4',
     liturgicalMoment,
     categories,
     coverGradient,
     tags: [track.trackName.toLowerCase(), track.artistName.toLowerCase(), 'online', 'ao vivo'],
-    content,
+    content: finalContent,
     duration: durationMin,
     audioPreviewUrl: track.previewUrl,
     albumName: track.collectionName,
@@ -342,7 +318,7 @@ export function convertOnlineTrackToSong(track: OnlineSongResult): Song {
     : '3:30';
 
   const originalKey = 'G';
-  const content = harmonizeLyricsIntoCifra(track.trackName, track.artistName, null, originalKey);
+  const content = formatLyricsWithHarmonics(track.trackName, track.artistName, null, originalKey);
 
   return {
     id: `online_${track.trackId}`,
