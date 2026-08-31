@@ -170,28 +170,32 @@ export class LiveSyncEngine {
       const roomDocRef = doc(db, 'rooms', this.roomId);
 
       if (fullMessage.type === 'SONG_CHANGE') {
-        await updateDoc(roomDocRef, {
+        const updateData: any = {
           currentSongId: fullMessage.payload.songId,
           currentKey: fullMessage.payload.key,
           semitoneShift: fullMessage.payload.semitones ?? 0,
           lastUpdated: Date.now()
-        });
+        };
+        if (fullMessage.payload.song) {
+          updateData.currentSong = fullMessage.payload.song;
+        }
+        await setDoc(roomDocRef, updateData, { merge: true });
       } else if (fullMessage.type === 'KEY_CHANGE') {
-        await updateDoc(roomDocRef, {
+        await setDoc(roomDocRef, {
           currentKey: fullMessage.payload.key,
           semitoneShift: fullMessage.payload.semitones,
           lastUpdated: Date.now()
-        });
+        }, { merge: true });
       } else if (fullMessage.type === 'SCROLL_SYNC') {
-        await updateDoc(roomDocRef, {
+        await setDoc(roomDocRef, {
           scrollPercentage: fullMessage.payload.scrollPercentage,
           lastUpdated: Date.now()
-        });
+        }, { merge: true });
       } else if (fullMessage.type === 'BAND_ALERT') {
-        await updateDoc(roomDocRef, {
+        await setDoc(roomDocRef, {
           currentAlert: fullMessage.payload,
           lastUpdated: Date.now()
-        });
+        }, { merge: true });
       } else if (fullMessage.type === 'MEMBER_JOIN') {
         const docSnap = await getDoc(roomDocRef);
         if (docSnap.exists()) {
@@ -201,26 +205,26 @@ export class LiveSyncEngine {
             ? existing.map((m) => (m.id === fullMessage.payload.id ? fullMessage.payload : m))
             : [...existing, fullMessage.payload];
 
-          await updateDoc(roomDocRef, {
+          await setDoc(roomDocRef, {
             members: updatedMembers,
             lastUpdated: Date.now()
-          });
+          }, { merge: true });
         }
       } else if (fullMessage.type === 'MEMBER_LEAVE') {
         const docSnap = await getDoc(roomDocRef);
         if (docSnap.exists()) {
           const existing = (docSnap.data() as LiveSessionState).members || [];
           const updatedMembers = existing.filter((m) => m.id !== fullMessage.payload.id);
-          await updateDoc(roomDocRef, {
+          await setDoc(roomDocRef, {
             members: updatedMembers,
             lastUpdated: Date.now()
-          });
+          }, { merge: true });
         }
       } else if (fullMessage.type === 'STATE_UPDATE') {
-        await updateDoc(roomDocRef, {
+        await setDoc(roomDocRef, {
           ...fullMessage.payload,
           lastUpdated: Date.now()
-        });
+        }, { merge: true });
       }
     } catch (err: any) {
       console.warn('Firestore room broadcast note:', err.message);

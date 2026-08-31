@@ -134,15 +134,29 @@ const MainAppContent: React.FC = () => {
     }
   }, [setlists, userProfile?.uid]);
 
-  // Sync active song with Live Room state if changed remotely by Host
+  // Sync active song with Live Room state if changed remotely by Host or upon joining room
   useEffect(() => {
-    if (sessionState?.currentSongId) {
+    if (!sessionState) return;
+
+    if (sessionState.currentSong) {
+      const incomingSong = sessionState.currentSong;
+      setSelectedSong(incomingSong);
+      setSongs(prev => {
+        const existingIdx = prev.findIndex(s => s.id === incomingSong.id);
+        if (existingIdx === -1) {
+          return [incomingSong, ...prev];
+        }
+        const updated = [...prev];
+        updated[existingIdx] = { ...updated[existingIdx], ...incomingSong };
+        return updated;
+      });
+    } else if (sessionState.currentSongId) {
       const targetSong = songs.find(s => s.id === sessionState.currentSongId);
       if (targetSong) {
         setSelectedSong(targetSong);
       }
     }
-  }, [sessionState?.currentSongId, songs]);
+  }, [sessionState?.currentSong, sessionState?.currentSongId, sessionState?.lastUpdated]);
 
   // Setlist sync if active in room
   useEffect(() => {
@@ -182,7 +196,7 @@ const MainAppContent: React.FC = () => {
       setActiveSetlist(setlist);
     }
     if (isInRoom && isHost) {
-      selectSong(song.id, song.currentKey || song.originalKey);
+      selectSong(song.id, song.currentKey || song.originalKey, song);
     }
   };
 

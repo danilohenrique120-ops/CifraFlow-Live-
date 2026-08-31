@@ -137,12 +137,10 @@ export const StageViewer: React.FC<StageViewerProps> = ({
 
   // Sync state from Live Room if follower
   useEffect(() => {
-    if (sessionState && !isHost) {
-      if (sessionState.semitoneShift !== undefined) {
-        setSemitoneShift(sessionState.semitoneShift);
-      }
+    if (sessionState && !isHost && sessionState.semitoneShift !== undefined) {
+      setSemitoneShift(sessionState.semitoneShift);
     }
-  }, [sessionState?.semitoneShift, isHost]);
+  }, [sessionState?.semitoneShift, song.id, isHost]);
 
   // Sync scroll position from Leader if followScroll is active
   useEffect(() => {
@@ -152,6 +150,23 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       container.scrollTo({ top: targetScroll, behavior: 'smooth' });
     }
   }, [sessionState?.scrollPercentage, sessionState?.followScroll, isHost]);
+
+  // Manual scroll sync for Leader
+  const lastScrollBroadcastRef = useRef<number>(0);
+  const handleManualScroll = () => {
+    if (isInRoom && isHost && sessionState?.followScroll && scrollContainerRef.current) {
+      const now = Date.now();
+      if (now - lastScrollBroadcastRef.current > 120) {
+        lastScrollBroadcastRef.current = now;
+        const container = scrollContainerRef.current;
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        if (maxScroll > 0) {
+          const percentage = Math.min(100, Math.round((container.scrollTop / maxScroll) * 100));
+          broadcastScroll(percentage);
+        }
+      }
+    }
+  };
 
   // Wake Lock API implementation
   const requestWakeLock = useCallback(async () => {
@@ -583,6 +598,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       {/* Main Stage Lyrics Area */}
       <main
         ref={scrollContainerRef}
+        onScroll={handleManualScroll}
         onClick={() => setIsScrolling(prev => !prev)}
         className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 cursor-pointer select-text relative scroll-smooth"
       >

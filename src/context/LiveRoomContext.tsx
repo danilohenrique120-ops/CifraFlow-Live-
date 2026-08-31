@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
-import { BandAlert, LiveMember, LiveSessionState, UserRole } from '../types';
+import { BandAlert, LiveMember, LiveSessionState, Song, UserRole } from '../types';
 import { generateRoomPin, LiveSyncEngine, SyncMessage } from '../services/liveSync';
 import { useAuth } from './AuthContext';
 
@@ -12,7 +12,7 @@ interface LiveRoomContextType {
   createRoom: (roomName?: string, memberName?: string, instrument?: string) => Promise<string>;
   joinRoom: (pin: string, memberName?: string, instrument?: string) => Promise<boolean>;
   leaveRoom: () => void;
-  selectSong: (songId: string, songKey?: string) => void;
+  selectSong: (songId: string, songKey?: string, songData?: Song) => void;
   changeKey: (key: string, semitones: number) => void;
   toggleFollowScroll: (enabled?: boolean) => void;
   broadcastScroll: (percentage: number) => void;
@@ -115,6 +115,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return {
           ...prev,
           currentSongId: msg.payload.songId,
+          currentSong: msg.payload.song || prev.currentSong,
           currentKey: msg.payload.key || prev.currentKey,
           semitoneShift: msg.payload.semitones ?? 0,
           lastUpdated: Date.now()
@@ -262,6 +263,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       roomName: cloudState?.roomName || `Sala ${cleanPin}`,
       hostId: cloudState?.hostId || 'host_leader',
       currentSongId: cloudState?.currentSongId || 'ninguem-te-ama-como-eu',
+      currentSong: cloudState?.currentSong || null,
       currentKey: cloudState?.currentKey || 'C',
       semitoneShift: cloudState?.semitoneShift || 0,
       activeSetlistId: cloudState?.activeSetlistId || null,
@@ -314,12 +316,13 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [sessionState, currentMember]);
 
-  const selectSong = useCallback((songId: string, songKey = 'C') => {
+  const selectSong = useCallback((songId: string, songKey = 'C', songData?: Song) => {
     setSessionState(prev => {
       if (!prev) return null;
-      const updated = {
+      const updated: LiveSessionState = {
         ...prev,
         currentSongId: songId,
+        currentSong: songData !== undefined ? songData : prev.currentSong,
         currentKey: songKey,
         semitoneShift: 0,
         lastUpdated: Date.now()
@@ -329,7 +332,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           type: 'SONG_CHANGE',
           senderId: currentMember.id,
           senderName: currentMember.name,
-          payload: { songId, key: songKey, semitones: 0 }
+          payload: { songId, key: songKey, semitones: 0, song: songData || null }
         });
       }
       return updated;

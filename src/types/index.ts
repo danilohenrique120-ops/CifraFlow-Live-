@@ -151,6 +151,7 @@ export interface LiveSessionState {
   roomName: string;
   hostId: string;
   currentSongId: string | null;
+  currentSong?: Song | null;
   currentKey: string;
   semitoneShift: number;
   activeSetlistId: string | null;
