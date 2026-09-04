@@ -18,10 +18,13 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pro';
     }
 
-    // Regras para perfil de usuário
+    // Regras para perfil e dados do usuário na nuvem
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow write: if isOwner(userId);
+    }
+    match /users/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
     }
 
     // Regras para repertórios / setlists na nuvem

@@ -8,7 +8,8 @@ import {
   Sparkles,
   LogOut,
   Check,
-  RefreshCw
+  RefreshCw,
+  Cloud
 } from 'lucide-react';
 
 interface UserProfileModalProps {
@@ -157,6 +158,22 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <span>Acesso ilimitado ao Live Band Sync e salas ao vivo liberado.</span>
             </div>
           )}
+        </div>
+
+        {/* Cloud Sync Status across devices */}
+        <div className="p-3 rounded-2xl bg-zinc-950/40 border border-zinc-800/80 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-none">
+            <Cloud className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+              <span>Sincronização em Nuvem Ativa</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-tight">
+              Tudo o que você salva ou altera é sincronizado automaticamente entre seu celular, tablet e computador.
+            </p>
+          </div>
         </div>
 
         {/* Instrument preference */}

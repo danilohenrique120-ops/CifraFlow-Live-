@@ -124,6 +124,10 @@ export interface UserProfile {
   subscription: UserSubscription;
   createdAt: number;
   lastLoginAt: number;
+  cloudSetlists?: Setlist[];
+  cloudCustomSongs?: Song[];
+  cloudMomentOverrides?: Record<string, LiturgicalMoment>;
+  lastCloudSync?: number;
 }
 
 export interface LiveMember {

@@ -16,6 +16,11 @@ import { PricingModal } from './components/PricingModal';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { UploadSongModal } from './components/UploadSongModal';
+import {
+  saveWorkspaceToCloudDebounced,
+  loadAndMergeCloudWorkspace,
+  subscribeToCloudWorkspace
+} from './services/cloudWorkspaceSync';
 
 const MainAppContent: React.FC = () => {
   const { isInRoom, isHost, sessionState, selectSong } = useLiveRoom();
@@ -46,61 +51,101 @@ const MainAppContent: React.FC = () => {
     return INITIAL_SETLISTS;
   });
 
-  // Automatically load the isolated workspace for the logged-in user
+  // Automatically load and sync the workspace in real time across all devices for the logged-in user
   useEffect(() => {
-    if (userProfile?.uid) {
-      const userSongsKey = `cifrasync_songs_${userProfile.uid}`;
-      const userSetlistsKey = `cifrasync_setlists_${userProfile.uid}`;
-      const userCatalogVerKey = `cifrasync_catalog_ver_${userProfile.uid}`;
-
-      const savedVer = localStorage.getItem(userCatalogVerKey);
-      const savedSongs = localStorage.getItem(userSongsKey);
-
-      // If version changed (e.g. platform pivot to multi-genre), automatically refresh catalog
-      if (savedVer !== CATALOG_VERSION) {
-        let customSongs: Song[] = [];
-        if (savedSongs) {
-          try {
-            const parsed = JSON.parse(savedSongs);
-            if (Array.isArray(parsed)) {
-              customSongs = parsed.filter((s: Song) => s.isCustom);
-            }
-          } catch (e) {}
-        }
-        const freshSongs = [...INITIAL_SONGS, ...customSongs];
-        setSongs(freshSongs);
-        setSetlists(INITIAL_SETLISTS);
-        localStorage.setItem(userSongsKey, JSON.stringify(freshSongs));
-        localStorage.setItem(userSetlistsKey, JSON.stringify(INITIAL_SETLISTS));
-        localStorage.setItem(userCatalogVerKey, CATALOG_VERSION);
-      } else if (savedSongs) {
-        try {
-          setSongs(JSON.parse(savedSongs));
-        } catch (e) {
-          setSongs(INITIAL_SONGS);
-        }
-      } else {
-        setSongs(INITIAL_SONGS);
-      }
-
-      if (savedVer === CATALOG_VERSION) {
-        const savedSetlists = localStorage.getItem(userSetlistsKey);
-        if (savedSetlists) {
-          try {
-            setSetlists(JSON.parse(savedSetlists));
-          } catch (e) {
-            setSetlists(INITIAL_SETLISTS);
-          }
-        } else {
-          setSetlists(INITIAL_SETLISTS);
-        }
-      }
-    } else {
+    if (!userProfile?.uid) {
       setSongs(INITIAL_SONGS);
       setSetlists(INITIAL_SETLISTS);
       setSelectedSong(null);
       setActiveSetlist(null);
+      return;
     }
+
+    const uid = userProfile.uid;
+    const userSongsKey = `cifrasync_songs_${uid}`;
+    const userSetlistsKey = `cifrasync_setlists_${uid}`;
+    const userCatalogVerKey = `cifrasync_catalog_ver_${uid}`;
+
+    // 1. Instant local cache load so the user sees their data immediately without delay
+    const savedVer = localStorage.getItem(userCatalogVerKey);
+    const savedSongs = localStorage.getItem(userSongsKey);
+    const savedSetlists = localStorage.getItem(userSetlistsKey);
+
+    let initialLocalSongs: Song[] = INITIAL_SONGS;
+    let initialLocalSetlists: Setlist[] = INITIAL_SETLISTS;
+
+    if (savedSongs) {
+      try {
+        const parsed = JSON.parse(savedSongs);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          initialLocalSongs = parsed;
+          setSongs(parsed);
+        }
+      } catch (e) {}
+    }
+
+    if (savedSetlists) {
+      try {
+        const parsed = JSON.parse(savedSetlists);
+        if (Array.isArray(parsed)) {
+          initialLocalSetlists = parsed;
+          setSetlists(parsed);
+        }
+      } catch (e) {}
+    }
+
+    // 2. Load and merge with Cloud Firestore across all devices
+    let isSubscribed = true;
+    loadAndMergeCloudWorkspace(uid, initialLocalSetlists, initialLocalSongs).then(({ setlists: cloudSetlists, songs: cloudSongs }) => {
+      if (!isSubscribed) return;
+      setSetlists(cloudSetlists);
+      setSongs(cloudSongs);
+      try {
+        localStorage.setItem(userSetlistsKey, JSON.stringify(cloudSetlists));
+        localStorage.setItem(userSongsKey, JSON.stringify(cloudSongs));
+        localStorage.setItem(userCatalogVerKey, CATALOG_VERSION);
+      } catch (e) {}
+    });
+
+    // 3. Real-time 2-way listener: when user saves or changes anything on another device (smartphone, tablet, etc.)
+    const unsubscribe = subscribeToCloudWorkspace(uid, (cloudData) => {
+      if (!isSubscribed) return;
+
+      if (cloudData.setlists) {
+        setSetlists(cloudData.setlists);
+        try {
+          localStorage.setItem(userSetlistsKey, JSON.stringify(cloudData.setlists));
+        } catch (e) {}
+        setActiveSetlist(prev => {
+          if (!prev) return null;
+          return cloudData.setlists.find(s => s.id === prev.id) || prev;
+        });
+      }
+
+      if (cloudData.customSongs) {
+        const updatedSongs = INITIAL_SONGS.map(s => {
+          if (cloudData.momentOverrides && cloudData.momentOverrides[s.id]) {
+            return { ...s, liturgicalMoment: cloudData.momentOverrides[s.id] };
+          }
+          return s;
+        });
+
+        for (const custom of cloudData.customSongs) {
+          if (!updatedSongs.some(s => s.id === custom.id)) {
+            updatedSongs.unshift(custom);
+          }
+        }
+        setSongs(updatedSongs);
+        try {
+          localStorage.setItem(userSongsKey, JSON.stringify(updatedSongs));
+        } catch (e) {}
+      }
+    });
+
+    return () => {
+      isSubscribed = false;
+      unsubscribe();
+    };
   }, [userProfile?.uid]);
 
   // Navigation and active views
@@ -121,18 +166,16 @@ const MainAppContent: React.FC = () => {
   const [pricingReason, setPricingReason] = useState<string | undefined>(undefined);
   const [uploadPresetMoment, setUploadPresetMoment] = useState<LiturgicalMoment | undefined>(undefined);
 
-  // Save changes isolated per user
+  // Save changes isolated per user to both local storage and Cloud Firestore
   useEffect(() => {
     if (userProfile?.uid) {
-      localStorage.setItem(`cifrasync_songs_${userProfile.uid}`, JSON.stringify(songs));
+      try {
+        localStorage.setItem(`cifrasync_songs_${userProfile.uid}`, JSON.stringify(songs));
+        localStorage.setItem(`cifrasync_setlists_${userProfile.uid}`, JSON.stringify(setlists));
+      } catch (e) {}
+      saveWorkspaceToCloudDebounced(userProfile.uid, setlists, songs);
     }
-  }, [songs, userProfile?.uid]);
-
-  useEffect(() => {
-    if (userProfile?.uid) {
-      localStorage.setItem(`cifrasync_setlists_${userProfile.uid}`, JSON.stringify(setlists));
-    }
-  }, [setlists, userProfile?.uid]);
+  }, [songs, setlists, userProfile?.uid]);
 
   // Sync active song with Live Room state if changed remotely by Host or upon joining room
   useEffect(() => {
