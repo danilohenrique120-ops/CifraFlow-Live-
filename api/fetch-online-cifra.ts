@@ -167,6 +167,52 @@ async function fetchFromCifrasBr(artist: string, song: string) {
   return null;
 }
 
+async function fetchFromCifraClub(artist: string, song: string) {
+  const artistSlug = cleanSlug(artist);
+  const songSlug = cleanSlug(song);
+
+  const urls = [
+    `https://www.cifraclub.com.br/${artistSlug}/${songSlug}/`,
+    `https://www.cifraclub.com.br/${artistSlug.replace(/-e-/g, '-')}/${songSlug}/`,
+    `https://www.cifraclub.com.br/${artistSlug.replace(/&/g, 'e')}/${songSlug}/`
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+        }
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const preMatch = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
+        if (preMatch) {
+          let text = preMatch[1]
+            .replace(/<span[^>]*class="tablatura"[^>]*>[\s\S]*?<\/span>/gi, '')
+            .replace(/<b[^>]*>(.*?)<\/b>/gi, '$1')
+            .replace(/<small[^>]*>(.*?)<\/small>/gi, '$1')
+            .replace(/<span[^>]*>(.*?)<\/span>/gi, '$1')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]+>/g, '');
+
+          text = decodeHtml(text).trim();
+          if (text.length > 50) {
+            return {
+              cifra: text,
+              key: detectKeyFromCifra(text),
+              capo: detectCapoFromCifra(text),
+              source: 'cifraclub'
+            };
+          }
+        }
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -201,7 +247,21 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 2. Tentar Cifras.com.br
+    // 2. Tentar CifraClub (Líder em músicas brasileiras, gospel, sertanejo, etc.)
+    const cifraClub = await fetchFromCifraClub(artist, title);
+    if (cifraClub) {
+      return res.status(200).json({
+        success: true,
+        title,
+        artist,
+        key: cifraClub.key,
+        capo: cifraClub.capo,
+        cifra: cifraClub.cifra,
+        source: cifraClub.source
+      });
+    }
+
+    // 3. Tentar Cifras.com.br
     const cifrasBr = await fetchFromCifrasBr(artist, title);
     if (cifrasBr) {
       return res.status(200).json({

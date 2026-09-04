@@ -2,12 +2,34 @@ import { doc, getDoc, setDoc, onSnapshot, Unsubscribe } from 'firebase/firestore
 import { db, isFirebaseConfigured } from '../firebase';
 import { Setlist, Song, LiturgicalMoment } from '../types';
 import { INITIAL_SONGS } from '../data/songsData';
+import { formatLyricsWithHarmonics, fetchRealOnlineCifra } from './onlineMusicSearch';
 
 export interface CloudWorkspaceData {
   setlists: Setlist[];
   customSongs: Song[];
   momentOverrides: Record<string, LiturgicalMoment>;
   lastUpdated?: number;
+}
+
+/**
+ * Sanitizes any song that might have received corrupted dummy lyrics ("Todos os dias quando acordo")
+ * from the previous fallback bug, without affecting the real "Tempo Perdido" song.
+ */
+export function sanitizeSong(song: Song): Song {
+  if (!song || !song.content) return song;
+  const isGenuineTempoPerdido =
+    song.id === 'tempo-perdido' ||
+    song.title.trim().toLowerCase() === 'tempo perdido' ||
+    song.title.toLowerCase().includes('tempo perdido');
+
+  if (!isGenuineTempoPerdido && song.content.includes('Todos os dias quando acordo')) {
+    const cleanedContent = formatLyricsWithHarmonics(song.title, song.artist, null, song.originalKey || 'G');
+    return {
+      ...song,
+      content: cleanedContent
+    };
+  }
+  return song;
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -159,15 +181,15 @@ export async function loadAndMergeCloudWorkspace(
     }
     const mergedSetlists = Array.from(mergedSetlistsMap.values());
 
-    // Merge Custom Songs
+    // Merge Custom Songs with automatic sanitization of old dummy templates
     const mergedCustomSongsMap = new Map<string, Song>();
     for (const s of cloudCustomSongs) {
-      mergedCustomSongsMap.set(s.id, s);
+      mergedCustomSongsMap.set(s.id, sanitizeSong(s));
     }
     const localCustomSongs = extractCustomSongs(localSongs);
     for (const s of localCustomSongs) {
       if (!mergedCustomSongsMap.has(s.id)) {
-        mergedCustomSongsMap.set(s.id, s);
+        mergedCustomSongsMap.set(s.id, sanitizeSong(s));
       }
     }
 
@@ -200,6 +222,50 @@ export async function loadAndMergeCloudWorkspace(
 }
 
 /**
+ * Heals contaminated or fallback online songs asynchronously with real authentic chords from scrapers
+ */
+export async function healContaminatedSongsAsync(
+  userId: string,
+  songs: Song[],
+  setlists: Setlist[],
+  onUpdateSongs: (songs: Song[]) => void
+): Promise<void> {
+  const contaminated = songs.filter(s => {
+    const isTempo = s.id === 'tempo-perdido' || s.title.toLowerCase().includes('tempo perdido');
+    return !isTempo && s.id.startsWith('online_') && (s.content.includes('Todos os dias quando acordo') || s.content.includes('Arranjo e harmonia da canção'));
+  });
+
+  if (contaminated.length === 0) return;
+
+  let hasChanges = false;
+  const updatedSongs = [...songs];
+
+  for (const song of contaminated) {
+    try {
+      const real = await fetchRealOnlineCifra(song.title, song.artist);
+      if (real && real.cifra && real.cifra.length > 50) {
+        const idx = updatedSongs.findIndex(s => s.id === song.id);
+        if (idx !== -1) {
+          updatedSongs[idx] = {
+            ...updatedSongs[idx],
+            content: real.cifra,
+            originalKey: real.key || updatedSongs[idx].originalKey || 'G',
+            currentKey: real.key || updatedSongs[idx].currentKey || 'G',
+            capo: real.capo > 0 ? real.capo : updatedSongs[idx].capo
+          };
+          hasChanges = true;
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (hasChanges) {
+    onUpdateSongs(updatedSongs);
+    saveWorkspaceToCloudDebounced(userId, setlists, updatedSongs, 200);
+  }
+}
+
+/**
  * Real-time 2-way sync listener across multiple devices using Firestore onSnapshot
  */
 export function subscribeToCloudWorkspace(
@@ -225,7 +291,7 @@ export function subscribeToCloudWorkspace(
       if (!cloudSetlists && !cloudCustomSongs) return;
 
       const setlists = cloudSetlists || [];
-      const customSongs = cloudCustomSongs || [];
+      const customSongs = (cloudCustomSongs || []).map(sanitizeSong);
       const incomingSig = computeSignature(setlists, customSongs);
 
       // Avoid looping if the change originated from this same device's save

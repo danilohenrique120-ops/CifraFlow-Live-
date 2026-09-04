@@ -136,39 +136,6 @@ export function formatLyricsWithHarmonics(
   plainLyrics: string | null,
   originalKey: string = 'G'
 ): string {
-  if (!plainLyrics || plainLyrics.trim().length < 20) {
-    return `[Intro] G  D/F#  Em7  C9
-
-[Primeira Parte]
-G                  D/F#
-  ${title} - ${artist}
-Em7                C9
-  Todos os dias quando acordo
-G                  D/F#
-  Temos todo o tempo do mundo
-Em7                C9
-  Para cantar e tocar esta canção
-
-[Refrão]
-G                  D/F#
-  Este é o refrão marcante do show
-Em7                C9
-  Onde todo o público canta junto
-G                  D/F#
-  Aumente o som da guitarra e do violão
-Em7        D/F#     C9
-  Vamos tocar até o final!`;
-  }
-
-  const rawLines = plainLyrics
-    .split('\n')
-    .map(l => l.trim())
-    .filter(l => !l.startsWith('[') && !l.startsWith('(') && l.length > 0);
-
-  if (rawLines.length === 0) {
-    return `[Intro] G  D/F#  Em7  C9\n\n[Primeira Parte]\n${title} - ${artist}`;
-  }
-
   const PROGRESSIONS: Record<string, { intro: string; verse: string[]; chorus: string[] }> = {
     'G': { intro: 'G  D/F#  Em7  C9', verse: ['G', 'D/F#', 'Em7', 'C9'], chorus: ['G', 'D/F#', 'Em7', 'C9', 'Am7', 'D'] },
     'D': { intro: 'D  A/C#  Bm7  G', verse: ['D', 'A/C#', 'Bm7', 'G'], chorus: ['D', 'A/C#', 'Bm7', 'G', 'Em7', 'A'] },
@@ -178,6 +145,37 @@ Em7        D/F#     C9
   };
 
   const keyProg = PROGRESSIONS[originalKey] || PROGRESSIONS['G'];
+
+  if (!plainLyrics || plainLyrics.trim().length < 20) {
+    return `[Intro] ${keyProg.intro}
+
+[Primeira Parte]
+${keyProg.verse[0]}                  ${keyProg.verse[1]}
+  ${title} - ${artist}
+${keyProg.verse[2]}                  ${keyProg.verse[3]}
+  Arranjo e harmonia da canção
+${keyProg.verse[0]}                  ${keyProg.verse[1]}
+  Acompanhamento base para voz e instrumentos
+${keyProg.verse[2]}                  ${keyProg.verse[3]}
+  Ritmo e dinâmica em compasso 4/4
+
+[Refrão]
+${keyProg.chorus[0]}                  ${keyProg.chorus[1]}
+  ${title} - Refrão Principal
+${keyProg.chorus[2]}                  ${keyProg.chorus[3]}
+  Crescendo com toda a banda
+${keyProg.chorus[4] || keyProg.verse[0]}                  ${keyProg.chorus[5] || keyProg.verse[1]}
+  Finalização em harmonia`;
+  }
+
+  const rawLines = plainLyrics
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => !l.startsWith('[') && !l.startsWith('(') && l.length > 0);
+
+  if (rawLines.length === 0) {
+    return `[Intro] ${keyProg.intro}\n\n[Primeira Parte]\n${title} - ${artist}`;
+  }
   const chunkSize = Math.max(4, Math.min(8, Math.ceil(rawLines.length / 4)));
   const sections: { title: string; lines: string[]; chords: string[] }[] = [];
 

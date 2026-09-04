@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Song, StageTheme, FontScale, ColumnMode, Setlist, INSTRUMENT_OPTIONS } from '../types';
-import { isChordLine, transposeSongContent, calculateNewKey, detectCapoInText, getInstrumentTranspositionOffset } from '../utils/chordEngine';
+import { isChordLine, transposeSongContent, calculateNewKey, detectCapoInText, getInstrumentTranspositionOffset, getSemitoneDifference } from '../utils/chordEngine';
 import { useLiveRoom } from '../context/LiveRoomContext';
 import { useAuth } from '../context/AuthContext';
 import { ChordModal } from './ChordTooltip';
@@ -50,6 +50,7 @@ interface StageViewerProps {
   onOpenMetronome?: () => void;
   onOpenPricing?: (reason?: string) => void;
   onSaveCustomSong?: (newSong: Song) => void;
+  onUpdateCustomKey?: (songId: string, newKey: string) => void;
 }
 
 export const StageViewer: React.FC<StageViewerProps> = ({
@@ -62,7 +63,8 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   onOpenLiveRoomModal,
   onOpenMetronome,
   onOpenPricing,
-  onSaveCustomSong
+  onSaveCustomSong,
+  onUpdateCustomKey
 }) => {
   const { userProfile, isPro } = useAuth();
   const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
@@ -79,9 +81,16 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     recentAlert
   } = useLiveRoom();
 
+  // Target key for the song: checks active setlist item's customKey first, then song.currentKey, then song.originalKey
+  const currentSetlistItem = activeSetlist?.items?.find(it => it.songId === song.id);
+  const targetKeyForSong = currentSetlistItem?.customKey || song.currentKey || song.originalKey;
+
   // Transposition state
   const [semitoneShift, setSemitoneShift] = useState<number>(() => {
-    return sessionState?.semitoneShift || 0;
+    if (isInRoom && !isHost && sessionState?.semitoneShift !== undefined) {
+      return sessionState.semitoneShift;
+    }
+    return getSemitoneDifference(song.originalKey, targetKeyForSong);
   });
 
   // Display preferences
@@ -154,12 +163,21 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     }
   };
 
+  // Re-calculate transposition whenever song or targetKeyForSong changes
+  useEffect(() => {
+    if (isInRoom && !isHost && sessionState?.semitoneShift !== undefined) {
+      setSemitoneShift(sessionState.semitoneShift);
+      return;
+    }
+    setSemitoneShift(getSemitoneDifference(song.originalKey, targetKeyForSong));
+  }, [song.id, song.originalKey, targetKeyForSong, isInRoom, isHost]);
+
   // Sync state from Live Room if follower
   useEffect(() => {
-    if (sessionState && !isHost && sessionState.semitoneShift !== undefined) {
+    if (isInRoom && !isHost && sessionState?.semitoneShift !== undefined) {
       setSemitoneShift(sessionState.semitoneShift);
     }
-  }, [sessionState?.semitoneShift, song.id, isHost]);
+  }, [sessionState?.semitoneShift, isInRoom, isHost]);
 
   // Sync scroll position from Leader if followScroll is active
   useEffect(() => {
@@ -280,12 +298,18 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     if (isInRoom && isHost) {
       changeKey(newKey, newShift);
     }
+    if (onUpdateCustomKey) {
+      onUpdateCustomKey(song.id, newKey);
+    }
   };
 
   const handleResetKey = () => {
     setSemitoneShift(0);
     if (isInRoom && isHost) {
       changeKey(song.originalKey, 0);
+    }
+    if (onUpdateCustomKey) {
+      onUpdateCustomKey(song.id, song.originalKey);
     }
   };
 

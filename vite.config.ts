@@ -73,6 +73,37 @@ export default defineConfig(() => {
               });
               return;
             }
+
+            if (req.url?.startsWith('/api/fetch-online-cifra') && req.method === 'POST') {
+              let bodyStr = '';
+              req.on('data', chunk => { bodyStr += chunk; });
+              req.on('end', async () => {
+                try {
+                  const body = JSON.parse(bodyStr || '{}');
+                  const handler = (await import('./api/fetch-online-cifra.ts')).default;
+                  const mockRes = {
+                    setHeader: (k: string, v: string) => res.setHeader(k, v),
+                    status: (code: number) => {
+                      res.statusCode = code;
+                      return {
+                        json: (data: any) => {
+                          res.setHeader('Content-Type', 'application/json');
+                          res.end(JSON.stringify(data));
+                        },
+                        end: () => res.end()
+                      };
+                    }
+                  };
+                  await handler({ body, query: {}, method: 'POST' }, mockRes);
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ error: err.message || 'Erro ao buscar cifra' }));
+                }
+              });
+              return;
+            }
+
             next();
           });
         }

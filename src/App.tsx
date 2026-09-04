@@ -19,11 +19,13 @@ import { UploadSongModal } from './components/UploadSongModal';
 import {
   saveWorkspaceToCloudDebounced,
   loadAndMergeCloudWorkspace,
-  subscribeToCloudWorkspace
+  subscribeToCloudWorkspace,
+  healContaminatedSongsAsync
 } from './services/cloudWorkspaceSync';
+import { getSemitoneDifference } from './utils/chordEngine';
 
 const MainAppContent: React.FC = () => {
-  const { isInRoom, isHost, sessionState, selectSong } = useLiveRoom();
+  const { isInRoom, isHost, sessionState, selectSong, changeKey } = useLiveRoom();
   const { isPro, userProfile, isLoading } = useAuth();
 
   // User-isolated songs and setlists state
@@ -105,6 +107,15 @@ const MainAppContent: React.FC = () => {
         localStorage.setItem(userSongsKey, JSON.stringify(cloudSongs));
         localStorage.setItem(userCatalogVerKey, CATALOG_VERSION);
       } catch (e) {}
+
+      // Automatically heal any contaminated online songs in the background with authentic chords
+      healContaminatedSongsAsync(uid, cloudSongs, cloudSetlists, (healedSongs) => {
+        if (!isSubscribed) return;
+        setSongs(healedSongs);
+        try {
+          localStorage.setItem(userSongsKey, JSON.stringify(healedSongs));
+        } catch (e) {}
+      });
     });
 
     // 3. Real-time 2-way listener: when user saves or changes anything on another device (smartphone, tablet, etc.)
@@ -177,9 +188,9 @@ const MainAppContent: React.FC = () => {
     }
   }, [songs, setlists, userProfile?.uid]);
 
-  // Sync active song with Live Room state if changed remotely by Host or upon joining room
+  // Sync active song with Live Room state if changed remotely by Host or upon joining room (only for members following host)
   useEffect(() => {
-    if (!sessionState) return;
+    if (!isInRoom || isHost || !sessionState) return;
 
     if (sessionState.currentSong) {
       const incomingSong = sessionState.currentSong;
@@ -199,17 +210,16 @@ const MainAppContent: React.FC = () => {
         setSelectedSong(targetSong);
       }
     }
-  }, [sessionState?.currentSong, sessionState?.currentSongId, sessionState?.lastUpdated]);
+  }, [isInRoom, isHost, sessionState?.currentSong, sessionState?.currentSongId, sessionState?.lastUpdated]);
 
-  // Setlist sync if active in room
+  // Setlist sync if active in room (only for members following host)
   useEffect(() => {
-    if (sessionState?.activeSetlistId) {
-      const targetSetlist = setlists.find(sl => sl.id === sessionState.activeSetlistId);
-      if (targetSetlist) {
-        setActiveSetlist(targetSetlist);
-      }
+    if (!isInRoom || isHost || !sessionState?.activeSetlistId) return;
+    const targetSetlist = setlists.find(sl => sl.id === sessionState.activeSetlistId);
+    if (targetSetlist) {
+      setActiveSetlist(targetSetlist);
     }
-  }, [sessionState?.activeSetlistId, setlists]);
+  }, [isInRoom, isHost, sessionState?.activeSetlistId, setlists]);
 
   // Global Keyboard Shortcut: Ctrl+K / Cmd+K for search
   useEffect(() => {
@@ -229,18 +239,34 @@ const MainAppContent: React.FC = () => {
   };
 
   // Handlers
-  const handleSelectSong = (song: Song, setlist?: Setlist) => {
+  const handleSelectSong = (song: Song, setlist?: Setlist | null) => {
     // Add to songs list if it's an online song not yet in catalog
     if (!songs.some(s => s.id === song.id)) {
       setSongs(prev => [song, ...prev]);
     }
     setSelectedSong(song);
-    if (setlist) {
-      setActiveSetlist(setlist);
-    }
+    setActiveSetlist(setlist || null);
     if (isInRoom && isHost) {
-      selectSong(song.id, song.currentKey || song.originalKey, song);
+      const targetKey = setlist?.items.find(it => it.songId === song.id)?.customKey || song.currentKey || song.originalKey;
+      const shift = getSemitoneDifference(song.originalKey, targetKey);
+      selectSong(song.id, targetKey, song);
+      if (shift !== 0) {
+        changeKey(targetKey, shift);
+      }
     }
+  };
+
+  const handleUpdateCustomKey = (songId: string, newKey: string) => {
+    if (activeSetlist) {
+      const updatedSetlist: Setlist = {
+        ...activeSetlist,
+        items: activeSetlist.items.map(it => it.songId === songId ? { ...it, customKey: newKey } : it),
+        updatedAt: new Date().toISOString()
+      };
+      setActiveSetlist(updatedSetlist);
+      setSetlists(prev => prev.map(sl => sl.id === updatedSetlist.id ? updatedSetlist : sl));
+    }
+    setSongs(prev => prev.map(s => s.id === songId ? { ...s, currentKey: newKey } : s));
   };
 
   const handleSaveCustomSong = (newSong: Song) => {
@@ -451,7 +477,7 @@ const MainAppContent: React.FC = () => {
           {currentView === 'discovery' ? (
             <DiscoveryHub
               songs={songs}
-              onSelectSong={(song) => handleSelectSong(song)}
+              onSelectSong={(song) => handleSelectSong(song, null)}
               onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
               onOpenSearch={() => setIsSearchOpen(true)}
               onOpenUploadModal={handleOpenUploadWithPreset}
@@ -493,6 +519,7 @@ const MainAppContent: React.FC = () => {
           onOpenMetronome={() => setIsMetronomeOpen(true)}
           onOpenPricing={handleOpenPricingWithReason}
           onSaveCustomSong={handleSaveCustomSong}
+          onUpdateCustomKey={handleUpdateCustomKey}
         />
       )}
 
@@ -501,7 +528,7 @@ const MainAppContent: React.FC = () => {
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         songs={songs}
-        onSelectSong={(song) => handleSelectSong(song)}
+        onSelectSong={(song) => handleSelectSong(song, null)}
         onOpenUploadModal={() => handleOpenUploadWithPreset()}
         setlists={setlists}
         onAddToSetlist={handleAddSongDirectToSetlist}
