@@ -34,13 +34,17 @@ import {
   Lock,
   Edit3,
   Check,
-  X
+  X,
+  ListPlus,
+  ListMusic
 } from 'lucide-react';
 
 interface StageViewerProps {
   song: Song;
   onBack: () => void;
   activeSetlist?: Setlist | null;
+  setlists?: Setlist[];
+  onAddToSetlist?: (song: Song, setlistId: string) => void;
   onNavigateSetlist?: (direction: 'prev' | 'next') => void;
   onOpenLiveRoomModal?: () => void;
   onOpenMetronome?: () => void;
@@ -52,6 +56,8 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   song,
   onBack,
   activeSetlist,
+  setlists,
+  onAddToSetlist,
   onNavigateSetlist,
   onOpenLiveRoomModal,
   onOpenMetronome,
@@ -101,6 +107,19 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const wakeLockRef = useRef<any>(null);
+
+  // Setlist Dropdown & Feedback state
+  const [isSetlistDropdownOpen, setIsSetlistDropdownOpen] = useState<boolean>(false);
+  const [setlistFeedback, setSetlistFeedback] = useState<string | null>(null);
+
+  // Close setlist dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = () => setIsSetlistDropdownOpen(false);
+    if (isSetlistDropdownOpen) {
+      window.addEventListener('click', handleClickOutside);
+      return () => window.removeEventListener('click', handleClickOutside);
+    }
+  }, [isSetlistDropdownOpen]);
 
   // Keep scrollSpeedRef always in sync with state for instantaneous speed responsiveness
   useEffect(() => {
@@ -559,6 +578,73 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               <Music className="w-5 h-5" />
             </button>
 
+            {/* 📋 Adicionar ao Repertório Button & Dropdown */}
+            {onAddToSetlist && (
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setIsSetlistDropdownOpen(prev => !prev)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
+                    isSetlistDropdownOpen
+                      ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-extrabold'
+                      : 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 border-zinc-700 hover:border-emerald-500/40'
+                  }`}
+                  title="Adicionar esta música a um Repertório"
+                >
+                  <ListPlus className="w-4 h-4 text-emerald-400" />
+                  <span className="hidden md:inline">Repertório</span>
+                </button>
+
+                {/* Dropdown Menu de Repertórios */}
+                {isSetlistDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 text-left">
+                    <div className="px-2 py-1 border-b border-zinc-800 mb-1.5 flex items-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-zinc-400">
+                      <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Escolha o Repertório:</span>
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto space-y-1">
+                      {setlists && setlists.length > 0 ? (
+                        setlists.map((sl) => {
+                          const isAlreadyIn = sl.items.some(it => it.songId === song.id);
+                          return (
+                            <button
+                              key={sl.id}
+                              disabled={isAlreadyIn}
+                              onClick={() => {
+                                onAddToSetlist(song, sl.id);
+                                setIsSetlistDropdownOpen(false);
+                                setSetlistFeedback(sl.title);
+                                setTimeout(() => setSetlistFeedback(null), 3500);
+                              }}
+                              className={`w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold truncate transition flex items-center justify-between group ${
+                                isAlreadyIn
+                                  ? 'bg-emerald-500/10 text-emerald-300 opacity-80 cursor-default'
+                                  : 'hover:bg-zinc-800 text-zinc-200'
+                              }`}
+                            >
+                              <span className="truncate pr-2">{sl.title}</span>
+                              {isAlreadyIn ? (
+                                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 flex-none">
+                                  <Check className="w-3.5 h-3.5" />
+                                  Adicionada
+                                </span>
+                              ) : (
+                                <Plus className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-400 flex-none" />
+                              )}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <p className="px-2 py-3 text-xs text-zinc-400 text-center">
+                          Nenhum repertório criado ainda. Crie um repertório na aba Repertórios!
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ✏️ Criar Minha Versão / Revisar Cifra */}
             <button
               onClick={() => {
@@ -593,6 +679,14 @@ export const StageViewer: React.FC<StageViewerProps> = ({
             </button>
           </div>
         </header>
+      )}
+
+      {/* Setlist Feedback Notification Toast */}
+      {setlistFeedback && (
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-emerald-500 text-zinc-950 font-black text-xs sm:text-sm shadow-2xl shadow-emerald-900/50 flex items-center gap-2 animate-in fade-in slide-in-from-top-3">
+          <Check className="w-4 h-4 stroke-[3]" />
+          <span>Música adicionada ao repertório "{setlistFeedback}"!</span>
+        </div>
       )}
 
       {/* Main Stage Lyrics Area */}

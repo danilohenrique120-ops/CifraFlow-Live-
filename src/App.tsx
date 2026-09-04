@@ -254,29 +254,80 @@ const MainAppContent: React.FC = () => {
     }
   };
 
-  const handleAddToSetlist = (songId: string, setlistId: string) => {
-    const song = songs.find(s => s.id === songId);
-    if (!song) return;
+  const handleAddToSetlist = (songOrId: string | Song, setlistId: string) => {
+    let targetSong: Song | undefined;
 
-    setSetlists(prev => prev.map(sl => {
-      if (sl.id === setlistId) {
-        const exists = sl.items.some(item => item.songId === songId);
-        if (exists) return sl;
+    if (typeof songOrId === 'string') {
+      targetSong = songs.find(s => s.id === songOrId);
+    } else {
+      targetSong = songOrId;
+      // Make sure the full song is registered in songs array
+      setSongs(prev => {
+        if (!prev.some(s => s.id === targetSong!.id)) {
+          return [targetSong!, ...prev];
+        }
+        return prev;
+      });
+    }
+
+    if (!targetSong) return;
+
+    const finalSong = targetSong;
+    const songId = finalSong.id;
+    const initialKey = finalSong.currentKey || finalSong.originalKey || 'G';
+
+    setSetlists(prev => {
+      const updated = prev.map(sl => {
+        if (sl.id === setlistId) {
+          const exists = sl.items.some(item => item.songId === songId);
+          if (exists) return sl;
+          return {
+            ...sl,
+            items: [
+              ...sl.items,
+              {
+                songId,
+                customKey: initialKey,
+                order: sl.items.length + 1
+              }
+            ],
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return sl;
+      });
+
+      // Synchronously write to localStorage
+      const storageKey = userProfile?.uid
+        ? `cifrasync_setlists_${userProfile.uid}`
+        : 'cifrasync_setlists_guest';
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+      } catch (e) {}
+
+      return updated;
+    });
+
+    // Also update activeSetlist if it is the one being modified
+    setActiveSetlist(prev => {
+      if (prev && prev.id === setlistId) {
+        const exists = prev.items.some(item => item.songId === songId);
+        if (exists) return prev;
         return {
-          ...sl,
+          ...prev,
           items: [
-            ...sl.items,
+            ...prev.items,
             {
               songId,
-              customKey: song.originalKey,
-              order: sl.items.length + 1
+              customKey: initialKey,
+              order: prev.items.length + 1
             }
           ],
           updatedAt: new Date().toISOString()
         };
       }
-      return sl;
-    }));
+      return prev;
+    });
   };
 
   const handleOpenUploadWithPreset = (preset?: LiturgicalMoment) => {
@@ -314,10 +365,7 @@ const MainAppContent: React.FC = () => {
   }
 
   const handleAddSongDirectToSetlist = (song: Song, setlistId: string) => {
-    if (!songs.some(s => s.id === song.id)) {
-      setSongs(prev => [song, ...prev]);
-    }
-    handleAddToSetlist(song.id, setlistId);
+    handleAddToSetlist(song, setlistId);
   };
 
   return (
@@ -395,6 +443,8 @@ const MainAppContent: React.FC = () => {
           song={selectedSong}
           onBack={() => setSelectedSong(null)}
           activeSetlist={activeSetlist}
+          setlists={setlists}
+          onAddToSetlist={handleAddSongDirectToSetlist}
           onNavigateSetlist={handleNavigateSetlist}
           onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
           onOpenMetronome={() => setIsMetronomeOpen(true)}

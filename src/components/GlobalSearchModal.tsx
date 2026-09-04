@@ -408,16 +408,31 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                   <span>Escolha o Repertório:</span>
                                 </div>
 
-                                {setlists.map((setlist) => (
-                                  <button
-                                    key={setlist.id}
-                                    onClick={(e) => handleAddOnlineTrackToSetlist(track, setlist, e)}
-                                    className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-zinc-800 text-xs font-semibold text-zinc-200 truncate transition flex items-center justify-between group/item"
-                                  >
-                                    <span className="truncate">{setlist.title}</span>
-                                    <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
-                                  </button>
-                                ))}
+                                {setlists.map((setlist) => {
+                                  const isAlreadyIn = setlist.items.some(it => it.songId === `online_${track.trackId}`);
+                                  return (
+                                    <button
+                                      key={setlist.id}
+                                      disabled={isAlreadyIn}
+                                      onClick={(e) => handleAddOnlineTrackToSetlist(track, setlist, e)}
+                                      className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold truncate transition flex items-center justify-between group/item ${
+                                        isAlreadyIn
+                                          ? 'bg-emerald-500/10 text-emerald-300 opacity-80 cursor-default'
+                                          : 'hover:bg-zinc-800 text-zinc-200'
+                                      }`}
+                                    >
+                                      <span className="truncate">{setlist.title}</span>
+                                      {isAlreadyIn ? (
+                                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 flex-none ml-1">
+                                          <Check className="w-3.5 h-3.5" />
+                                          Adicionada
+                                        </span>
+                                      ) : (
+                                        <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
+                                      )}
+                                    </button>
+                                  );
+                                })}
 
                                 {setlists.length === 0 && (
                                   <p className="px-2 py-2 text-xs text-zinc-500 text-center">
@@ -632,17 +647,31 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                     <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
                                     <span>Escolha o Repertório:</span>
                                   </div>
-
-                                  {setlists.map((setlist) => (
-                                    <button
-                                      key={setlist.id}
-                                      onClick={(e) => handleAddSongToSetlist(song, setlist, e)}
-                                      className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-zinc-800 text-xs font-semibold text-zinc-200 truncate transition flex items-center justify-between group/item"
-                                    >
-                                      <span className="truncate">{setlist.title}</span>
-                                      <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
-                                    </button>
-                                  ))}
+                                  {setlists.map((setlist) => {
+                                    const isAlreadyIn = setlist.items.some(it => it.songId === song.id);
+                                    return (
+                                      <button
+                                        key={setlist.id}
+                                        disabled={isAlreadyIn}
+                                        onClick={(e) => handleAddSongToSetlist(song, setlist, e)}
+                                        className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold truncate transition flex items-center justify-between group/item ${
+                                          isAlreadyIn
+                                            ? 'bg-emerald-500/10 text-emerald-300 opacity-80 cursor-default'
+                                            : 'hover:bg-zinc-800 text-zinc-200'
+                                        }`}
+                                      >
+                                        <span className="truncate">{setlist.title}</span>
+                                        {isAlreadyIn ? (
+                                          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 flex-none ml-1">
+                                            <Check className="w-3.5 h-3.5" />
+                                            Adicionada
+                                          </span>
+                                        ) : (
+                                          <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
+                                        )}
+                                      </button>
+                                    );
+                                  })}
 
                                   {setlists.length === 0 && (
                                     <p className="px-2 py-2 text-xs text-zinc-500 text-center">
