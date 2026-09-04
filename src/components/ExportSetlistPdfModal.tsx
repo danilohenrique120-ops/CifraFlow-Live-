@@ -69,7 +69,7 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
       text += `\n`;
     });
 
-    text += `\n✨ _Gerado via Cifraê Live Pro_`;
+    text += `\n✨ _Gerado via Cifraê Pro_`;
 
     navigator.clipboard.writeText(text);
     setCopiedWhatsapp(true);
@@ -273,7 +273,7 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
           )}
           <div className="text-[10px] text-gray-500 mt-2 flex items-center justify-between">
             <span>Total de Músicas: {setlistSongs.length}</span>
-            <span>Data: {new Date().toLocaleDateString('pt-BR')} • Cifraê Live</span>
+            <span>Data: {new Date().toLocaleDateString('pt-BR')} • Cifraê</span>
           </div>
         </div>
 

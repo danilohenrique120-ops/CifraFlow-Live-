@@ -57,8 +57,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Music className="w-5 h-5 fill-current" />
           </div>
           <div>
-            <span className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-1.5">
-              Cifraê <span className="text-emerald-400">Live</span>
+            <span className="text-base sm:text-lg font-black tracking-tight text-white flex items-center">
+              Cifra<span className="text-emerald-400">ê</span>
             </span>
           </div>
         </div>

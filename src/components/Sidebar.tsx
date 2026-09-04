@@ -362,7 +362,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           <div className="text-center text-[10px] text-zinc-600">
-            <p className="font-bold text-zinc-400">Cifraê Live v2.0</p>
+            <p className="font-bold text-zinc-400">Cifra<span className="text-emerald-400">ê</span> v2.0</p>
             <p>PWA & Live Band Sync Ready</p>
           </div>
         </div>

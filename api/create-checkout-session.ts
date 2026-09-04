@@ -60,7 +60,7 @@ export default async function handler(req: any, res: any) {
       };
     } else {
       const unitAmount = isProBand ? (isAnnual ? 19900 : 2490) : (isAnnual ? 9900 : 1490);
-      const planTitle = isProBand ? 'Cifraê Live - Plano Pro' : 'Cifraê Live - Pro Músico Solo';
+      const planTitle = isProBand ? 'Cifraê - Plano Pro' : 'Cifraê - Pro Músico Solo';
 
       lineItem = {
         price_data: {
