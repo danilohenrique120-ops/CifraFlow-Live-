@@ -104,7 +104,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-black tracking-tight flex items-center gap-1.5">
-                CifraSync <span className="text-emerald-400">Live</span>
+                Cifraê <span className="text-emerald-400">Live</span>
               </h3>
               <p className="text-[11px] text-zinc-400">
                 {isSignUp ? 'Crie sua conta para começar' : 'Acesse sua conta para entrar no app'}

@@ -31,10 +31,10 @@ const MainAppContent: React.FC = () => {
   // User-isolated songs and setlists state
   const [songs, setSongs] = useState<Song[]>(() => {
     if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_SONGS;
-    const userCatalogVerKey = `cifrasync_catalog_ver_${userProfile.uid}`;
-    const savedVer = localStorage.getItem(userCatalogVerKey);
+    const userCatalogVerKey = `cifrae_catalog_ver_${userProfile.uid}`;
+    const savedVer = localStorage.getItem(userCatalogVerKey) || localStorage.getItem(`cifrasync_catalog_ver_${userProfile.uid}`);
     if (savedVer !== CATALOG_VERSION) return INITIAL_SONGS;
-    const saved = localStorage.getItem(`cifrasync_songs_${userProfile.uid}`);
+    const saved = localStorage.getItem(`cifrae_songs_${userProfile.uid}`) || localStorage.getItem(`cifrasync_songs_${userProfile.uid}`);
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
@@ -43,10 +43,10 @@ const MainAppContent: React.FC = () => {
 
   const [setlists, setSetlists] = useState<Setlist[]>(() => {
     if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_SETLISTS;
-    const userCatalogVerKey = `cifrasync_catalog_ver_${userProfile.uid}`;
-    const savedVer = localStorage.getItem(userCatalogVerKey);
+    const userCatalogVerKey = `cifrae_catalog_ver_${userProfile.uid}`;
+    const savedVer = localStorage.getItem(userCatalogVerKey) || localStorage.getItem(`cifrasync_catalog_ver_${userProfile.uid}`);
     if (savedVer !== CATALOG_VERSION) return INITIAL_SETLISTS;
-    const saved = localStorage.getItem(`cifrasync_setlists_${userProfile.uid}`);
+    const saved = localStorage.getItem(`cifrae_setlists_${userProfile.uid}`) || localStorage.getItem(`cifrasync_setlists_${userProfile.uid}`);
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
@@ -64,14 +64,14 @@ const MainAppContent: React.FC = () => {
     }
 
     const uid = userProfile.uid;
-    const userSongsKey = `cifrasync_songs_${uid}`;
-    const userSetlistsKey = `cifrasync_setlists_${uid}`;
-    const userCatalogVerKey = `cifrasync_catalog_ver_${uid}`;
+    const userSongsKey = `cifrae_songs_${uid}`;
+    const userSetlistsKey = `cifrae_setlists_${uid}`;
+    const userCatalogVerKey = `cifrae_catalog_ver_${uid}`;
 
     // 1. Instant local cache load so the user sees their data immediately without delay
-    const savedVer = localStorage.getItem(userCatalogVerKey);
-    const savedSongs = localStorage.getItem(userSongsKey);
-    const savedSetlists = localStorage.getItem(userSetlistsKey);
+    const savedVer = localStorage.getItem(userCatalogVerKey) || localStorage.getItem(`cifrasync_catalog_ver_${uid}`);
+    const savedSongs = localStorage.getItem(userSongsKey) || localStorage.getItem(`cifrasync_songs_${uid}`);
+    const savedSetlists = localStorage.getItem(userSetlistsKey) || localStorage.getItem(`cifrasync_setlists_${uid}`);
 
     let initialLocalSongs: Song[] = INITIAL_SONGS;
     let initialLocalSetlists: Setlist[] = INITIAL_SETLISTS;
@@ -181,8 +181,8 @@ const MainAppContent: React.FC = () => {
   useEffect(() => {
     if (userProfile?.uid) {
       try {
-        localStorage.setItem(`cifrasync_songs_${userProfile.uid}`, JSON.stringify(songs));
-        localStorage.setItem(`cifrasync_setlists_${userProfile.uid}`, JSON.stringify(setlists));
+        localStorage.setItem(`cifrae_songs_${userProfile.uid}`, JSON.stringify(songs));
+        localStorage.setItem(`cifrae_setlists_${userProfile.uid}`, JSON.stringify(setlists));
       } catch (e) {}
       saveWorkspaceToCloudDebounced(userProfile.uid, setlists, songs);
     }
@@ -368,8 +368,8 @@ const MainAppContent: React.FC = () => {
 
       // Synchronously write to localStorage
       const storageKey = userProfile?.uid
-        ? `cifrasync_setlists_${userProfile.uid}`
-        : 'cifrasync_setlists_guest';
+        ? `cifrae_setlists_${userProfile.uid}`
+        : 'cifrae_setlists_guest';
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
       } catch (e) {}

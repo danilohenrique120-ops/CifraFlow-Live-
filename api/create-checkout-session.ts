@@ -40,7 +40,7 @@ export default async function handler(req: any, res: any) {
       apiVersion: '2023-10-16' as any
     });
 
-    const origin = returnUrl || 'https://cifrasync.vercel.app';
+    const origin = returnUrl || 'https://cifrae.vercel.app';
 
     // Determine plan details & pricing
     const isAnnual = billingCycle === 'annual';
@@ -60,7 +60,7 @@ export default async function handler(req: any, res: any) {
       };
     } else {
       const unitAmount = isProBand ? (isAnnual ? 19900 : 2490) : (isAnnual ? 9900 : 1490);
-      const planTitle = isProBand ? 'CifraSync Live - Plano Pro' : 'CifraSync Live - Pro Músico Solo';
+      const planTitle = isProBand ? 'Cifraê Live - Plano Pro' : 'Cifraê Live - Pro Músico Solo';
 
       lineItem = {
         price_data: {

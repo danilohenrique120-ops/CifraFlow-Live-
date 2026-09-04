@@ -1,4 +1,4 @@
-// Chord Transposition & Notation Engine for CifraSync Live
+// Chord Transposition & Notation Engine for Cifraê Live
 
 export const CHROMATIC_SHARPS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 export const CHROMATIC_FLATS  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];

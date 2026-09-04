@@ -58,7 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <div>
             <span className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-1.5">
-              CifraSync <span className="text-emerald-400">Live</span>
+              Cifraê <span className="text-emerald-400">Live</span>
             </span>
           </div>
         </div>

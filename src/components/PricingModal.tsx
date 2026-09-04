@@ -121,7 +121,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
               Planos e Assinaturas
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white">
-              Desbloqueie o Poder Total do <span className="text-emerald-400">CifraSync Live</span>
+              Desbloqueie o Poder Total do <span className="text-emerald-400">Cifraê Live</span>
             </h2>
             {featureReason && (
               <p className="text-xs text-amber-400 font-semibold mt-0.5">
