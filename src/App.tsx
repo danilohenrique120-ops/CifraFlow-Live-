@@ -25,7 +25,7 @@ import {
 import { getSemitoneDifference } from './utils/chordEngine';
 
 const MainAppContent: React.FC = () => {
-  const { isInRoom, isHost, sessionState, selectSong, changeKey, changeCapo } = useLiveRoom();
+  const { isInRoom, isHost, currentMember, sessionState, selectSong, changeKey, changeCapo } = useLiveRoom();
   const { isPro, userProfile, isLoading } = useAuth();
 
 
@@ -212,7 +212,8 @@ const MainAppContent: React.FC = () => {
     const targetSongId = sessionState.currentSongId || sessionState.currentSong?.id;
     if (!targetSongId) return;
 
-    if (sessionState.currentSong) {
+    // 1. If incoming song object matches targetSongId, use it directly!
+    if (sessionState.currentSong && sessionState.currentSong.id === targetSongId) {
       const incomingSong = sessionState.currentSong;
       setSelectedSong(prev => (prev?.id === incomingSong.id && prev?.content === incomingSong.content ? prev : incomingSong));
       setSongs(prev => {
@@ -227,13 +228,26 @@ const MainAppContent: React.FC = () => {
         }
         return prev;
       });
-    } else if (targetSongId) {
-      const found = songs.find(s => s.id === targetSongId);
+      return;
+    }
+
+    // 2. If targetSongId is different from currently selected song, look in songs and catalog
+    if (targetSongId !== selectedSong?.id) {
+      const found = songs.find(s => s.id === targetSongId) || INITIAL_SONGS.find(s => s.id === targetSongId);
       if (found) {
-        setSelectedSong(prev => (prev?.id === targetSongId ? prev : found));
+        setSelectedSong(found);
       }
     }
-  }, [isInRoom, isHost, sessionState?.currentSongId, sessionState?.currentSong?.id, sessionState?.currentSong?.title, sessionState?.currentSong?.content, songs]);
+  }, [
+    isInRoom,
+    isHost,
+    sessionState?.currentSongId,
+    sessionState?.currentSong?.id,
+    sessionState?.currentSong?.title,
+    sessionState?.currentSong?.content,
+    selectedSong?.id,
+    songs
+  ]);
 
   // Setlist sync if active in room (only for members following host)
   useEffect(() => {
@@ -269,7 +283,7 @@ const MainAppContent: React.FC = () => {
     }
     setSelectedSong(song);
     setActiveSetlist(setlist || null);
-    if (isInRoom && isHost) {
+    if (isInRoom && (isHost || sessionState?.hostId === currentMember?.id || currentMember?.role === 'leader' || currentMember?.isHost)) {
       const targetKey = setlist?.items.find(it => it.songId === song.id)?.customKey || song.currentKey || song.originalKey;
       const shift = getSemitoneDifference(song.originalKey, targetKey);
       const effectiveCapo = song.capo !== undefined ? song.capo : 0;
@@ -550,6 +564,7 @@ const MainAppContent: React.FC = () => {
       {/* Stage Viewer Overlay */}
       {selectedSong && (
         <StageViewer
+          key={selectedSong.id}
           song={selectedSong}
           onBack={() => setSelectedSong(null)}
           activeSetlist={activeSetlist}

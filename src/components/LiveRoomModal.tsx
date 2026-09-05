@@ -88,6 +88,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
     const success = await joinRoom(pinInput, nameInput, selectedInstrument);
     if (success) {
       setActiveTab('status');
+      onClose();
     }
   };
 
@@ -313,11 +314,19 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                 </form>
               </div>
 
-              {/* Leave Room Button */}
-              <div className="pt-2 border-t border-zinc-800 flex justify-end">
+              {/* Actions: Ir para o Palco / Sair */}
+              <div className="pt-2 border-t border-zinc-800 flex items-center justify-between gap-3">
+                <button
+                  onClick={onClose}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-950/40"
+                >
+                  <Music className="w-4 h-4" />
+                  Ir para o Palco
+                </button>
+
                 <button
                   onClick={leaveRoom}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition"
                 >
                   <LogOut className="w-4 h-4" />
                   Sair da Sessão

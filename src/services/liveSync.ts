@@ -34,6 +34,21 @@ export interface SyncMessage {
 
 const STORAGE_PREFIX = 'cifraflow_room_state_';
 
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) return null as any;
+  if (typeof data !== 'object') return data;
+  if (Array.isArray(data)) {
+    return data.map(sanitizeForFirestore) as any;
+  }
+  const clean: any = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      clean[key] = sanitizeForFirestore(value);
+    }
+  }
+  return clean;
+}
+
 export class LiveSyncEngine {
   private roomId: string;
   private channel: BroadcastChannel | null = null;
@@ -184,6 +199,14 @@ export class LiveSyncEngine {
         const merged = {
           ...current,
           ...(fullMessage.type === 'STATE_UPDATE' ? fullMessage.payload : {}),
+          ...(fullMessage.type === 'SONG_CHANGE' ? {
+            currentSongId: fullMessage.payload.songId,
+            currentSong: fullMessage.payload.song || null,
+            currentKey: fullMessage.payload.key || 'C',
+            semitoneShift: fullMessage.payload.semitones ?? 0,
+            currentCapo: fullMessage.payload.capo ?? (fullMessage.payload.song?.capo || 0),
+            scrollPercentage: 0
+          } : {}),
           lastSenderId: fullMessage.senderId,
           lastUpdated: Date.now()
         };
@@ -198,27 +221,30 @@ export class LiveSyncEngine {
       if (fullMessage.type === 'SONG_CHANGE') {
         const updateData: any = {
           currentSongId: fullMessage.payload.songId,
-          currentKey: fullMessage.payload.key,
+          currentKey: fullMessage.payload.key || 'C',
           semitoneShift: fullMessage.payload.semitones ?? 0,
           currentCapo: fullMessage.payload.capo ?? (fullMessage.payload.song?.capo || 0),
           scrollPercentage: 0,
           lastUpdated: Date.now()
         };
         if (fullMessage.payload.song) {
-          updateData.currentSong = {
-            id: fullMessage.payload.song.id,
-            title: fullMessage.payload.song.title,
-            artist: fullMessage.payload.song.artist,
-            originalKey: fullMessage.payload.song.originalKey,
-            currentKey: fullMessage.payload.song.currentKey || fullMessage.payload.key,
-            capo: fullMessage.payload.song.capo,
-            bpm: fullMessage.payload.song.bpm,
-            timeSignature: fullMessage.payload.song.timeSignature,
-            liturgicalMoment: fullMessage.payload.song.liturgicalMoment,
-            content: fullMessage.payload.song.content
+          const s = fullMessage.payload.song;
+          const cleanSong: any = {
+            id: s.id || fullMessage.payload.songId,
+            title: s.title || '',
+            artist: s.artist || '',
+            originalKey: s.originalKey || fullMessage.payload.key || 'C',
+            currentKey: s.currentKey || fullMessage.payload.key || 'C',
+            content: s.content || ''
           };
+          if (s.capo !== undefined && s.capo !== null) cleanSong.capo = s.capo;
+          if (s.bpm !== undefined && s.bpm !== null) cleanSong.bpm = s.bpm;
+          if (s.timeSignature !== undefined && s.timeSignature !== null) cleanSong.timeSignature = s.timeSignature;
+          if (s.liturgicalMoment !== undefined && s.liturgicalMoment !== null) cleanSong.liturgicalMoment = s.liturgicalMoment;
+          if (s.audioPreviewUrl !== undefined && s.audioPreviewUrl !== null) cleanSong.audioPreviewUrl = s.audioPreviewUrl;
+          updateData.currentSong = cleanSong;
         }
-        await setDoc(roomDocRef, updateData, { merge: true });
+        await setDoc(roomDocRef, sanitizeForFirestore(updateData), { merge: true });
       } else if (fullMessage.type === 'KEY_CHANGE') {
         await setDoc(roomDocRef, {
           currentKey: fullMessage.payload.key,
@@ -352,7 +378,7 @@ export class LiveSyncEngine {
     // 2. Cloud Firestore creation / full overwrite
     try {
       const roomDocRef = doc(db, 'rooms', this.roomId);
-      await setDoc(roomDocRef, state);
+      await setDoc(roomDocRef, sanitizeForFirestore(state));
     } catch (err: any) {
       console.warn('Firestore room saveState note:', err.message);
     }

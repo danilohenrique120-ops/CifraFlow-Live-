@@ -102,6 +102,21 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     return getSemitoneDifference(song.originalKey, targetKeyForSong);
   });
 
+  // Initial capo detected from song.capo or embedded inside song.content
+  const detectedInitialCapo = useMemo(() => {
+    if (song.capo !== undefined && song.capo > 0) return song.capo;
+    const fromText = detectCapoInText(song.content);
+    return fromText || 0;
+  }, [song.capo, song.content]);
+
+  const [capoFret, setCapoFret] = useState<number>(() => {
+    if (isInRoom && !isHost && sessionState?.currentCapo !== undefined) {
+      return sessionState.currentCapo;
+    }
+    return detectedInitialCapo;
+  });
+  const [isCapoPopoverOpen, setIsCapoPopoverOpen] = useState(false);
+
   // Display preferences
   const [theme, setTheme] = useState<StageTheme>('dark-stage');
   const [fontScale, setFontScale] = useState<FontScale>('base');
@@ -184,13 +199,20 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     }
   }, [isInRoom, isHost, sessionState?.semitoneShift, sessionState?.currentCapo]);
 
-  // When song changes (for leader or standalone viewer), initialize shift and capo
+  // When song changes, initialize shift and capo properly for leader and followers
   useEffect(() => {
     if (!isInRoom || isHost) {
       setSemitoneShift(getSemitoneDifference(song.originalKey, targetKeyForSong));
       setCapoFret(detectedInitialCapo);
+    } else {
+      if (sessionState?.semitoneShift !== undefined) {
+        setSemitoneShift(sessionState.semitoneShift);
+      }
+      if (sessionState?.currentCapo !== undefined) {
+        setCapoFret(sessionState.currentCapo);
+      }
     }
-  }, [song.id]);
+  }, [song.id, isInRoom, isHost, sessionState?.semitoneShift, sessionState?.currentCapo, song.originalKey, targetKeyForSong, detectedInitialCapo]);
 
   // Sync scroll position from Leader in real-time if followScroll is active
   useEffect(() => {
@@ -251,16 +273,6 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     };
   }, [requestWakeLock, releaseWakeLock]);
 
-  // Initial capo detected from song.capo or embedded inside song.content
-  const detectedInitialCapo = useMemo(() => {
-    if (song.capo !== undefined && song.capo > 0) return song.capo;
-    const fromText = detectCapoInText(song.content);
-    return fromText || 0;
-  }, [song.capo, song.content]);
-
-  const [capoFret, setCapoFret] = useState<number>(detectedInitialCapo);
-  const [isCapoPopoverOpen, setIsCapoPopoverOpen] = useState(false);
-
   // Active instrument state
   const [activeInstrument, setActiveInstrument] = useState<string>(userProfile?.instrument || 'Violão / Guitarra');
   const [isInstrumentPopoverOpen, setIsInstrumentPopoverOpen] = useState<boolean>(false);
@@ -272,8 +284,12 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   }, [userProfile?.instrument]);
 
   useEffect(() => {
-    setCapoFret(detectedInitialCapo);
-  }, [detectedInitialCapo, song.id]);
+    if (isInRoom && !isHost && sessionState?.currentCapo !== undefined) {
+      setCapoFret(sessionState.currentCapo);
+    } else {
+      setCapoFret(detectedInitialCapo);
+    }
+  }, [detectedInitialCapo, song.id, isInRoom, isHost, sessionState?.currentCapo]);
 
   // Instrument transposition offset (Eb = -3 / +9, Bb = +2, C = 0)
   const instrumentOffset = useMemo(() => {
@@ -1272,28 +1288,41 @@ export const StageViewer: React.FC<StageViewerProps> = ({
         </div>
 
         {/* Setlist Navigation Bar if Active */}
-        {activeSetlist && onNavigateSetlist && (
+        {activeSetlist && (
           <div className="mt-2 pt-2 border-t border-zinc-800/80 flex items-center justify-between max-w-6xl mx-auto text-xs">
-            <button
-              onClick={() => onNavigateSetlist('prev')}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold border border-zinc-700"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Anterior</span>
-            </button>
+            {(!isInRoom || isHost) && onNavigateSetlist ? (
+              <button
+                onClick={() => onNavigateSetlist('prev')}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold border border-zinc-700"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Anterior</span>
+              </button>
+            ) : (
+              <div className="w-16" />
+            )}
 
-            <span className="text-zinc-400 font-medium">
-              Repertório: <strong className="text-white">{activeSetlist.title}</strong>{' '}
+            <div className="text-zinc-400 font-medium text-center">
+              <span>Repertório: <strong className="text-white">{activeSetlist.title}</strong>{' '}</span>
               {setlistIndex && `(${setlistIndex.current} de ${setlistIndex.total})`}
-            </span>
+              {isInRoom && !isHost && (
+                <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30 inline-block">
+                  Sincronizado com o Líder
+                </span>
+              )}
+            </div>
 
-            <button
-              onClick={() => onNavigateSetlist('next')}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold border border-zinc-700"
-            >
-              <span>Próxima</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {(!isInRoom || isHost) && onNavigateSetlist ? (
+              <button
+                onClick={() => onNavigateSetlist('next')}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold border border-zinc-700"
+              >
+                <span>Próxima</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <div className="w-16" />
+            )}
           </div>
         )}
 

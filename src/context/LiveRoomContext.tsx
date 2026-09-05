@@ -132,7 +132,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return {
           ...prev,
           currentSongId: msg.payload.songId,
-          currentSong: msg.payload.song || prev.currentSong,
+          currentSong: msg.payload.song !== undefined ? msg.payload.song : (prev.currentSongId === msg.payload.songId ? prev.currentSong : null),
           currentKey: msg.payload.key || prev.currentKey,
           semitoneShift: msg.payload.semitones ?? 0,
           currentCapo: msg.payload.capo ?? (msg.payload.song?.capo || 0),
@@ -274,13 +274,20 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const cloudState = await newEngine.fetchCloudRoomState();
 
     const memberId = userProfile?.uid || currentMember?.id || 'usr_' + Math.random().toString(36).substring(2, 9);
+    const isUserTheHost = Boolean(
+      cloudState && (
+        cloudState.hostId === memberId ||
+        (userProfile?.uid && cloudState.hostId === userProfile.uid) ||
+        currentMember?.isHost === true
+      )
+    );
     const member: LiveMember = {
       id: memberId,
-      name: memberName || userProfile?.displayName || currentMember?.name || 'Músico Conectado',
-      role: 'member',
+      name: memberName || userProfile?.displayName || currentMember?.name || (isUserTheHost ? 'Líder da Banda' : 'Músico Conectado'),
+      role: isUserTheHost ? 'leader' : 'member',
       instrument: instrument || userProfile?.instrument || currentMember?.instrument || 'Violão',
       joinedAt: Date.now(),
-      isHost: false,
+      isHost: isUserTheHost,
       avatarColor: currentMember?.avatarColor || AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
     };
 
@@ -358,18 +365,20 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const updated: LiveSessionState = {
         ...prev,
         currentSongId: songId,
-        currentSong: songData !== undefined ? songData : prev.currentSong,
+        currentSong: songData !== undefined ? songData : (prev.currentSongId === songId ? prev.currentSong : null),
         currentKey: songKey,
         semitoneShift: semitoneShift,
         currentCapo: effectiveCapo,
         scrollPercentage: 0,
         lastUpdated: Date.now()
       };
-      if (engineRef.current && currentMember) {
+      if (engineRef.current) {
+        const senderId = currentMember?.id || prev.hostId || 'leader';
+        const senderName = currentMember?.name || 'Líder';
         engineRef.current.broadcast({
           type: 'SONG_CHANGE',
-          senderId: currentMember.id,
-          senderName: currentMember.name,
+          senderId,
+          senderName,
           payload: { songId, key: songKey, semitones: semitoneShift, capo: effectiveCapo, song: songData || null }
         });
       }
@@ -513,12 +522,11 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const isHost = Boolean(
-    sessionState &&
-    currentMember &&
-    (
-      sessionState.hostId === currentMember.id ||
-      (userProfile?.uid && sessionState.hostId === userProfile.uid) ||
-      currentMember.isHost === true
+    sessionState && (
+      currentMember?.isHost === true ||
+      currentMember?.role === 'leader' ||
+      (currentMember && sessionState.hostId === currentMember.id) ||
+      (userProfile?.uid && sessionState.hostId === userProfile.uid)
     )
   );
 
