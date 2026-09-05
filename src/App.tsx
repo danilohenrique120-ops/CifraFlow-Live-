@@ -274,22 +274,12 @@ const MainAppContent: React.FC = () => {
     const targetSongId = sessionState.currentSongId || sessionState.currentSong?.id;
     if (!targetSongId) return;
 
-    // 1. If incoming song object matches targetSongId, use it directly!
+    // 1. If incoming song object matches targetSongId, use it directly for stage view!
     if (sessionState.currentSong && sessionState.currentSong.id === targetSongId) {
       const incomingSong = sessionState.currentSong;
       setSelectedSong(prev => (prev?.id === incomingSong.id && prev?.content === incomingSong.content ? prev : incomingSong));
-      setSongs(prev => {
-        const existingIdx = prev.findIndex(s => s.id === incomingSong.id);
-        if (existingIdx === -1) {
-          return [incomingSong, ...prev];
-        }
-        if (prev[existingIdx].content !== incomingSong.content || prev[existingIdx].title !== incomingSong.title) {
-          const updated = [...prev];
-          updated[existingIdx] = { ...updated[existingIdx], ...incomingSong };
-          return updated;
-        }
-        return prev;
-      });
+      // NOTE: Do NOT add incomingSong to the member's personal song catalog (songs array).
+      // The member follows the leader in real-time on stage without polluting their personal catalog.
       return;
     }
 
@@ -389,7 +379,7 @@ const MainAppContent: React.FC = () => {
       if (exists) {
         return prev.map(s => s.id === updatedSong.id ? { ...s, ...updatedSong } : s);
       }
-      return [updatedSong, ...prev];
+      return prev;
     });
     setSelectedSong(prev => (prev && prev.id === updatedSong.id ? { ...prev, ...updatedSong } : prev));
   };
