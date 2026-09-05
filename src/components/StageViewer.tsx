@@ -102,16 +102,18 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     return getSemitoneDifference(song.originalKey, targetKeyForSong);
   });
 
-  // Initial capo detected from song.capo or embedded inside song.content
+  // Initial capo embedded inside song text (e.g. "Capotraste na 2ª casa")
   const detectedInitialCapo = useMemo(() => {
-    if (song.capo !== undefined && song.capo > 0) return song.capo;
     const fromText = detectCapoInText(song.content);
     return fromText || 0;
-  }, [song.capo, song.content]);
+  }, [song.content]);
 
   const [capoFret, setCapoFret] = useState<number>(() => {
     if (isInRoom && !isHost && sessionState?.currentCapo !== undefined) {
       return sessionState.currentCapo;
+    }
+    if (song.capo !== undefined && song.capo > 0) {
+      return song.capo;
     }
     return detectedInitialCapo;
   });
@@ -199,20 +201,13 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     }
   }, [isInRoom, isHost, sessionState?.semitoneShift, sessionState?.currentCapo]);
 
-  // When song changes, initialize shift and capo properly for leader and followers
+  // When song changes (for leader or standalone viewer), initialize shift and capo
   useEffect(() => {
     if (!isInRoom || isHost) {
       setSemitoneShift(getSemitoneDifference(song.originalKey, targetKeyForSong));
-      setCapoFret(detectedInitialCapo);
-    } else {
-      if (sessionState?.semitoneShift !== undefined) {
-        setSemitoneShift(sessionState.semitoneShift);
-      }
-      if (sessionState?.currentCapo !== undefined) {
-        setCapoFret(sessionState.currentCapo);
-      }
+      setCapoFret(song.capo !== undefined && song.capo > 0 ? song.capo : detectedInitialCapo);
     }
-  }, [song.id, isInRoom, isHost, sessionState?.semitoneShift, sessionState?.currentCapo, song.originalKey, targetKeyForSong, detectedInitialCapo]);
+  }, [song.id]);
 
   // Sync scroll position from Leader in real-time if followScroll is active
   useEffect(() => {
@@ -282,14 +277,6 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       setActiveInstrument(userProfile.instrument);
     }
   }, [userProfile?.instrument]);
-
-  useEffect(() => {
-    if (isInRoom && !isHost && sessionState?.currentCapo !== undefined) {
-      setCapoFret(sessionState.currentCapo);
-    } else {
-      setCapoFret(detectedInitialCapo);
-    }
-  }, [detectedInitialCapo, song.id, isInRoom, isHost, sessionState?.currentCapo]);
 
   // Instrument transposition offset (Eb = -3 / +9, Bb = +2, C = 0)
   const instrumentOffset = useMemo(() => {
