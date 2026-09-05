@@ -79,6 +79,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   const {
     isInRoom,
     isHost,
+    currentMember,
     sessionState,
     changeKey,
     changeCapo,
@@ -89,6 +90,12 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     recentAlert
   } = useLiveRoom();
 
+  const isLeaderHost = Boolean(
+    isHost ||
+    currentMember?.role === 'leader' ||
+    currentMember?.isHost === true ||
+    (sessionState && currentMember && sessionState.hostId === currentMember.id)
+  );
 
   // Target key for the song: checks active setlist item's customKey first, then song.currentKey, then song.originalKey
   const currentSetlistItem = activeSetlist?.items?.find(it => it.songId === song.id);
@@ -96,7 +103,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
 
   // Transposition state
   const [semitoneShift, setSemitoneShift] = useState<number>(() => {
-    if (isInRoom && !isHost && sessionState?.semitoneShift !== undefined) {
+    if (isInRoom && sessionState?.semitoneShift !== undefined) {
       return sessionState.semitoneShift;
     }
     return getSemitoneDifference(song.originalKey, targetKeyForSong);
@@ -109,7 +116,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   }, [song.content]);
 
   const [capoFret, setCapoFret] = useState<number>(() => {
-    if (isInRoom && !isHost && sessionState?.currentCapo !== undefined) {
+    if (isInRoom && sessionState?.currentCapo !== undefined) {
       return sessionState.currentCapo;
     }
     if (song.capo !== undefined && song.capo > 0) {
@@ -118,6 +125,15 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     return detectedInitialCapo;
   });
   const [isCapoPopoverOpen, setIsCapoPopoverOpen] = useState(false);
+
+  // Single source of truth: when in room, derive from sessionState, otherwise fallback to local state
+  const activeCapo = (isInRoom && sessionState?.currentCapo !== undefined)
+    ? sessionState.currentCapo
+    : capoFret;
+
+  const activeShift = (isInRoom && sessionState?.semitoneShift !== undefined)
+    ? sessionState.semitoneShift
+    : semitoneShift;
 
   // Display preferences
   const [theme, setTheme] = useState<StageTheme>('dark-stage');
@@ -189,9 +205,9 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     }
   };
 
-  // Sync state from Live Room if follower (Key and Capo)
+  // Sync state from Live Room (Key and Capo) for all participants
   useEffect(() => {
-    if (isInRoom && !isHost) {
+    if (isInRoom) {
       if (sessionState?.semitoneShift !== undefined) {
         setSemitoneShift(sessionState.semitoneShift);
       }
@@ -199,7 +215,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
         setCapoFret(sessionState.currentCapo);
       }
     }
-  }, [isInRoom, isHost, sessionState?.semitoneShift, sessionState?.currentCapo]);
+  }, [isInRoom, sessionState?.semitoneShift, sessionState?.currentCapo]);
 
   // When song changes (for leader or standalone viewer), initialize shift and capo
   useEffect(() => {
@@ -287,22 +303,22 @@ export const StageViewer: React.FC<StageViewerProps> = ({
 
   // Real Sounding Key (Tom Real ouvido pela banda)
   const currentKey = useMemo(() => {
-    return calculateNewKey(song.originalKey, semitoneShift);
-  }, [song.originalKey, semitoneShift]);
+    return calculateNewKey(song.originalKey, activeShift);
+  }, [song.originalKey, activeShift]);
 
   // Shape Key (Formato visual dos acordes digitados com os dedos, considerando Capo e Instrumento)
   const shapeKey = useMemo(() => {
-    const effectiveCapoShift = capoFret - detectedInitialCapo;
-    const totalChordShift = semitoneShift - effectiveCapoShift + instrumentOffset;
+    const effectiveCapoShift = activeCapo - detectedInitialCapo;
+    const totalChordShift = activeShift - effectiveCapoShift + instrumentOffset;
     return calculateNewKey(song.originalKey, totalChordShift);
-  }, [song.originalKey, semitoneShift, capoFret, detectedInitialCapo, instrumentOffset]);
+  }, [song.originalKey, activeShift, activeCapo, detectedInitialCapo, instrumentOffset]);
 
   // Transposed song text according to pitch shift, active Capo fret, and instrument offset
   const transposedContent = useMemo(() => {
-    const effectiveCapoShift = capoFret - detectedInitialCapo;
-    const totalChordShift = semitoneShift - effectiveCapoShift + instrumentOffset;
+    const effectiveCapoShift = activeCapo - detectedInitialCapo;
+    const totalChordShift = activeShift - effectiveCapoShift + instrumentOffset;
     return transposeSongContent(song.content, totalChordShift, shapeKey);
-  }, [song.content, semitoneShift, capoFret, detectedInitialCapo, instrumentOffset, shapeKey]);
+  }, [song.content, activeShift, activeCapo, detectedInitialCapo, instrumentOffset, shapeKey]);
 
   // Selected instrument metadata object
   const selectedInstrumentObj = useMemo(() => {
@@ -311,10 +327,10 @@ export const StageViewer: React.FC<StageViewerProps> = ({
 
   // Handlers for transposition and persistent song saving
   const handleSemitoneChange = (delta: number) => {
-    const newShift = semitoneShift + delta;
+    const newShift = activeShift + delta;
     setSemitoneShift(newShift);
     const newKey = calculateNewKey(song.originalKey, newShift);
-    if (isInRoom && isHost) {
+    if (isInRoom && isLeaderHost) {
       changeKey(newKey, newShift);
     }
     if (onUpdateCustomKey) {
@@ -327,7 +343,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
 
   const handleResetKey = () => {
     setSemitoneShift(0);
-    if (isInRoom && isHost) {
+    if (isInRoom && isLeaderHost) {
       changeKey(song.originalKey, 0);
     }
     if (onUpdateCustomKey) {
@@ -341,7 +357,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   const handleCapoChange = (newCapo: number) => {
     const validCapo = Math.max(0, Math.min(11, newCapo));
     setCapoFret(validCapo);
-    if (isInRoom && isHost) {
+    if (isInRoom && isLeaderHost) {
       changeCapo(validCapo);
     }
     if (onUpdateSong) {
@@ -433,7 +449,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [semitoneShift, song.originalKey, isInRoom, isHost]);
+  }, [activeShift, song.originalKey, isInRoom, isLeaderHost]);
 
   const handlePrintSong = () => {
     if (!isPro) {
@@ -445,7 +461,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     const html = generateSingleSongPdfHtml({
       song,
       effectiveKey: shapeKey,
-      capo: capoFret,
+      capo: activeCapo,
       instrument: activeInstrument,
       columnsCount: columnMode === '2' ? '2' : '1',
       fontSize: fontScale === 'small' ? 'sm' : fontScale === 'large' ? 'lg' : 'base'
@@ -881,7 +897,14 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 <span className="text-2xl font-black text-emerald-400 font-mono">{currentKey}</span>
               </div>
 
-              {semitoneShift !== 0 && (
+              {activeCapo > 0 && (
+                <div className="px-3.5 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center shadow-lg">
+                  <span className="text-[10px] uppercase font-bold text-amber-400/80 block tracking-wider">Formato</span>
+                  <span className="text-2xl font-black text-amber-300 font-mono">{shapeKey}</span>
+                </div>
+              )}
+
+              {activeShift !== 0 && (
                 <div className="px-3 py-2 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center">
                   <span className="text-[10px] uppercase font-bold text-zinc-500 block">Original</span>
                   <span className="text-base font-bold text-zinc-300 font-mono">{song.originalKey}</span>
@@ -893,7 +916,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 <button
                   onClick={() => setIsCapoPopoverOpen(prev => !prev)}
                   className={`px-4 py-2 rounded-2xl border transition-all text-center shadow-lg flex items-center gap-2.5 ${
-                    capoFret > 0
+                    activeCapo > 0
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 hover:bg-amber-500/30'
                       : 'bg-zinc-900/90 text-zinc-400 border-zinc-700 hover:border-amber-500/60 hover:text-white'
                   }`}
@@ -904,8 +927,8 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                     <span className="text-[10px] uppercase font-bold text-zinc-400 block leading-tight">
                       Capotraste
                     </span>
-                    <span className={`text-sm font-black ${capoFret > 0 ? 'text-amber-300' : 'text-zinc-300'}`}>
-                      {capoFret > 0 ? `${capoFret}ª casa` : 'Sem Capo'}
+                    <span className={`text-sm font-black ${activeCapo > 0 ? 'text-amber-300' : 'text-zinc-300'}`}>
+                      {activeCapo > 0 ? `${activeCapo}ª casa` : 'Sem Capo'}
                     </span>
                   </div>
                 </button>
@@ -939,7 +962,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                             setIsCapoPopoverOpen(false);
                           }}
                           className={`py-1.5 px-1 rounded-xl text-xs font-bold transition text-center ${
-                            capoFret === fret
+                            activeCapo === fret
                               ? 'bg-amber-500 text-zinc-950 font-black shadow-md'
                               : 'bg-zinc-800/90 text-zinc-300 hover:bg-zinc-700 hover:text-white'
                           }`}
@@ -950,7 +973,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                     </div>
 
 
-                    {capoFret > 0 && (
+                    {activeCapo > 0 && (
                       <div className="mt-2.5 pt-2 border-t border-zinc-800 text-[11px] text-zinc-300 flex items-center justify-between">
                         <span>Formato dos acordes:</span>
                         <strong className="text-amber-400 font-mono font-bold text-xs">{shapeKey}</strong>
@@ -1103,9 +1126,9 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               </button>
               <div className="px-2 text-center min-w-[50px]">
                 <span className="text-base font-black text-emerald-400 font-mono">{currentKey}</span>
-                {semitoneShift !== 0 && (
+                {activeShift !== 0 && (
                   <span className="text-[10px] text-zinc-400 block font-mono">
-                    {semitoneShift > 0 ? `+${semitoneShift}` : semitoneShift}
+                    {activeShift > 0 ? `+${activeShift}` : activeShift}
                   </span>
                 )}
               </div>
@@ -1116,7 +1139,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               >
                 +
               </button>
-              {semitoneShift !== 0 && (
+              {activeShift !== 0 && (
                 <button
                   onClick={handleResetKey}
                   className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition text-xs"
@@ -1134,7 +1157,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 CAPO
               </span>
               <button
-                onClick={() => handleCapoChange(capoFret - 1)}
+                onClick={() => handleCapoChange(activeCapo - 1)}
                 className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
                 title="Diminuir casa do capotraste"
               >
@@ -1145,12 +1168,12 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 className="px-2 text-center min-w-[42px] cursor-pointer hover:bg-zinc-800 rounded-lg py-0.5 transition"
                 title="Clique para abrir seletor de capotraste"
               >
-                <span className={`text-sm font-black font-mono ${capoFret > 0 ? 'text-amber-400' : 'text-zinc-400'}`}>
-                  {capoFret > 0 ? `${capoFret}ª` : '0'}
+                <span className={`text-sm font-black font-mono ${activeCapo > 0 ? 'text-amber-400' : 'text-zinc-400'}`}>
+                  {activeCapo > 0 ? `${activeCapo}ª` : '0'}
                 </span>
               </div>
               <button
-                onClick={() => handleCapoChange(capoFret + 1)}
+                onClick={() => handleCapoChange(activeCapo + 1)}
                 className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
                 title="Aumentar casa do capotraste"
               >

@@ -395,11 +395,13 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         semitoneShift: semitones,
         lastUpdated: Date.now()
       };
-      if (engineRef.current && currentMember) {
+      if (engineRef.current) {
+        const senderId = currentMember?.id || prev.hostId || 'leader';
+        const senderName = currentMember?.name || 'Líder';
         engineRef.current.broadcast({
           type: 'KEY_CHANGE',
-          senderId: currentMember.id,
-          senderName: currentMember.name,
+          senderId,
+          senderName,
           payload: { key, semitones }
         });
       }
@@ -415,11 +417,13 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         currentCapo: capo,
         lastUpdated: Date.now()
       };
-      if (engineRef.current && currentMember) {
+      if (engineRef.current) {
+        const senderId = currentMember?.id || prev.hostId || 'leader';
+        const senderName = currentMember?.name || 'Líder';
         engineRef.current.broadcast({
           type: 'CAPO_CHANGE',
-          senderId: currentMember.id,
-          senderName: currentMember.name,
+          senderId,
+          senderName,
           payload: { capo }
         });
       }

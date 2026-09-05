@@ -207,6 +207,13 @@ export class LiveSyncEngine {
             currentCapo: fullMessage.payload.capo ?? (fullMessage.payload.song?.capo || 0),
             scrollPercentage: 0
           } : {}),
+          ...(fullMessage.type === 'CAPO_CHANGE' ? {
+            currentCapo: fullMessage.payload.capo
+          } : {}),
+          ...(fullMessage.type === 'KEY_CHANGE' ? {
+            currentKey: fullMessage.payload.key,
+            semitoneShift: fullMessage.payload.semitones
+          } : {}),
           lastSenderId: fullMessage.senderId,
           lastUpdated: Date.now()
         };
