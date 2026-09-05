@@ -228,12 +228,12 @@ const MainAppContent: React.FC = () => {
         return prev;
       });
     } else if (targetSongId) {
-      setSelectedSong(prev => {
-        if (prev?.id === targetSongId) return prev;
-        return songs.find(s => s.id === targetSongId) || prev;
-      });
+      const found = songs.find(s => s.id === targetSongId);
+      if (found) {
+        setSelectedSong(prev => (prev?.id === targetSongId ? prev : found));
+      }
     }
-  }, [isInRoom, isHost, sessionState?.currentSongId, sessionState?.currentSong?.id]);
+  }, [isInRoom, isHost, sessionState?.currentSongId, sessionState?.currentSong?.id, sessionState?.currentSong?.title, sessionState?.currentSong?.content, songs]);
 
   // Setlist sync if active in room (only for members following host)
   useEffect(() => {
@@ -593,6 +593,7 @@ const MainAppContent: React.FC = () => {
         isOpen={isLiveRoomModalOpen}
         onClose={() => setIsLiveRoomModalOpen(false)}
         onRequirePro={(reason) => handleOpenPricingWithReason(reason)}
+        currentSong={selectedSong}
       />
 
       {/* Metronome Modal */}

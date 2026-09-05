@@ -181,10 +181,16 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       if (sessionState?.currentCapo !== undefined) {
         setCapoFret(sessionState.currentCapo);
       }
-      return;
     }
-    setSemitoneShift(getSemitoneDifference(song.originalKey, targetKeyForSong));
-  }, [song.id, song.originalKey, targetKeyForSong, isInRoom, isHost, sessionState?.semitoneShift, sessionState?.currentCapo]);
+  }, [isInRoom, isHost, sessionState?.semitoneShift, sessionState?.currentCapo]);
+
+  // When song changes (for leader or standalone viewer), initialize shift and capo
+  useEffect(() => {
+    if (!isInRoom || isHost) {
+      setSemitoneShift(getSemitoneDifference(song.originalKey, targetKeyForSong));
+      setCapoFret(detectedInitialCapo);
+    }
+  }, [song.id]);
 
   // Sync scroll position from Leader in real-time if followScroll is active
   useEffect(() => {

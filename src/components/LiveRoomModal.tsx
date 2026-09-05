@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Song } from '../types';
 import { useLiveRoom } from '../context/LiveRoomContext';
 import { useAuth } from '../context/AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
@@ -24,6 +25,7 @@ interface LiveRoomModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRequirePro?: (reason: string) => void;
+  currentSong?: Song | null;
 }
 
 const INSTRUMENT_OPTIONS = [
@@ -41,7 +43,8 @@ const INSTRUMENT_OPTIONS = [
 export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
   isOpen,
   onClose,
-  onRequirePro
+  onRequirePro,
+  currentSong
 }) => {
   const {
     isInRoom,
@@ -96,7 +99,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
       }
       return;
     }
-    await createRoom(roomNameInput, nameInput, selectedInstrument);
+    await createRoom(roomNameInput, nameInput, selectedInstrument, currentSong);
     setActiveTab('status');
   };
 

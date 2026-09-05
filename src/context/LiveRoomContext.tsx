@@ -9,7 +9,7 @@ interface LiveRoomContextType {
   currentMember: LiveMember | null;
   sessionState: LiveSessionState | null;
   engine: LiveSyncEngine | null;
-  createRoom: (roomName?: string, memberName?: string, instrument?: string) => Promise<string>;
+  createRoom: (roomName?: string, memberName?: string, instrument?: string, initialSong?: Song | null) => Promise<string>;
   joinRoom: (pin: string, memberName?: string, instrument?: string) => Promise<boolean>;
   leaveRoom: () => void;
   selectSong: (songId: string, songKey?: string, songData?: Song, semitoneShift?: number, capo?: number) => void;
@@ -47,7 +47,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try { return JSON.parse(saved); } catch (e) {}
     }
     return {
-      id: 'usr_' + Math.random().toString(36).substring(2, 9),
+      id: userProfile?.uid || 'usr_' + Math.random().toString(36).substring(2, 9),
       name: userProfile?.displayName || 'Músico ' + Math.floor(100 + Math.random() * 900),
       role: 'member',
       instrument: userProfile?.instrument || 'Violão',
@@ -66,11 +66,15 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     if (userProfile) {
       setCurrentMember(prev => {
-        if (!prev) return null;
+        const id = userProfile.uid || prev?.id || 'usr_' + Math.random().toString(36).substring(2, 9);
         return {
-          ...prev,
-          name: userProfile.displayName || prev.name,
-          instrument: userProfile.instrument || prev.instrument
+          id,
+          name: userProfile.displayName || prev?.name || 'Músico',
+          role: prev?.role || 'member',
+          instrument: userProfile.instrument || prev?.instrument || 'Violão',
+          joinedAt: prev?.joinedAt || Date.now(),
+          isHost: prev?.isHost || false,
+          avatarColor: prev?.avatarColor || AVATAR_COLORS[0]
         };
       });
     }
@@ -132,6 +136,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           currentKey: msg.payload.key || prev.currentKey,
           semitoneShift: msg.payload.semitones ?? 0,
           currentCapo: msg.payload.capo ?? (msg.payload.song?.capo || 0),
+          scrollPercentage: 0,
           lastUpdated: Date.now()
         };
       });
@@ -196,14 +201,15 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const createRoom = useCallback(async (roomName = 'Ensaio Geral', memberName?: string, instrument?: string): Promise<string> => {
+  const createRoom = useCallback(async (roomName = 'Ensaio Geral', memberName?: string, instrument?: string, initialSong?: Song | null): Promise<string> => {
     if (engineRef.current) {
       engineRef.current.destroy();
     }
 
     const pin = generateRoomPin('MTS');
+    const hostId = userProfile?.uid || currentMember?.id || 'usr_' + Math.random().toString(36).substring(2, 9);
     const member: LiveMember = {
-      id: currentMember?.id || 'usr_' + Math.random().toString(36).substring(2, 9),
+      id: hostId,
       name: memberName || userProfile?.displayName || currentMember?.name || 'Líder da Banda',
       role: 'leader',
       instrument: instrument || userProfile?.instrument || currentMember?.instrument || 'Violão',
@@ -213,16 +219,23 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     setCurrentMember(member);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('cifraflow_member', JSON.stringify(member));
+      } catch (e) {}
+    }
 
+    const startSong = initialSong || null;
     const initialState: LiveSessionState = {
       roomId: pin,
       pin,
       roomName,
-      hostId: member.id,
-      currentSongId: 'ninguem-te-ama-como-eu',
-      currentKey: 'C',
+      hostId: hostId,
+      currentSongId: startSong?.id || '',
+      currentSong: startSong,
+      currentKey: startSong?.currentKey || startSong?.originalKey || 'C',
       semitoneShift: 0,
-      currentCapo: 0,
+      currentCapo: startSong?.capo || 0,
       activeSetlistId: null,
       followScroll: true,
       scrollPercentage: 0,
@@ -260,8 +273,9 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const newEngine = new LiveSyncEngine(cleanPin);
     const cloudState = await newEngine.fetchCloudRoomState();
 
+    const memberId = userProfile?.uid || currentMember?.id || 'usr_' + Math.random().toString(36).substring(2, 9);
     const member: LiveMember = {
-      id: currentMember?.id || 'usr_' + Math.random().toString(36).substring(2, 9),
+      id: memberId,
       name: memberName || userProfile?.displayName || currentMember?.name || 'Músico Conectado',
       role: 'member',
       instrument: instrument || userProfile?.instrument || currentMember?.instrument || 'Violão',
@@ -271,13 +285,18 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     setCurrentMember(member);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('cifraflow_member', JSON.stringify(member));
+      } catch (e) {}
+    }
 
     const mergedState: LiveSessionState = {
       roomId: cleanPin,
       pin: cleanPin,
       roomName: cloudState?.roomName || `Sala ${cleanPin}`,
       hostId: cloudState?.hostId || 'host_leader',
-      currentSongId: cloudState?.currentSongId || 'ninguem-te-ama-como-eu',
+      currentSongId: cloudState?.currentSongId || '',
       currentSong: cloudState?.currentSong || null,
       currentKey: cloudState?.currentKey || 'C',
       semitoneShift: cloudState?.semitoneShift || 0,
@@ -289,7 +308,6 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       members: cloudState?.members ? [...cloudState.members.filter(m => m.id !== member.id), member] : [member],
       lastUpdated: Date.now()
     };
-
 
     newEngine.subscribe(handleIncomingMessage);
     await newEngine.broadcast({
@@ -494,7 +512,15 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   }, []);
 
-  const isHost = Boolean(sessionState && currentMember && sessionState.hostId === currentMember.id);
+  const isHost = Boolean(
+    sessionState &&
+    currentMember &&
+    (
+      sessionState.hostId === currentMember.id ||
+      (userProfile?.uid && sessionState.hostId === userProfile.uid) ||
+      currentMember.isHost === true
+    )
+  );
 
   return (
     <LiveRoomContext.Provider
