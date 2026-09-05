@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLiveRoom } from '../context/LiveRoomContext';
 import { useAuth } from '../context/AuthContext';
+import { AppLogo } from './AppLogo';
 import {
   Search,
   Radio,
@@ -53,9 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-zinc-950 shadow-lg shadow-emerald-900/40">
-            <Music className="w-5 h-5 fill-current" />
-          </div>
+          <AppLogo size={36} variant="circle" />
           <div>
             <span className="text-base sm:text-lg font-black tracking-tight text-white flex items-center">
               Cifra<span className="text-emerald-400">ê</span>

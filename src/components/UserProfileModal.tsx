@@ -155,7 +155,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           ) : (
             <div className="text-[11px] text-zinc-400 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Acesso ilimitado ao Live Band Sync e salas ao vivo liberado.</span>
+              <span>Acesso ilimitado à Sincronização ao Vivo e salas ao vivo liberado.</span>
             </div>
           )}
         </div>

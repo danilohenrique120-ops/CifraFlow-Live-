@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Song, Setlist, LiturgicalMoment } from './types';
-import { INITIAL_SONGS, INITIAL_SETLISTS, CATALOG_VERSION } from './data/songsData';
+import { Song, Setlist, LiturgicalMoment, GenreFolder } from './types';
+import { INITIAL_SONGS, INITIAL_SETLISTS, INITIAL_GENRE_FOLDERS, CATALOG_VERSION, PRESET_SONG_IDS } from './data/songsData';
 import { LiveRoomProvider, useLiveRoom } from './context/LiveRoomContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
@@ -29,29 +29,68 @@ const MainAppContent: React.FC = () => {
   const { isPro, userProfile, isLoading } = useAuth();
 
 
+  // Helper to extract custom/online songs from raw list
+  const extractNonStandardSongs = (list: Song[]): Song[] => {
+    return list.filter(s =>
+      Boolean(
+        (s.isCustom ||
+         s.id.startsWith('custom_') ||
+         s.id.startsWith('online_') ||
+         s.parentSongId ||
+         s.versionName) &&
+        !PRESET_SONG_IDS.has(s.id)
+      )
+    );
+  };
+
   // User-isolated songs and setlists state
   const [songs, setSongs] = useState<Song[]>(() => {
     if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_SONGS;
+    const userSongsKey = `cifrae_songs_${userProfile.uid}`;
     const userCatalogVerKey = `cifrae_catalog_ver_${userProfile.uid}`;
-    const savedVer = localStorage.getItem(userCatalogVerKey) || localStorage.getItem(`cifrasync_catalog_ver_${userProfile.uid}`);
-    if (savedVer !== CATALOG_VERSION) return INITIAL_SONGS;
-    const saved = localStorage.getItem(`cifrae_songs_${userProfile.uid}`) || localStorage.getItem(`cifrasync_songs_${userProfile.uid}`);
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+    const savedVer = localStorage.getItem(userCatalogVerKey);
+    const saved = localStorage.getItem(userSongsKey);
+
+    if (saved && savedVer === CATALOG_VERSION) {
+      try {
+        const parsed: Song[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(s => !PRESET_SONG_IDS.has(s.id));
+        }
+      } catch (e) {}
     }
     return INITIAL_SONGS;
   });
 
   const [setlists, setSetlists] = useState<Setlist[]>(() => {
     if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_SETLISTS;
-    const userCatalogVerKey = `cifrae_catalog_ver_${userProfile.uid}`;
-    const savedVer = localStorage.getItem(userCatalogVerKey) || localStorage.getItem(`cifrasync_catalog_ver_${userProfile.uid}`);
-    if (savedVer !== CATALOG_VERSION) return INITIAL_SETLISTS;
-    const saved = localStorage.getItem(`cifrae_setlists_${userProfile.uid}`) || localStorage.getItem(`cifrasync_setlists_${userProfile.uid}`);
+    const userSetlistsKey = `cifrae_setlists_${userProfile.uid}`;
+    const fallbackSetlistsKey = `cifrasync_setlists_${userProfile.uid}`;
+    const saved = localStorage.getItem(userSetlistsKey) || localStorage.getItem(fallbackSetlistsKey);
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {}
     }
     return INITIAL_SETLISTS;
+  });
+
+  const [genreFolders, setGenreFolders] = useState<GenreFolder[]>(() => {
+    if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_GENRE_FOLDERS;
+    const userFoldersKey = `cifrae_folders_${userProfile.uid}`;
+    const saved = localStorage.getItem(userFoldersKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {}
+    }
+    return INITIAL_GENRE_FOLDERS;
   });
 
   // Automatically load and sync the workspace in real time across all devices for the logged-in user
@@ -59,6 +98,7 @@ const MainAppContent: React.FC = () => {
     if (!userProfile?.uid) {
       setSongs(INITIAL_SONGS);
       setSetlists(INITIAL_SETLISTS);
+      setGenreFolders(INITIAL_GENRE_FOLDERS);
       setSelectedSong(null);
       setActiveSetlist(null);
       return;
@@ -67,22 +107,26 @@ const MainAppContent: React.FC = () => {
     const uid = userProfile.uid;
     const userSongsKey = `cifrae_songs_${uid}`;
     const userSetlistsKey = `cifrae_setlists_${uid}`;
+    const userFoldersKey = `cifrae_folders_${uid}`;
     const userCatalogVerKey = `cifrae_catalog_ver_${uid}`;
 
     // 1. Instant local cache load so the user sees their data immediately without delay
     const savedVer = localStorage.getItem(userCatalogVerKey) || localStorage.getItem(`cifrasync_catalog_ver_${uid}`);
     const savedSongs = localStorage.getItem(userSongsKey) || localStorage.getItem(`cifrasync_songs_${uid}`);
     const savedSetlists = localStorage.getItem(userSetlistsKey) || localStorage.getItem(`cifrasync_setlists_${uid}`);
+    const savedFolders = localStorage.getItem(userFoldersKey);
 
     let initialLocalSongs: Song[] = INITIAL_SONGS;
     let initialLocalSetlists: Setlist[] = INITIAL_SETLISTS;
+    let initialLocalFolders: GenreFolder[] = INITIAL_GENRE_FOLDERS;
 
     if (savedSongs) {
       try {
         const parsed = JSON.parse(savedSongs);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          initialLocalSongs = parsed;
-          setSongs(parsed);
+          const cleaned = parsed.filter(s => !PRESET_SONG_IDS.has(s.id));
+          initialLocalSongs = cleaned;
+          setSongs(cleaned);
         }
       } catch (e) {}
     }
@@ -97,24 +141,40 @@ const MainAppContent: React.FC = () => {
       } catch (e) {}
     }
 
+    if (savedFolders) {
+      try {
+        const parsed = JSON.parse(savedFolders);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          initialLocalFolders = parsed;
+          setGenreFolders(parsed);
+        }
+      } catch (e) {}
+    }
+
     // 2. Load and merge with Cloud Firestore across all devices
     let isSubscribed = true;
-    loadAndMergeCloudWorkspace(uid, initialLocalSetlists, initialLocalSongs).then(({ setlists: cloudSetlists, songs: cloudSongs }) => {
+    loadAndMergeCloudWorkspace(uid, initialLocalSetlists, initialLocalSongs, initialLocalFolders).then(({ setlists: cloudSetlists, songs: cloudSongs, genreFolders: cloudFolders }) => {
       if (!isSubscribed) return;
       setSetlists(cloudSetlists);
-      setSongs(cloudSongs);
+      const cleanCloudSongs = cloudSongs.filter(s => !PRESET_SONG_IDS.has(s.id));
+      setSongs(cleanCloudSongs);
+      if (cloudFolders && cloudFolders.length > 0) {
+        setGenreFolders(cloudFolders);
+      }
       try {
         localStorage.setItem(userSetlistsKey, JSON.stringify(cloudSetlists));
-        localStorage.setItem(userSongsKey, JSON.stringify(cloudSongs));
+        localStorage.setItem(userSongsKey, JSON.stringify(cleanCloudSongs));
+        localStorage.setItem(userFoldersKey, JSON.stringify(cloudFolders || initialLocalFolders));
         localStorage.setItem(userCatalogVerKey, CATALOG_VERSION);
       } catch (e) {}
 
       // Automatically heal any contaminated online songs in the background with authentic chords
-      healContaminatedSongsAsync(uid, cloudSongs, cloudSetlists, (healedSongs) => {
+      healContaminatedSongsAsync(uid, cleanCloudSongs, cloudSetlists, (healedSongs) => {
         if (!isSubscribed) return;
-        setSongs(healedSongs);
+        const cleanHealed = healedSongs.filter(s => !PRESET_SONG_IDS.has(s.id));
+        setSongs(cleanHealed);
         try {
-          localStorage.setItem(userSongsKey, JSON.stringify(healedSongs));
+          localStorage.setItem(userSongsKey, JSON.stringify(cleanHealed));
         } catch (e) {}
       });
     });
@@ -134,34 +194,35 @@ const MainAppContent: React.FC = () => {
         });
       }
 
-      if (cloudData.customSongs || cloudData.songOverrides || cloudData.momentOverrides) {
-        const overrides = cloudData.songOverrides || {};
-        const momentOverrides = cloudData.momentOverrides || {};
-        const customSongs = cloudData.customSongs || [];
+      if (cloudData.genreFolders && cloudData.genreFolders.length > 0) {
+        setGenreFolders(cloudData.genreFolders);
+        try {
+          localStorage.setItem(userFoldersKey, JSON.stringify(cloudData.genreFolders));
+        } catch (e) {}
+      }
 
-        const updatedSongs = INITIAL_SONGS.map(s => {
-          let updated: Song = { ...s };
-          if (momentOverrides[s.id]) {
-            updated.liturgicalMoment = momentOverrides[s.id];
-          }
-          if (overrides[s.id]) {
-            updated = { ...updated, ...overrides[s.id] };
-          }
-          return updated;
-        });
+      if (cloudData.customSongs) {
+        const customSongs = (cloudData.customSongs || []).filter(s => !PRESET_SONG_IDS.has(s.id));
 
+        const updatedSongs: Song[] = [];
         for (const custom of customSongs) {
           if (!updatedSongs.some(s => s.id === custom.id)) {
-            updatedSongs.unshift(custom);
-          } else {
-            const idx = updatedSongs.findIndex(s => s.id === custom.id);
-            updatedSongs[idx] = custom;
+            updatedSongs.push(custom);
           }
         }
-        setSongs(updatedSongs);
-        try {
-          localStorage.setItem(userSongsKey, JSON.stringify(updatedSongs));
-        } catch (e) {}
+
+        setSongs(prev => {
+          const prevSig = prev.map(s => `${s.id}_${s.currentKey || s.originalKey}_${s.capo || 0}_${s.liturgicalMoment}`).join('|');
+          const nextSig = updatedSongs.map(s => `${s.id}_${s.currentKey || s.originalKey}_${s.capo || 0}_${s.liturgicalMoment}`).join('|');
+          if (prevSig === nextSig) {
+            return prev;
+          }
+          try {
+            localStorage.setItem(userSongsKey, JSON.stringify(updatedSongs));
+          } catch (e) {}
+          return updatedSongs;
+        });
+
         setSelectedSong(prev => {
           if (!prev) return null;
           return updatedSongs.find(s => s.id === prev.id) || prev;
@@ -200,10 +261,11 @@ const MainAppContent: React.FC = () => {
       try {
         localStorage.setItem(`cifrae_songs_${userProfile.uid}`, JSON.stringify(songs));
         localStorage.setItem(`cifrae_setlists_${userProfile.uid}`, JSON.stringify(setlists));
+        localStorage.setItem(`cifrae_folders_${userProfile.uid}`, JSON.stringify(genreFolders));
       } catch (e) {}
-      saveWorkspaceToCloudDebounced(userProfile.uid, setlists, songs);
+      saveWorkspaceToCloudDebounced(userProfile.uid, setlists, songs, genreFolders);
     }
-  }, [songs, setlists, userProfile?.uid]);
+  }, [songs, setlists, genreFolders, userProfile?.uid]);
 
   // Sync active song with Live Room state if changed remotely by Host or upon joining room (only for members following host)
   useEffect(() => {
@@ -279,7 +341,22 @@ const MainAppContent: React.FC = () => {
   const handleSelectSong = (song: Song, setlist?: Setlist | null) => {
     // Add to songs list if it's an online song not yet in catalog
     if (!songs.some(s => s.id === song.id)) {
-      setSongs(prev => [song, ...prev]);
+      if (!isPro && songs.length >= 10) {
+        handleOpenPricingWithReason('O plano Free permite até 10 músicas no catálogo. Faça upgrade para o Plano Pro para ter músicas ilimitadas!');
+        return;
+      }
+      setSongs(prev => {
+        if (!prev.some(s => s.id === song.id)) {
+          const updated = [song, ...prev];
+          if (userProfile?.uid) {
+            try {
+              localStorage.setItem(`cifrae_songs_${userProfile.uid}`, JSON.stringify(updated));
+            } catch (e) {}
+          }
+          return updated;
+        }
+        return prev;
+      });
     }
     setSelectedSong(song);
     setActiveSetlist(setlist || null);
@@ -318,6 +395,11 @@ const MainAppContent: React.FC = () => {
   };
 
   const handleSaveCustomSong = (newSong: Song) => {
+    const isNew = !songs.some(s => s.id === newSong.id);
+    if (isNew && !isPro && songs.length >= 10) {
+      handleOpenPricingWithReason('O plano Free permite até 10 músicas no catálogo. Faça upgrade para o Plano Pro para ter músicas ilimitadas!');
+      return;
+    }
     setSongs(prev => {
       const exists = prev.some(s => s.id === newSong.id);
       if (exists) {
@@ -326,6 +408,45 @@ const MainAppContent: React.FC = () => {
       return [newSong, ...prev];
     });
     setSelectedSong(newSong);
+  };
+
+  const handleSaveGenreFolder = (folder: GenreFolder) => {
+    setGenreFolders(prev => {
+      const idx = prev.findIndex(f => f.id === folder.id);
+      let updated: GenreFolder[];
+      if (idx !== -1) {
+        const oldName = prev[idx].name;
+        updated = [...prev];
+        updated[idx] = folder;
+        if (oldName !== folder.name) {
+          setSongs(prevSongs => prevSongs.map(s => s.liturgicalMoment === oldName ? { ...s, liturgicalMoment: folder.name } : s));
+        }
+      } else {
+        if (!isPro && prev.length >= 3) {
+          handleOpenPricingWithReason('O plano Free permite até 3 pastas de estilos. Faça upgrade para o Plano Pro para criar pastas ilimitadas!');
+          return prev;
+        }
+        updated = [...prev, folder];
+      }
+      if (userProfile?.uid) {
+        try {
+          localStorage.setItem(`cifrae_folders_${userProfile.uid}`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+  };
+
+  const handleDeleteGenreFolder = (folderId: string) => {
+    setGenreFolders(prev => {
+      const updated = prev.filter(f => f.id !== folderId);
+      if (userProfile?.uid) {
+        try {
+          localStorage.setItem(`cifrae_folders_${userProfile.uid}`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
   };
 
 
@@ -385,10 +506,21 @@ const MainAppContent: React.FC = () => {
       targetSong = songs.find(s => s.id === songOrId);
     } else {
       targetSong = songOrId;
-      // Make sure the full song is registered in songs array
+      const isNew = !songs.some(s => s.id === targetSong!.id);
+      if (isNew && !isPro && songs.length >= 10) {
+        handleOpenPricingWithReason('O plano Free permite até 10 músicas no catálogo. Faça upgrade para o Plano Pro para ter músicas ilimitadas!');
+        return;
+      }
+      // Make sure the full song is registered in songs array and localStorage
       setSongs(prev => {
         if (!prev.some(s => s.id === targetSong!.id)) {
-          return [targetSong!, ...prev];
+          const updated = [targetSong!, ...prev];
+          if (userProfile?.uid) {
+            try {
+              localStorage.setItem(`cifrae_songs_${userProfile.uid}`, JSON.stringify(updated));
+            } catch (e) {}
+          }
+          return updated;
         }
         return prev;
       });
@@ -532,14 +664,19 @@ const MainAppContent: React.FC = () => {
           {currentView === 'discovery' ? (
             <DiscoveryHub
               songs={songs}
+              genreFolders={genreFolders}
+              isPro={isPro}
               onSelectSong={(song) => handleSelectSong(song, null)}
               onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
               onOpenSearch={() => setIsSearchOpen(true)}
               onOpenUploadModal={handleOpenUploadWithPreset}
+              onOpenPricing={handleOpenPricingWithReason}
               setlists={setlists}
               onAddToSetlist={handleAddToSetlist}
               onUpdateSongMoment={handleUpdateSongMoment}
               onBatchUpdateMoments={handleBatchUpdateMoments}
+              onSaveGenreFolder={handleSaveGenreFolder}
+              onDeleteGenreFolder={handleDeleteGenreFolder}
             />
           ) : (
             <SetlistsManager

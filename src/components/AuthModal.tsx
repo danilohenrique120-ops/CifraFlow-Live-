@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { AppLogo } from './AppLogo';
 import {
   X,
   LogIn,
@@ -99,9 +100,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
         {/* Brand Banner */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-zinc-950 shadow-lg shadow-emerald-900/40">
-              <Music className="w-5 h-5 fill-current" />
-            </div>
+            <AppLogo size={42} variant="circle" />
             <div>
               <h3 className="text-base sm:text-lg font-black tracking-tight flex items-center">
                 Cifra<span className="text-emerald-400">ê</span>

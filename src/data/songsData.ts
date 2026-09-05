@@ -1,8 +1,56 @@
-import { Song, Setlist } from '../types';
+import { Song, Setlist, GenreFolder } from '../types';
 
-export const CATALOG_VERSION = 'v3_capo_universal_multi_genre';
+export const CATALOG_VERSION = 'v5_empty_catalog_dynamic_folders';
 
-export const INITIAL_SONGS: Song[] = [
+export const PRESET_SONG_IDS = new Set<string>([
+  'tempo-perdido',
+  'anunciacao',
+  'evidencias',
+  'pe-na-areia',
+  'gostava-tanto-de-voce',
+  'whisky-a-go-go',
+  'lanterna-dos-afogados',
+  'dormi-na-praca',
+  'ainda-gosto-de-voce',
+  'porque-ele-vive',
+  'raridade',
+  'xote-dos-milagres',
+  'flor-e-o-beija-flor',
+  'meu-abrigo',
+  'sinonimos',
+  'asa-branca',
+  'te-louvarei',
+  'proibida-pra-mim',
+  'como-nossos-pais',
+  'deus-de-promessas',
+  'cheia-de-manias',
+  'o-sol'
+]);
+
+export const INITIAL_GENRE_FOLDERS: GenreFolder[] = [
+  {
+    id: 'folder_pop_rock',
+    name: 'Pop Rock',
+    color: 'from-blue-600 to-indigo-900',
+    desc: 'Clássicos e hits do rock nacional e internacional'
+  },
+  {
+    id: 'folder_mpb',
+    name: 'MPB',
+    color: 'from-amber-600 to-orange-800',
+    desc: 'Voz e violão, samba e canções da música brasileira'
+  },
+  {
+    id: 'folder_sertanejo',
+    name: 'Sertanejo',
+    color: 'from-amber-700 to-yellow-900',
+    desc: 'Sertanejo clássico, universitário e modas de viola'
+  }
+];
+
+export const INITIAL_SONGS: Song[] = [];
+
+export const PRESET_CATALOG_SONGS: Song[] = [
   {
     id: 'tempo-perdido',
     title: 'Tempo Perdido',

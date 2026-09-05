@@ -1,18 +1,15 @@
-export type MusicGenre =
-  | 'Pop Rock'
-  | 'MPB'
-  | 'Sertanejo'
-  | 'Pagode & Samba'
-  | 'Gospel & Louvor'
-  | 'Forró & Piseiro'
-  | 'Hits do Show'
-  | 'Acústico'
-  | 'Baladas & Românticas'
-  | 'Abertura & Encerramento'
-  | 'Geral';
+export type MusicGenre = string;
 
 // Type alias to maintain backwards-compatibility across components
-export type LiturgicalMoment = MusicGenre;
+export type LiturgicalMoment = string;
+
+export interface GenreFolder {
+  id: string;
+  name: string;
+  color: string;
+  desc?: string;
+  createdAt?: string;
+}
 
 export type CategoryTag =
   | 'Pop Rock'

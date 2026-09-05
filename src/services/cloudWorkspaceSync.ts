@@ -1,7 +1,7 @@
 import { doc, getDoc, setDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../firebase';
-import { Setlist, Song, LiturgicalMoment, CategoryTag } from '../types';
-import { INITIAL_SONGS } from '../data/songsData';
+import { Setlist, Song, LiturgicalMoment, CategoryTag, GenreFolder } from '../types';
+import { INITIAL_SONGS, INITIAL_GENRE_FOLDERS, PRESET_SONG_IDS } from '../data/songsData';
 import { formatLyricsWithHarmonics, fetchRealOnlineCifra } from './onlineMusicSearch';
 
 export interface SongOverride {
@@ -19,6 +19,7 @@ export interface SongOverride {
 export interface CloudWorkspaceData {
   setlists: Setlist[];
   customSongs: Song[];
+  genreFolders?: GenreFolder[];
   songOverrides?: Record<string, Partial<Song>>;
   momentOverrides?: Record<string, LiturgicalMoment>;
   lastUpdated?: number;
@@ -54,12 +55,12 @@ let lastSavedSignature = '';
 export function extractCustomSongs(songs: Song[]): Song[] {
   return songs.filter(s =>
     Boolean(
-      s.isCustom ||
-      s.id.startsWith('custom_') ||
-      s.id.startsWith('online_') ||
-      s.parentSongId ||
-      s.versionName ||
-      !INITIAL_SONGS.some(init => init.id === s.id)
+      (s.isCustom ||
+       s.id.startsWith('custom_') ||
+       s.id.startsWith('online_') ||
+       s.parentSongId ||
+       s.versionName) &&
+      !PRESET_SONG_IDS.has(s.id)
     )
   );
 }
@@ -148,18 +149,20 @@ export function extractMomentOverrides(songs: Song[]): Record<string, Liturgical
 function computeSignature(
   setlists: Setlist[],
   customSongs: Song[],
-  songOverrides: Record<string, Partial<Song>> = {}
+  songOverrides: Record<string, Partial<Song>> = {},
+  genreFolders: GenreFolder[] = []
 ): string {
   const setlistSig = setlists
     .map(s => `${s.id}_${s.items.length}_${s.updatedAt}_${s.items.map(i => `${i.songId}:${i.customKey}`).join(',')}`)
     .join('|');
   const songSig = customSongs
-    .map(s => `${s.id}_${s.currentKey || s.originalKey}_${s.capo || 0}_${s.content?.length || 0}_${s.title}`)
+    .map(s => `${s.id}_${s.currentKey || s.originalKey}_${s.capo || 0}_${s.content?.length || 0}_${s.title}_${s.liturgicalMoment}`)
     .join('|');
   const overrideSig = Object.entries(songOverrides)
     .map(([id, o]) => `${id}_${o.currentKey}_${o.capo}_${o.bpm}_${o.content?.length || 0}_${o.liturgicalMoment}`)
     .join('|');
-  return `${setlistSig}:::${songSig}:::${overrideSig}`;
+  const folderSig = genreFolders.map(f => `${f.id}_${f.name}_${f.color}`).join('|');
+  return `${setlistSig}:::${songSig}:::${overrideSig}:::${folderSig}`;
 }
 
 /**
@@ -169,6 +172,7 @@ export function saveWorkspaceToCloudDebounced(
   userId: string,
   setlists: Setlist[],
   songs: Song[],
+  genreFolders?: GenreFolder[],
   delayMs = 600
 ): void {
   if (!userId || !isFirebaseConfigured) return;
@@ -178,10 +182,32 @@ export function saveWorkspaceToCloudDebounced(
   }
 
   debounceTimer = setTimeout(() => {
-    saveWorkspaceToCloudImmediate(userId, setlists, songs).catch(err => {
+    saveWorkspaceToCloudImmediate(userId, setlists, songs, genreFolders).catch(err => {
       console.warn('Background cloud workspace sync error:', err);
     });
   }, delayMs);
+}
+
+/**
+ * Recursively cleans any undefined values from objects/arrays so Firestore setDoc never fails
+ */
+export function cleanForFirestore<T>(data: T): T {
+  if (data === undefined || data === null) {
+    return data;
+  }
+  if (Array.isArray(data)) {
+    return data.map(item => cleanForFirestore(item)) as unknown as T;
+  }
+  if (typeof data === 'object') {
+    const cleaned: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data as Record<string, any>)) {
+      if (value !== undefined) {
+        cleaned[key] = cleanForFirestore(value);
+      }
+    }
+    return cleaned as T;
+  }
+  return data;
 }
 
 /**
@@ -190,7 +216,8 @@ export function saveWorkspaceToCloudDebounced(
 export async function saveWorkspaceToCloudImmediate(
   userId: string,
   setlists: Setlist[],
-  songs: Song[]
+  songs: Song[],
+  genreFolders?: GenreFolder[]
 ): Promise<void> {
   if (!userId || !isFirebaseConfigured) return;
 
@@ -198,21 +225,24 @@ export async function saveWorkspaceToCloudImmediate(
     const customSongs = extractCustomSongs(songs);
     const momentOverrides = extractMomentOverrides(songs);
     const songOverrides = extractSongOverrides(songs);
-    const signature = computeSignature(setlists, customSongs, songOverrides);
+    const signature = computeSignature(setlists, customSongs, songOverrides, genreFolders);
 
     // Skip if identical to last save
     if (signature === lastSavedSignature) return;
 
     const userRef = doc(db, 'users', userId);
+    const payload = cleanForFirestore({
+      cloudSetlists: setlists,
+      cloudCustomSongs: customSongs,
+      cloudGenreFolders: genreFolders,
+      cloudMomentOverrides: momentOverrides,
+      cloudSongOverrides: songOverrides,
+      lastCloudSync: Date.now()
+    });
+
     await setDoc(
       userRef,
-      {
-        cloudSetlists: setlists,
-        cloudCustomSongs: customSongs,
-        cloudMomentOverrides: momentOverrides,
-        cloudSongOverrides: songOverrides,
-        lastCloudSync: Date.now()
-      },
+      payload,
       { merge: true }
     );
 
@@ -229,10 +259,11 @@ export async function saveWorkspaceToCloudImmediate(
 export async function loadAndMergeCloudWorkspace(
   userId: string,
   localSetlists: Setlist[],
-  localSongs: Song[]
-): Promise<{ setlists: Setlist[]; songs: Song[] }> {
+  localSongs: Song[],
+  localFolders: GenreFolder[] = INITIAL_GENRE_FOLDERS
+): Promise<{ setlists: Setlist[]; songs: Song[]; genreFolders: GenreFolder[] }> {
   if (!userId || !isFirebaseConfigured) {
-    return { setlists: localSetlists, songs: localSongs };
+    return { setlists: localSetlists, songs: localSongs, genreFolders: localFolders };
   }
 
   try {
@@ -241,79 +272,81 @@ export async function loadAndMergeCloudWorkspace(
 
     if (!docSnap.exists()) {
       // First time: upload local workspace to Cloud Firestore
-      await saveWorkspaceToCloudImmediate(userId, localSetlists, localSongs);
-      return { setlists: localSetlists, songs: localSongs };
+      await saveWorkspaceToCloudImmediate(userId, localSetlists, localSongs, localFolders);
+      return { setlists: localSetlists, songs: localSongs, genreFolders: localFolders };
     }
 
     const data = docSnap.data();
     const cloudSetlists = (data?.cloudSetlists as Setlist[]) || [];
     const cloudCustomSongs = (data?.cloudCustomSongs as Song[]) || [];
+    const cloudGenreFolders = (data?.cloudGenreFolders as GenreFolder[]) || [];
     const cloudSongOverrides = (data?.cloudSongOverrides as Record<string, Partial<Song>>) || {};
     const cloudMomentOverrides = (data?.cloudMomentOverrides as Record<string, LiturgicalMoment>) || {};
 
-    // If Cloud is empty but local has items, migrate local to cloud
-    if (cloudSetlists.length === 0 && localSetlists.length > 0) {
-      await saveWorkspaceToCloudImmediate(userId, localSetlists, localSongs);
-      return { setlists: localSetlists, songs: localSongs };
+    // Merge Folders: Cloud takes precedence if user has cloud folders, else localFolders
+    let mergedFolders = localFolders;
+    if (cloudGenreFolders && cloudGenreFolders.length > 0) {
+      mergedFolders = cloudGenreFolders;
     }
 
-    // Merge Setlists (Cloud takes precedence, but keep any offline-created setlists from this device)
+    // If Cloud is empty but local has items, migrate local to cloud
+    if (cloudSetlists.length === 0 && localSetlists.length > 0) {
+      await saveWorkspaceToCloudImmediate(userId, localSetlists, localSongs, mergedFolders);
+      return { setlists: localSetlists, songs: localSongs, genreFolders: mergedFolders };
+    }
+
+    // Merge Setlists:
     const mergedSetlistsMap = new Map<string, Setlist>();
     for (const sl of cloudSetlists) {
       mergedSetlistsMap.set(sl.id, sl);
     }
     for (const sl of localSetlists) {
-      if (!mergedSetlistsMap.has(sl.id)) {
+      const isDefaultTemplate = sl.id === 'show-sexta-acustico' || sl.id === 'noite-pop-rock' || sl.id === 'roda-de-samba-pagode';
+      if (!mergedSetlistsMap.has(sl.id) && (!isDefaultTemplate || cloudSetlists.length === 0)) {
         mergedSetlistsMap.set(sl.id, sl);
       }
     }
     const mergedSetlists = Array.from(mergedSetlistsMap.values());
 
-    // Merge Custom Songs with automatic sanitization of old dummy templates
+    // Merge Custom Songs with automatic sanitization and removal of preset songs
     const mergedCustomSongsMap = new Map<string, Song>();
     for (const s of cloudCustomSongs) {
-      mergedCustomSongsMap.set(s.id, sanitizeSong(s));
+      if (!PRESET_SONG_IDS.has(s.id)) {
+        mergedCustomSongsMap.set(s.id, sanitizeSong(s));
+      }
     }
     const localCustomSongs = extractCustomSongs(localSongs);
     for (const s of localCustomSongs) {
-      if (!mergedCustomSongsMap.has(s.id)) {
+      if (!PRESET_SONG_IDS.has(s.id) && !mergedCustomSongsMap.has(s.id)) {
         mergedCustomSongsMap.set(s.id, sanitizeSong(s));
       }
     }
 
-    // Rebuild full songs catalog: INITIAL_SONGS + all user song overrides + merged custom songs
-    const combinedSongs = INITIAL_SONGS.map(s => {
-      let updated: Song = { ...s };
-      if (cloudMomentOverrides[s.id]) {
-        updated.liturgicalMoment = cloudMomentOverrides[s.id];
-      }
-      if (cloudSongOverrides[s.id]) {
-        updated = { ...updated, ...cloudSongOverrides[s.id] };
-      }
-      return updated;
-    });
-
+    // Rebuild full songs catalog: user-added custom songs (or INITIAL_SONGS if any)
+    const combinedSongs: Song[] = [];
     for (const custom of mergedCustomSongsMap.values()) {
       if (!combinedSongs.some(s => s.id === custom.id)) {
-        combinedSongs.unshift(custom);
+        combinedSongs.push(custom);
       }
     }
 
     lastSavedSignature = computeSignature(
       mergedSetlists,
       Array.from(mergedCustomSongsMap.values()),
-      cloudSongOverrides
+      cloudSongOverrides,
+      mergedFolders
     );
 
-    // If local had new items not in cloud, push merged back to cloud
-    if (mergedSetlists.length > cloudSetlists.length || mergedCustomSongsMap.size > cloudCustomSongs.length) {
-      saveWorkspaceToCloudDebounced(userId, mergedSetlists, combinedSongs, 100);
+    // If cloud had old preset songs or local had new items, push clean state to cloud
+    const hadObsoletePresetSongs = cloudCustomSongs.some(s => PRESET_SONG_IDS.has(s.id));
+    if (hadObsoletePresetSongs || mergedSetlists.length > cloudSetlists.length || mergedCustomSongsMap.size > cloudCustomSongs.length || (!cloudGenreFolders?.length && mergedFolders.length > 0)) {
+      saveWorkspaceToCloudImmediate(userId, mergedSetlists, combinedSongs, mergedFolders).catch(() => {});
     }
 
-    return { setlists: mergedSetlists, songs: combinedSongs };
+    return { setlists: mergedSetlists, songs: combinedSongs, genreFolders: mergedFolders };
   } catch (err) {
     console.warn('Error loading cloud workspace, falling back to local cache:', err);
-    return { setlists: localSetlists, songs: localSongs };
+    return { setlists: localSetlists, songs: localSongs, genreFolders: localFolders };
   }
 }
 
@@ -357,7 +390,7 @@ export async function healContaminatedSongsAsync(
 
   if (hasChanges) {
     onUpdateSongs(updatedSongs);
-    saveWorkspaceToCloudDebounced(userId, setlists, updatedSongs, 200);
+    saveWorkspaceToCloudDebounced(userId, setlists, updatedSongs, undefined, 200);
   }
 }
 
@@ -382,15 +415,17 @@ export function subscribeToCloudWorkspace(
       const data = docSnap.data();
       const cloudSetlists = data?.cloudSetlists as Setlist[] | undefined;
       const cloudCustomSongs = data?.cloudCustomSongs as Song[] | undefined;
+      const cloudGenreFolders = data?.cloudGenreFolders as GenreFolder[] | undefined;
       const cloudSongOverrides = data?.cloudSongOverrides as Record<string, Partial<Song>> | undefined;
       const cloudMomentOverrides = data?.cloudMomentOverrides as Record<string, LiturgicalMoment> | undefined;
 
-      if (!cloudSetlists && !cloudCustomSongs && !cloudSongOverrides) return;
+      if (!cloudSetlists && !cloudCustomSongs && !cloudSongOverrides && !cloudGenreFolders) return;
 
       const setlists = cloudSetlists || [];
-      const customSongs = (cloudCustomSongs || []).map(sanitizeSong);
+      const customSongs = (cloudCustomSongs || []).filter(s => !PRESET_SONG_IDS.has(s.id)).map(sanitizeSong);
+      const genreFolders = cloudGenreFolders || [];
       const songOverrides = cloudSongOverrides || {};
-      const incomingSig = computeSignature(setlists, customSongs, songOverrides);
+      const incomingSig = computeSignature(setlists, customSongs, songOverrides, genreFolders);
 
       // Avoid looping if the change originated from this same device's save
       if (incomingSig === lastSavedSignature) return;
@@ -400,6 +435,7 @@ export function subscribeToCloudWorkspace(
       onRemoteChange({
         setlists,
         customSongs,
+        genreFolders,
         songOverrides,
         momentOverrides: cloudMomentOverrides || {},
         lastUpdated: data?.lastCloudSync

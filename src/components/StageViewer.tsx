@@ -819,9 +819,25 @@ export const StageViewer: React.FC<StageViewerProps> = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                setIsScrolling(prev => !prev);
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold backdrop-blur-md shadow-xl border transition ${
+                isScrolling
+                  ? 'bg-amber-500 text-zinc-950 border-amber-400 font-extrabold'
+                  : 'bg-zinc-900/90 text-zinc-300 border-zinc-700/80 hover:bg-zinc-800'
+              }`}
+              title={isScrolling ? 'Pausar Rolagem Automática' : 'Iniciar Rolagem Automática'}
+            >
+              {isScrolling ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+              <span>{isScrolling ? 'Pausar' : 'Auto-Rolagem'}</span>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
                 setIsCleanStage(false);
               }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/90 text-zinc-200 border border-zinc-700/80 hover:bg-zinc-800 text-xs font-bold backdrop-blur-md shadow-xl"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900/90 text-zinc-200 border border-zinc-700/80 hover:bg-zinc-800 text-xs font-bold backdrop-blur-md shadow-xl"
             >
               <EyeOff className="w-3.5 h-3.5 text-zinc-400" />
               Sair do Palco Limpo
@@ -1105,12 +1121,13 @@ export const StageViewer: React.FC<StageViewerProps> = ({
           </div>
 
           {/* Spacer for comfortable stage scrolling */}
-          <div className="h-48" />
+          <div className={isCleanStage ? "h-16" : "h-48"} />
         </div>
       </main>
 
       {/* 🎛️ Floating Stage HUD / Controls */}
-      <footer className="flex-none p-3 sm:p-4 bg-zinc-950/95 border-t border-zinc-800/90 backdrop-blur-lg z-30">
+      {!isCleanStage && (
+        <footer className="flex-none p-3 sm:p-4 bg-zinc-950/95 border-t border-zinc-800/90 backdrop-blur-lg z-30">
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
           {/* Left: Pitch & Capo Controllers */}
           <div className="flex items-center gap-2">
@@ -1375,6 +1392,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
           </div>
         )}
       </footer>
+      )}
 
       {/* Interactive Chord Diagram Modal */}
       {selectedChord && (

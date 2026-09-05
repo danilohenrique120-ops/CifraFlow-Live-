@@ -1,6 +1,7 @@
 import React from 'react';
 import { Setlist } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { AppLogo } from './AppLogo';
 import {
   Compass,
   ListMusic,
@@ -102,11 +103,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         {/* Top: Brand & Navigation */}
         <div className="space-y-5 overflow-y-auto pr-1 scrollbar-none">
-          <div className="flex items-center justify-between lg:hidden pb-2 border-b border-zinc-850">
-            <span className="text-sm font-black text-white">Menu Principal</span>
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-850">
+            <div className="flex items-center gap-2.5">
+              <AppLogo size={32} variant="circle" />
+              <span className="text-base font-black text-white flex items-center">
+                Cifra<span className="text-emerald-400">ê</span>
+              </span>
+            </div>
             <button
               onClick={onCloseMobile}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white"
+              className="lg:hidden p-1.5 rounded-lg text-zinc-400 hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
@@ -168,7 +174,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-zinc-400 hover:text-emerald-400 hover:bg-zinc-900 transition"
             >
               <Radio className="w-5 h-5 text-emerald-400" />
-              Live Band Sync
+              Sincronização ao Vivo
             </button>
           </nav>
 
@@ -361,9 +367,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           )}
 
-          <div className="text-center text-[10px] text-zinc-600">
+          <div className="text-center text-[10px] text-zinc-600 flex flex-col items-center gap-1.5">
+            <AppLogo size={22} variant="circle" />
             <p className="font-bold text-zinc-400">Cifra<span className="text-emerald-400">ê</span> v2.0</p>
-            <p>PWA & Live Band Sync Ready</p>
+            <p>PWA & Sincronização ao Vivo Ready</p>
           </div>
         </div>
       </aside>

@@ -3,6 +3,7 @@ import { Song } from '../types';
 import { useLiveRoom } from '../context/LiveRoomContext';
 import { useAuth } from '../context/AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
+import { AppLogo } from './AppLogo';
 import {
   X,
   Radio,
@@ -119,13 +120,11 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
       >
         {/* Header */}
         <div className="flex-none p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/60">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <Radio className="w-5 h-5 animate-pulse" />
-            </div>
+          <div className="flex items-center gap-3">
+            <AppLogo size={42} variant="circle" />
             <div>
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                Live Band Sync
+                Sincronização ao Vivo
                 {isInRoom && (
                   <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                     CONECTADO

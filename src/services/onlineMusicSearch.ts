@@ -285,13 +285,12 @@ export async function convertOnlineTrackToSongWithRealLyrics(track: OnlineSongRe
     finalContent = formatLyricsWithHarmonics(track.trackName, track.artistName, realLyrics, finalKey);
   }
 
-  return {
+  const songResult: Song = {
     id: `online_${track.trackId}`,
     title: track.trackName,
     artist: track.artistName,
     originalKey: finalKey,
     currentKey: finalKey,
-    capo: finalCapo,
     bpm: 110,
     timeSignature: '4/4',
     liturgicalMoment,
@@ -300,11 +299,23 @@ export async function convertOnlineTrackToSongWithRealLyrics(track: OnlineSongRe
     tags: [track.trackName.toLowerCase(), track.artistName.toLowerCase(), 'online', 'ao vivo'],
     content: finalContent,
     duration: durationMin,
-    audioPreviewUrl: track.previewUrl,
-    albumName: track.collectionName,
-    coverUrl: track.artworkUrl100,
     isCustom: true
   };
+
+  if (finalCapo !== undefined) {
+    songResult.capo = finalCapo;
+  }
+  if (track.previewUrl) {
+    songResult.audioPreviewUrl = track.previewUrl;
+  }
+  if (track.collectionName) {
+    songResult.albumName = track.collectionName;
+  }
+  if (track.artworkUrl100) {
+    songResult.coverUrl = track.artworkUrl100;
+  }
+
+  return songResult;
 }
 
 /**
@@ -318,7 +329,7 @@ export function convertOnlineTrackToSong(track: OnlineSongResult): Song {
   const originalKey = 'G';
   const content = formatLyricsWithHarmonics(track.trackName, track.artistName, null, originalKey);
 
-  return {
+  const songResult: Song = {
     id: `online_${track.trackId}`,
     title: track.trackName,
     artist: track.artistName,
@@ -332,9 +343,18 @@ export function convertOnlineTrackToSong(track: OnlineSongResult): Song {
     tags: [track.trackName.toLowerCase(), track.artistName.toLowerCase(), 'online'],
     content,
     duration: durationMin,
-    audioPreviewUrl: track.previewUrl,
-    albumName: track.collectionName,
-    coverUrl: track.artworkUrl100,
     isCustom: true
   };
+
+  if (track.previewUrl) {
+    songResult.audioPreviewUrl = track.previewUrl;
+  }
+  if (track.collectionName) {
+    songResult.albumName = track.collectionName;
+  }
+  if (track.artworkUrl100) {
+    songResult.coverUrl = track.artworkUrl100;
+  }
+
+  return songResult;
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { AppLogo } from './AppLogo';
 import {
   Crown,
   Check,
@@ -115,19 +116,22 @@ export const PricingModal: React.FC<PricingModalProps> = ({
       >
         {/* Header */}
         <div className="flex-none p-6 pb-4 border-b border-zinc-800 bg-zinc-950/60 flex items-center justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black uppercase tracking-wider mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              Planos e Assinaturas
+          <div className="flex items-center gap-3.5">
+            <AppLogo size={46} variant="circle" />
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black uppercase tracking-wider mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                Planos e Assinaturas
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white">
+                Desbloqueie o Poder Total do Cifra<span className="text-emerald-400">ê</span>
+              </h2>
+              {featureReason && (
+                <p className="text-xs text-amber-400 font-semibold mt-0.5">
+                  🔒 {featureReason}
+                </p>
+              )}
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white">
-              Desbloqueie o Poder Total do Cifra<span className="text-emerald-400">ê</span>
-            </h2>
-            {featureReason && (
-              <p className="text-xs text-amber-400 font-semibold mt-0.5">
-                🔒 {featureReason}
-              </p>
-            )}
           </div>
 
           <button
@@ -197,7 +201,11 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 <ul className="space-y-2.5 text-xs text-zinc-300 pt-3 border-t border-zinc-800/80">
                   <li className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-emerald-400 flex-none" />
-                    <span>Acesso a todo o catálogo de cifras</span>
+                    <span><strong>Até 10 músicas</strong> no catálogo pessoal</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <span><strong>Até 3 pastas de estilos</strong> personalizáveis</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-emerald-400 flex-none" />
@@ -217,6 +225,14 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                   </li>
                   <li className="flex items-center gap-2.5 text-zinc-500">
                     <X className="w-4 h-4 text-zinc-600 flex-none" />
+                    <span>Músicas ilimitadas no catálogo</span>
+                  </li>
+                  <li className="flex items-center gap-2.5 text-zinc-500">
+                    <X className="w-4 h-4 text-zinc-600 flex-none" />
+                    <span>Pastas de estilos ilimitadas</span>
+                  </li>
+                  <li className="flex items-center gap-2.5 text-zinc-500">
+                    <X className="w-4 h-4 text-zinc-600 flex-none" />
                     <span>Criar salas de ensaio (Líder)</span>
                   </li>
                   <li className="flex items-center gap-2.5 text-zinc-500">
@@ -230,10 +246,6 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                   <li className="flex items-center gap-2.5 text-zinc-500">
                     <X className="w-4 h-4 text-zinc-600 flex-none" />
                     <span>Criar versões próprias de cifras</span>
-                  </li>
-                  <li className="flex items-center gap-2.5 text-zinc-500">
-                    <X className="w-4 h-4 text-zinc-600 flex-none" />
-                    <span>Exportar repertório em PDF para impressão</span>
                   </li>
                 </ul>
               </div>
@@ -279,6 +291,14 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 <ul className="space-y-2.5 text-xs text-zinc-200 pt-3 border-t border-zinc-800">
                   <li className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <strong className="text-white">Músicas Ilimitadas no Catálogo Pessoal</strong>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <strong className="text-white">Pastas e Estilos Musicais Ilimitados na Nuvem</strong>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
                     <strong className="text-white">Criar Salas Ao Vivo (PIN e QR Code)</strong>
                   </li>
                   <li className="flex items-center gap-2.5">
@@ -300,10 +320,6 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                   <li className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-emerald-400 flex-none" />
                     <span>Repertórios e Setlists Ilimitados na nuvem</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
-                    <span>Personalização dos 10 blocos e gêneros do show</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-emerald-400 flex-none" />

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Song, MusicGenre } from '../types';
+import { Song, MusicGenre, GenreFolder } from '../types';
 import {
   X,
   Plus,
@@ -18,6 +18,7 @@ interface MomentManagerModalProps {
   onClose: () => void;
   moment: MusicGenre;
   allSongs: Song[];
+  allFolders?: GenreFolder[];
   onUpdateSongMoment: (songId: string, newMoment: MusicGenre) => void;
   onBatchUpdateMoments: (songIdsToAdd: string[], songIdsToRemove: string[], moment: MusicGenre) => void;
   onOpenUploadModal: (presetMoment?: MusicGenre) => void;
