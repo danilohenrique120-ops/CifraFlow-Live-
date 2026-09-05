@@ -42,6 +42,9 @@ export class LiveSyncEngine {
   private firestoreUnsubscribe: Unsubscribe | null = null;
   private isDestroyed = false;
 
+  // Track alert ID to never duplicate / spam past alerts on Firestore snapshots
+  private lastAlertId: string | null = null;
+
   // Scroll sync throttler to protect Firestore from rate-limiting
   private lastScrollSyncTime = 0;
   private pendingScrollPercentage: number | null = null;
@@ -117,25 +120,34 @@ export class LiveSyncEngine {
             timestamp: data.lastUpdated || Date.now()
           });
 
-          // Sync active alert or dismiss if cleared
+          // ONLY trigger a new alert notification if the alert is new and within the last 15s
           if (data.currentAlert) {
-            this.notifyListeners({
-              type: 'BAND_ALERT',
-              senderId: data.hostId || 'leader',
-              senderName: data.currentAlert.senderName || 'Líder',
-              roomId: this.roomId,
-              payload: data.currentAlert,
-              timestamp: data.currentAlert.timestamp || Date.now()
-            });
+            const isNewAlert = data.currentAlert.id && data.currentAlert.id !== this.lastAlertId;
+            const isFresh = Date.now() - (data.currentAlert.timestamp || 0) < 15000;
+
+            if (isNewAlert && isFresh) {
+              this.lastAlertId = data.currentAlert.id;
+              this.notifyListeners({
+                type: 'BAND_ALERT',
+                senderId: data.hostId || 'leader',
+                senderName: data.currentAlert.senderName || 'Líder',
+                roomId: this.roomId,
+                payload: data.currentAlert,
+                timestamp: data.currentAlert.timestamp || Date.now()
+              });
+            }
           } else {
-            this.notifyListeners({
-              type: 'DISMISS_ALERT',
-              senderId: data.hostId || 'cloud',
-              senderName: 'Sistema',
-              roomId: this.roomId,
-              payload: null,
-              timestamp: data.lastUpdated || Date.now()
-            });
+            if (this.lastAlertId !== null) {
+              this.lastAlertId = null;
+              this.notifyListeners({
+                type: 'DISMISS_ALERT',
+                senderId: data.hostId || 'cloud',
+                senderName: 'Sistema',
+                roomId: this.roomId,
+                payload: null,
+                timestamp: data.lastUpdated || Date.now()
+              });
+            }
           }
         },
         (error) => {
@@ -189,6 +201,7 @@ export class LiveSyncEngine {
           currentKey: fullMessage.payload.key,
           semitoneShift: fullMessage.payload.semitones ?? 0,
           currentCapo: fullMessage.payload.capo ?? (fullMessage.payload.song?.capo || 0),
+          scrollPercentage: 0,
           lastUpdated: Date.now()
         };
         if (fullMessage.payload.song) {
@@ -218,21 +231,23 @@ export class LiveSyncEngine {
           lastUpdated: Date.now()
         }, { merge: true });
       } else if (fullMessage.type === 'BAND_ALERT') {
+        this.lastAlertId = fullMessage.payload?.id || null;
         await setDoc(roomDocRef, {
           currentAlert: fullMessage.payload,
           lastUpdated: Date.now()
         }, { merge: true });
       } else if (fullMessage.type === 'DISMISS_ALERT') {
+        this.lastAlertId = null;
         await setDoc(roomDocRef, {
           currentAlert: null,
           lastUpdated: Date.now()
         }, { merge: true });
       } else if (fullMessage.type === 'SCROLL_SYNC') {
-        // High efficiency scroll sync with 500ms debounce to prevent choking Firestore
+        // Fast, responsive scroll sync with 200ms throttle
         const now = Date.now();
         this.pendingScrollPercentage = fullMessage.payload.scrollPercentage;
 
-        if (now - this.lastScrollSyncTime >= 500) {
+        if (now - this.lastScrollSyncTime >= 200) {
           this.lastScrollSyncTime = now;
           setDoc(roomDocRef, {
             scrollPercentage: fullMessage.payload.scrollPercentage,
@@ -248,7 +263,7 @@ export class LiveSyncEngine {
                 lastUpdated: Date.now()
               }, { merge: true }).catch(() => {});
             }
-          }, 500 - (now - this.lastScrollSyncTime));
+          }, 200 - (now - this.lastScrollSyncTime));
         }
       } else if (fullMessage.type === 'MEMBER_JOIN') {
         const docSnap = await getDoc(roomDocRef);
@@ -372,4 +387,3 @@ export function generateRoomPin(prefix = 'MTS'): string {
   const num = Math.floor(100 + Math.random() * 900);
   return `${prefix}-${num}`;
 }
-

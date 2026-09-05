@@ -12,7 +12,7 @@ interface LiveRoomContextType {
   createRoom: (roomName?: string, memberName?: string, instrument?: string) => Promise<string>;
   joinRoom: (pin: string, memberName?: string, instrument?: string) => Promise<boolean>;
   leaveRoom: () => void;
-  selectSong: (songId: string, songKey?: string, songData?: Song) => void;
+  selectSong: (songId: string, songKey?: string, songData?: Song, semitoneShift?: number, capo?: number) => void;
   changeKey: (key: string, semitones: number) => void;
   changeCapo: (capo: number) => void;
   toggleFollowScroll: (enabled?: boolean) => void;
@@ -333,8 +333,8 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [sessionState, currentMember]);
 
-  const selectSong = useCallback((songId: string, songKey = 'C', songData?: Song) => {
-    const effectiveCapo = songData?.capo ?? 0;
+  const selectSong = useCallback((songId: string, songKey = 'C', songData?: Song, semitoneShift = 0, capo?: number) => {
+    const effectiveCapo = capo !== undefined ? capo : (songData?.capo ?? 0);
     setSessionState(prev => {
       if (!prev) return null;
       const updated: LiveSessionState = {
@@ -342,8 +342,9 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         currentSongId: songId,
         currentSong: songData !== undefined ? songData : prev.currentSong,
         currentKey: songKey,
-        semitoneShift: 0,
+        semitoneShift: semitoneShift,
         currentCapo: effectiveCapo,
+        scrollPercentage: 0,
         lastUpdated: Date.now()
       };
       if (engineRef.current && currentMember) {
@@ -351,7 +352,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           type: 'SONG_CHANGE',
           senderId: currentMember.id,
           senderName: currentMember.name,
-          payload: { songId, key: songKey, semitones: 0, capo: effectiveCapo, song: songData || null }
+          payload: { songId, key: songKey, semitones: semitoneShift, capo: effectiveCapo, song: songData || null }
         });
       }
       return updated;
@@ -417,7 +418,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [currentMember]);
 
   const broadcastScroll = useCallback((percentage: number) => {
-    if (sessionState?.followScroll && engineRef.current && currentMember?.role === 'leader') {
+    if (sessionState?.followScroll && engineRef.current && currentMember && (currentMember.role === 'leader' || sessionState.hostId === currentMember.id)) {
       engineRef.current.broadcast({
         type: 'SCROLL_SYNC',
         senderId: currentMember.id,
@@ -425,7 +426,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         payload: { scrollPercentage: percentage }
       });
     }
-  }, [sessionState?.followScroll, currentMember]);
+  }, [sessionState?.followScroll, sessionState?.hostId, currentMember]);
 
   const sendBandAlert = useCallback((message: string, type: BandAlert['type'] = 'custom') => {
     if (!currentMember) return;

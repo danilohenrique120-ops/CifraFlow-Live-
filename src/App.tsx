@@ -209,32 +209,38 @@ const MainAppContent: React.FC = () => {
   useEffect(() => {
     if (!isInRoom || isHost || !sessionState) return;
 
+    const targetSongId = sessionState.currentSongId || sessionState.currentSong?.id;
+    if (!targetSongId) return;
+
     if (sessionState.currentSong) {
       const incomingSong = sessionState.currentSong;
-      setSelectedSong(incomingSong);
+      setSelectedSong(prev => (prev?.id === incomingSong.id && prev?.content === incomingSong.content ? prev : incomingSong));
       setSongs(prev => {
         const existingIdx = prev.findIndex(s => s.id === incomingSong.id);
         if (existingIdx === -1) {
           return [incomingSong, ...prev];
         }
-        const updated = [...prev];
-        updated[existingIdx] = { ...updated[existingIdx], ...incomingSong };
-        return updated;
+        if (prev[existingIdx].content !== incomingSong.content || prev[existingIdx].title !== incomingSong.title) {
+          const updated = [...prev];
+          updated[existingIdx] = { ...updated[existingIdx], ...incomingSong };
+          return updated;
+        }
+        return prev;
       });
-    } else if (sessionState.currentSongId) {
-      const targetSong = songs.find(s => s.id === sessionState.currentSongId);
-      if (targetSong) {
-        setSelectedSong(targetSong);
-      }
+    } else if (targetSongId) {
+      setSelectedSong(prev => {
+        if (prev?.id === targetSongId) return prev;
+        return songs.find(s => s.id === targetSongId) || prev;
+      });
     }
-  }, [isInRoom, isHost, sessionState?.currentSong, sessionState?.currentSongId, sessionState?.lastUpdated]);
+  }, [isInRoom, isHost, sessionState?.currentSongId, sessionState?.currentSong?.id]);
 
   // Setlist sync if active in room (only for members following host)
   useEffect(() => {
     if (!isInRoom || isHost || !sessionState?.activeSetlistId) return;
     const targetSetlist = setlists.find(sl => sl.id === sessionState.activeSetlistId);
     if (targetSetlist) {
-      setActiveSetlist(targetSetlist);
+      setActiveSetlist(prev => (prev?.id === targetSetlist.id ? prev : targetSetlist));
     }
   }, [isInRoom, isHost, sessionState?.activeSetlistId, setlists]);
 
@@ -266,13 +272,8 @@ const MainAppContent: React.FC = () => {
     if (isInRoom && isHost) {
       const targetKey = setlist?.items.find(it => it.songId === song.id)?.customKey || song.currentKey || song.originalKey;
       const shift = getSemitoneDifference(song.originalKey, targetKey);
-      selectSong(song.id, targetKey, song);
-      if (shift !== 0) {
-        changeKey(targetKey, shift);
-      }
-      if (song.capo !== undefined) {
-        changeCapo(song.capo);
-      }
+      const effectiveCapo = song.capo !== undefined ? song.capo : 0;
+      selectSong(song.id, targetKey, song, shift, effectiveCapo);
     }
   };
 

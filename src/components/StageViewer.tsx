@@ -172,35 +172,29 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     }
   };
 
-  // Re-calculate transposition whenever song or targetKeyForSong changes
+  // Sync state from Live Room if follower (Key and Capo)
   useEffect(() => {
-    if (isInRoom && !isHost && sessionState?.semitoneShift !== undefined) {
-      setSemitoneShift(sessionState.semitoneShift);
+    if (isInRoom && !isHost) {
+      if (sessionState?.semitoneShift !== undefined) {
+        setSemitoneShift(sessionState.semitoneShift);
+      }
+      if (sessionState?.currentCapo !== undefined) {
+        setCapoFret(sessionState.currentCapo);
+      }
       return;
     }
     setSemitoneShift(getSemitoneDifference(song.originalKey, targetKeyForSong));
-  }, [song.id, song.originalKey, targetKeyForSong, isInRoom, isHost]);
+  }, [song.id, song.originalKey, targetKeyForSong, isInRoom, isHost, sessionState?.semitoneShift, sessionState?.currentCapo]);
 
-  // Sync state from Live Room if follower (Key and Capo)
-  useEffect(() => {
-    if (isInRoom && !isHost && sessionState?.semitoneShift !== undefined) {
-      setSemitoneShift(sessionState.semitoneShift);
-    }
-  }, [sessionState?.semitoneShift, isInRoom, isHost]);
-
-  useEffect(() => {
-    if (isInRoom && !isHost && sessionState?.currentCapo !== undefined) {
-      setCapoFret(sessionState.currentCapo);
-    }
-  }, [sessionState?.currentCapo, isInRoom, isHost]);
-
-
-  // Sync scroll position from Leader if followScroll is active
+  // Sync scroll position from Leader in real-time if followScroll is active
   useEffect(() => {
     if (sessionState?.followScroll && !isHost && sessionState.scrollPercentage !== undefined && scrollContainerRef.current) {
       const container = scrollContainerRef.current;
-      const targetScroll = (sessionState.scrollPercentage / 100) * (container.scrollHeight - container.clientHeight);
-      container.scrollTo({ top: targetScroll, behavior: 'smooth' });
+      const maxScroll = container.scrollHeight - container.clientHeight;
+      if (maxScroll > 0) {
+        const targetScroll = (sessionState.scrollPercentage / 100) * maxScroll;
+        container.scrollTop = targetScroll;
+      }
     }
   }, [sessionState?.scrollPercentage, sessionState?.followScroll, isHost]);
 
@@ -384,10 +378,10 @@ export const StageViewer: React.FC<StageViewerProps> = ({
           const pxToScroll = 32 * scrollSpeedRef.current * delta;
           container.scrollTop += pxToScroll;
 
-          // Broadcast scroll to band if leader (throttled to 400ms to keep connection lightweight and fast)
+          // Broadcast scroll to band if leader (throttled to 200ms to keep connection lightweight and fast)
           if (isInRoom && isHost && sessionState?.followScroll && maxScroll > 0) {
             const now = performance.now();
-            if (now - lastAutoScrollBroadcastRef.current > 400) {
+            if (now - lastAutoScrollBroadcastRef.current > 200) {
               lastAutoScrollBroadcastRef.current = now;
               const percentage = Math.min(100, Math.round((container.scrollTop / maxScroll) * 100));
               broadcastScroll(percentage);
