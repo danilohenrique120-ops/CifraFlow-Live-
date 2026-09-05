@@ -463,8 +463,8 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       effectiveKey: shapeKey,
       capo: activeCapo,
       instrument: activeInstrument,
-      columnsCount: columnMode === '2' ? '2' : '1',
-      fontSize: fontScale === 'small' ? 'sm' : fontScale === 'large' ? 'lg' : 'base'
+      columnsCount: columnMode === '2-col' ? '2' : '1',
+      fontSize: fontScale === 'sm' ? 'sm' : fontScale === 'lg' || fontScale === 'xl' || fontScale === '2xl' ? 'lg' : 'base'
     });
     const docTitle = `Cifra_${song.title.replace(/\s+/g, '_')}_${shapeKey}_Cifrae`;
     printHtmlDocument(html, docTitle);

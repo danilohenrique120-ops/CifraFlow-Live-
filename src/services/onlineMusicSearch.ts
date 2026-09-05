@@ -20,18 +20,20 @@ export async function searchOnlineTracks(query: string): Promise<OnlineSongResul
       return [];
     }
 
-    return data.results.map((item: any) => ({
-      trackId: item.trackId || item.collectionId || Math.random().toString(),
-      trackName: item.trackName || item.collectionName || 'Música Desconhecida',
-      artistName: item.artistName || 'Artista Desconhecido',
-      collectionName: item.collectionName,
-      artworkUrl100: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : undefined,
-      previewUrl: item.previewUrl,
-      trackTimeMillis: item.trackTimeMillis,
-      primaryGenreName: item.primaryGenreName,
-      releaseDate: item.releaseDate,
-      source: 'online_itunes'
-    }));
+    return data.results
+      .filter((item: any) => Boolean(item && (item.trackName || item.collectionName)))
+      .map((item: any, idx: number) => ({
+        trackId: item.trackId ? String(item.trackId) : (item.collectionId ? `col_${item.collectionId}_${idx}` : `track_${Date.now()}_${idx}`),
+        trackName: String(item.trackName || item.collectionName || 'Música Desconhecida'),
+        artistName: String(item.artistName || 'Artista Desconhecido'),
+        collectionName: item.collectionName ? String(item.collectionName) : undefined,
+        artworkUrl100: typeof item.artworkUrl100 === 'string' ? item.artworkUrl100.replace('100x100bb', '600x600bb') : undefined,
+        previewUrl: typeof item.previewUrl === 'string' ? item.previewUrl : undefined,
+        trackTimeMillis: typeof item.trackTimeMillis === 'number' ? item.trackTimeMillis : undefined,
+        primaryGenreName: typeof item.primaryGenreName === 'string' ? item.primaryGenreName : undefined,
+        releaseDate: item.releaseDate ? String(item.releaseDate) : undefined,
+        source: 'online_itunes'
+      }));
   } catch (error) {
     console.warn('Error during online music search:', error);
     return [];

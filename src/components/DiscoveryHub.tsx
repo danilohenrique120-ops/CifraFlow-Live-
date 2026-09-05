@@ -32,7 +32,7 @@ interface DiscoveryHubProps {
   isPro: boolean;
   onSelectSong: (song: Song) => void;
   onOpenLiveRoomModal: () => void;
-  onOpenSearch: () => void;
+  onOpenSearch: (tab?: 'local' | 'online') => void;
   onOpenUploadModal: (presetMoment?: MusicGenre) => void;
   onOpenPricing: (reason?: string) => void;
   setlists: Setlist[];
@@ -149,7 +149,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
             </button>
 
             <button
-              onClick={onOpenSearch}
+              onClick={() => onOpenSearch('online')}
               className="px-4 py-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-sm border border-zinc-800 transition flex items-center gap-2"
             >
               <Globe className="w-4 h-4 text-blue-400" />
@@ -466,7 +466,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
 
             <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
               <button
-                onClick={onOpenSearch}
+                onClick={() => onOpenSearch('online')}
                 className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm shadow-xl shadow-emerald-900/40 transition flex items-center gap-2"
               >
                 <Globe className="w-4 h-4" />

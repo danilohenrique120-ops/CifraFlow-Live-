@@ -94,20 +94,20 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
 
   // Filter songs within current setlist by title, artist, genre, tone or notes
   const filteredSetlistItems = React.useMemo(() => {
-    if (!currentSetlist) return [];
+    if (!currentSetlist || !Array.isArray(currentSetlist.items)) return [];
     if (!searchQuery.trim()) return currentSetlist.items;
     const q = searchQuery.toLowerCase().trim();
     return currentSetlist.items.filter(item => {
-      const song = songs.find(s => s.id === item.songId);
+      if (!item) return false;
+      const song = songs.find(s => s && s.id === item.songId);
       if (!song) return false;
-      return (
-        song.title.toLowerCase().includes(q) ||
-        song.artist.toLowerCase().includes(q) ||
-        song.liturgicalMoment.toLowerCase().includes(q) ||
-        (item.notes && item.notes.toLowerCase().includes(q)) ||
-        (item.customKey && item.customKey.toLowerCase().includes(q)) ||
-        song.originalKey.toLowerCase().includes(q)
-      );
+      const titleMatch = typeof song.title === 'string' && song.title.toLowerCase().includes(q);
+      const artistMatch = typeof song.artist === 'string' && song.artist.toLowerCase().includes(q);
+      const momentMatch = typeof song.liturgicalMoment === 'string' && song.liturgicalMoment.toLowerCase().includes(q);
+      const notesMatch = typeof item.notes === 'string' && item.notes.toLowerCase().includes(q);
+      const customKeyMatch = typeof item.customKey === 'string' && item.customKey.toLowerCase().includes(q);
+      const originalKeyMatch = typeof song.originalKey === 'string' && song.originalKey.toLowerCase().includes(q);
+      return titleMatch || artistMatch || momentMatch || notesMatch || customKeyMatch || originalKeyMatch;
     });
   }, [currentSetlist, searchQuery, songs]);
 

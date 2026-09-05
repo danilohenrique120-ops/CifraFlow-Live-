@@ -53,21 +53,24 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
 
   // Current songs assigned to this genre/moment
   const currentSongs = useMemo(() => {
-    return allSongs.filter(s => s.liturgicalMoment === moment);
+    return (allSongs || []).filter(s => s && s.liturgicalMoment === moment);
   }, [allSongs, moment]);
 
   // Songs from other genres available to be added
   const otherSongs = useMemo(() => {
-    return allSongs.filter(s => s.liturgicalMoment !== moment);
+    return (allSongs || []).filter(s => s && s.liturgicalMoment !== moment);
   }, [allSongs, moment]);
 
   // Filtered other songs
   const filteredOtherSongs = useMemo(() => {
     if (!searchTerm.trim()) return otherSongs;
-    const term = searchTerm.toLowerCase();
-    return otherSongs.filter(
-      s => s.title.toLowerCase().includes(term) || s.artist.toLowerCase().includes(term)
-    );
+    const term = searchTerm.toLowerCase().trim();
+    return otherSongs.filter(s => {
+      if (!s) return false;
+      const titleMatch = typeof s.title === 'string' && s.title.toLowerCase().includes(term);
+      const artistMatch = typeof s.artist === 'string' && s.artist.toLowerCase().includes(term);
+      return titleMatch || artistMatch;
+    });
   }, [otherSongs, searchTerm]);
 
   if (!isOpen) return null;

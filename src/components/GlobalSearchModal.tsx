@@ -23,6 +23,8 @@ import {
   Loader2
 } from 'lucide-react';
 
+import { ErrorBoundary } from './ErrorBoundary';
+
 interface GlobalSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,20 +33,37 @@ interface GlobalSearchModalProps {
   onOpenUploadModal?: () => void;
   setlists: Setlist[];
   onAddToSetlist: (song: Song, setlistId: string) => void;
+  initialTab?: 'local' | 'online';
+  isPro?: boolean;
 }
 
 export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   isOpen,
   onClose,
-  songs,
+  songs = [],
   onSelectSong,
   onOpenUploadModal,
-  setlists,
-  onAddToSetlist
+  setlists = [],
+  onAddToSetlist,
+  initialTab,
+  isPro
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'local' | 'online'>('local');
   const [activeFilter, setActiveFilter] = useState<'all' | 'songs' | 'artists' | 'liturgical'>('all');
+
+  // Sync tab when opened: if initialTab requested or songs is empty, prefer online tab
+  useEffect(() => {
+    if (isOpen) {
+      if (initialTab) {
+        setActiveTab(initialTab);
+      } else if (!songs || songs.length === 0) {
+        setActiveTab('online');
+      } else {
+        setActiveTab('local');
+      }
+    }
+  }, [isOpen, initialTab, songs?.length]);
 
   // Online search state
   const [onlineResults, setOnlineResults] = useState<OnlineSongResult[]>([]);
@@ -113,7 +132,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
     if (playingAudioId === track.trackId && audioRef.current) {
       if (audioRef.current.paused) {
-        audioRef.current.play();
+        audioRef.current.play().catch(() => {});
       } else {
         audioRef.current.pause();
         setPlayingAudioId(null);
@@ -125,12 +144,16 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       audioRef.current.pause();
     }
 
-    const newAudio = new Audio(track.previewUrl);
-    newAudio.volume = 0.7;
-    newAudio.play();
-    newAudio.onended = () => setPlayingAudioId(null);
-    audioRef.current = newAudio;
-    setPlayingAudioId(track.trackId);
+    try {
+      const newAudio = new Audio(track.previewUrl);
+      newAudio.volume = 0.7;
+      newAudio.play().catch(() => {});
+      newAudio.onended = () => setPlayingAudioId(null);
+      audioRef.current = newAudio;
+      setPlayingAudioId(track.trackId);
+    } catch (e) {
+      console.warn('Audio play error:', e);
+    }
   };
 
   const handleSelectOnlineTrack = async (track: OnlineSongResult) => {
@@ -173,42 +196,71 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     }
   };
 
-  // Local filtered results
+  // Local filtered results with complete null/undefined protection
   const localResults = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    const term = (searchTerm || '').trim().toLowerCase();
+    const safeSongs = Array.isArray(songs) ? songs.filter(Boolean) : [];
+
     if (!term) {
+      const topSong = safeSongs[0] || null;
+      const validArtists = Array.from(
+        new Set(
+          safeSongs
+            .map(s => (s && typeof s.artist === 'string' ? s.artist.trim() : ''))
+            .filter(Boolean)
+        )
+      ).slice(0, 5);
+
+      const validMoments = Array.from(
+        new Set(
+          safeSongs
+            .map(s => (s && typeof s.liturgicalMoment === 'string' ? s.liturgicalMoment.trim() : ''))
+            .filter(Boolean)
+        )
+      );
+
       return {
-        topResult: songs[0] || null,
-        songsList: songs.slice(0, 8),
-        artistsList: Array.from(new Set(songs.map(s => s.artist))).slice(0, 5),
-        liturgicalList: Array.from(new Set(songs.map(s => s.liturgicalMoment)))
+        topResult: topSong,
+        songsList: safeSongs.slice(0, 8),
+        artistsList: validArtists,
+        liturgicalList: validMoments
       };
     }
 
-    const matchedSongs = songs.filter(s => {
-      const matchTitle = s.title.toLowerCase().includes(term);
-      const matchArtist = s.artist.toLowerCase().includes(term);
-      const matchMoment = s.liturgicalMoment.toLowerCase().includes(term);
-      const matchTags = s.tags.some(t => t.toLowerCase().includes(term));
-      const matchContent = s.content.toLowerCase().includes(term);
-      return matchTitle || matchArtist || matchMoment || matchTags || matchContent;
+    const matchedSongs = safeSongs.filter(s => {
+      if (!s) return false;
+      const title = typeof s.title === 'string' ? s.title.toLowerCase() : '';
+      const artist = typeof s.artist === 'string' ? s.artist.toLowerCase() : '';
+      const moment = typeof s.liturgicalMoment === 'string' ? s.liturgicalMoment.toLowerCase() : '';
+      const content = typeof s.content === 'string' ? s.content.toLowerCase() : '';
+      const tagsMatch = Array.isArray(s.tags) && s.tags.some(t => typeof t === 'string' && t.toLowerCase().includes(term));
+
+      return (
+        title.includes(term) ||
+        artist.includes(term) ||
+        moment.includes(term) ||
+        tagsMatch ||
+        content.includes(term)
+      );
     });
 
     const topResult = matchedSongs[0] || null;
 
     const matchedArtists = Array.from(
       new Set(
-        songs
-          .filter(s => s.artist.toLowerCase().includes(term))
-          .map(s => s.artist)
+        safeSongs
+          .filter(s => s && typeof s.artist === 'string' && s.artist.toLowerCase().includes(term))
+          .map(s => s.artist.trim())
+          .filter(Boolean)
       )
     );
 
     const matchedLiturgical = Array.from(
       new Set(
-        songs
-          .filter(s => s.liturgicalMoment.toLowerCase().includes(term))
-          .map(s => s.liturgicalMoment)
+        safeSongs
+          .filter(s => s && typeof s.liturgicalMoment === 'string' && s.liturgicalMoment.toLowerCase().includes(term))
+          .map(s => s.liturgicalMoment.trim())
+          .filter(Boolean)
       )
     );
 
@@ -306,8 +358,12 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           )}
         </div>
 
-        {/* Results Body */}
+        {/* Results Body with ErrorBoundary */}
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
+          <ErrorBoundary
+            fallbackTitle="Instabilidade na busca de cifras"
+            fallbackMessage="Tivemos uma falha ao exibir a lista de músicas. Tente buscar por outro termo ou alternar entre Catálogo e Busca Online."
+          >
           {activeTab === 'online' ? (
             /* 🌐 ONLINE GLOBAL SEARCH RESULTS (SPOTIFY / ITUNES) */
             <div className="space-y-4">
@@ -322,19 +378,23 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   </p>
                 </div>
                 {isSearchingOnline && (
-                  <span className="text-xs text-zinc-400 font-mono">Buscando...</span>
+                  <span className="text-xs text-zinc-400 font-mono flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                    Buscando online...
+                  </span>
                 )}
               </div>
 
               {onlineResults.length > 0 ? (
                 <div className="space-y-2">
-                  {onlineResults.map((track) => {
+                  {onlineResults.map((track, trackIdx) => {
+                    if (!track) return null;
                     const isPlaying = playingAudioId === track.trackId;
                     const isDropdownOpen = activeDropdownSongId === `online_${track.trackId}`;
 
                     return (
                       <div
-                        key={track.trackId}
+                        key={`${track.trackId}_${trackIdx}`}
                         onClick={() => handleSelectOnlineTrack(track)}
                         className="group relative p-3 rounded-2xl bg-zinc-950/70 border border-zinc-800 hover:border-emerald-500/80 hover:bg-zinc-850 transition cursor-pointer flex items-center justify-between gap-3 shadow-md"
                       >
@@ -344,7 +404,10 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                             {track.artworkUrl100 ? (
                               <img
                                 src={track.artworkUrl100}
-                                alt={track.trackName}
+                                alt={track.trackName || 'Capa da música'}
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = 'none';
+                                }}
                                 className="w-full h-full object-cover"
                               />
                             ) : (
@@ -408,8 +471,9 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                   <span>Escolha o Repertório:</span>
                                 </div>
 
-                                {setlists.map((setlist) => {
-                                  const isAlreadyIn = setlist.items.some(it => it.songId === `online_${track.trackId}`);
+                                {Array.isArray(setlists) && setlists.map((setlist) => {
+                                  if (!setlist) return null;
+                                  const isAlreadyIn = Array.isArray(setlist.items) && setlist.items.some(it => it && it.songId === `online_${track.trackId}`);
                                   return (
                                     <button
                                       key={setlist.id}
@@ -421,7 +485,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                           : 'hover:bg-zinc-800 text-zinc-200'
                                       }`}
                                     >
-                                      <span className="truncate">{setlist.title}</span>
+                                      <span className="truncate">{setlist.title || 'Repertório sem nome'}</span>
                                       {isAlreadyIn ? (
                                         <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 flex-none ml-1">
                                           <Check className="w-3.5 h-3.5" />
@@ -434,7 +498,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                   );
                                 })}
 
-                                {setlists.length === 0 && (
+                                {(!Array.isArray(setlists) || setlists.length === 0) && (
                                   <p className="px-2 py-2 text-xs text-zinc-500 text-center">
                                     Nenhum repertório criado ainda.
                                   </p>
@@ -556,18 +620,21 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                               <span>Escolha o Repertório:</span>
                             </div>
 
-                            {setlists.map((setlist) => (
-                              <button
-                                key={setlist.id}
-                                onClick={(e) => localResults.topResult && handleAddSongToSetlist(localResults.topResult, setlist, e)}
-                                className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-zinc-800 text-xs font-semibold text-zinc-200 truncate transition flex items-center justify-between group/item"
-                              >
-                                <span className="truncate">{setlist.title}</span>
-                                <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
-                              </button>
-                            ))}
+                            {Array.isArray(setlists) && setlists.map((setlist) => {
+                              if (!setlist) return null;
+                              return (
+                                <button
+                                  key={setlist.id}
+                                  onClick={(e) => localResults.topResult && handleAddSongToSetlist(localResults.topResult, setlist, e)}
+                                  className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-zinc-800 text-xs font-semibold text-zinc-200 truncate transition flex items-center justify-between group/item"
+                                >
+                                  <span className="truncate">{setlist.title || 'Repertório sem nome'}</span>
+                                  <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
+                                </button>
+                              );
+                            })}
 
-                            {setlists.length === 0 && (
+                            {(!Array.isArray(setlists) || setlists.length === 0) && (
                               <p className="px-2 py-2 text-xs text-zinc-500 text-center">
                                 Nenhum repertório criado ainda.
                               </p>
@@ -592,6 +659,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   </span>
                   <div className="space-y-1">
                     {localResults.songsList.map((song) => {
+                      if (!song) return null;
                       const isDropdownOpen = activeDropdownSongId === `catalog_${song.id}`;
 
                       return (
@@ -604,7 +672,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                           className="p-2.5 rounded-2xl hover:bg-zinc-800/80 transition cursor-pointer flex items-center justify-between group border border-transparent hover:border-zinc-700 relative"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${song.coverGradient} flex items-center justify-center text-white text-xs font-bold flex-none`}>
+                            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${song.coverGradient || 'from-emerald-600 to-teal-900'} flex items-center justify-center text-white text-xs font-bold flex-none`}>
                               <Music className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
@@ -617,10 +685,10 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
                           <div className="flex items-center gap-2 flex-none" onClick={(e) => e.stopPropagation()}>
                             <span className="hidden sm:inline text-[10px] px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 font-semibold border border-zinc-700">
-                              {song.liturgicalMoment}
+                              {song.liturgicalMoment || 'Geral'}
                             </span>
                             <span className="text-xs font-bold text-emerald-400 font-mono">
-                              {song.originalKey}
+                              {song.originalKey || 'G'}
                             </span>
 
                             {/* Add to Setlist Dropdown Trigger */}
@@ -647,8 +715,9 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                     <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
                                     <span>Escolha o Repertório:</span>
                                   </div>
-                                  {setlists.map((setlist) => {
-                                    const isAlreadyIn = setlist.items.some(it => it.songId === song.id);
+                                  {Array.isArray(setlists) && setlists.map((setlist) => {
+                                    if (!setlist) return null;
+                                    const isAlreadyIn = Array.isArray(setlist.items) && setlist.items.some(it => it && it.songId === song.id);
                                     return (
                                       <button
                                         key={setlist.id}
@@ -660,7 +729,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                             : 'hover:bg-zinc-800 text-zinc-200'
                                         }`}
                                       >
-                                        <span className="truncate">{setlist.title}</span>
+                                        <span className="truncate">{setlist.title || 'Repertório sem nome'}</span>
                                         {isAlreadyIn ? (
                                           <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 flex-none ml-1">
                                             <Check className="w-3.5 h-3.5" />
@@ -673,7 +742,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                     );
                                   })}
 
-                                  {setlists.length === 0 && (
+                                  {(!Array.isArray(setlists) || setlists.length === 0) && (
                                     <p className="px-2 py-2 text-xs text-zinc-500 text-center">
                                       Nenhum repertório criado ainda.
                                     </p>
@@ -736,18 +805,27 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
               {localResults.songsList.length === 0 && (
                 <div className="text-center py-10 space-y-3">
-                  <p className="text-sm text-zinc-400">Nenhum resultado no catálogo para "{searchTerm}".</p>
+                  <p className="text-sm text-zinc-400">
+                    {searchTerm.trim()
+                      ? `Nenhum resultado no catálogo local para "${searchTerm}".`
+                      : 'Seu catálogo local está vazio.'}
+                  </p>
                   <button
                     onClick={() => setActiveTab('online')}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5 mx-auto"
+                    className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition flex items-center gap-2 mx-auto active:scale-95"
                   >
                     <Globe className="w-4 h-4" />
-                    Buscar Online
+                    <span>
+                      {onlineResults.length > 0
+                        ? `Ver ${onlineResults.length} Cifras Encontradas Online`
+                        : 'Pesquisar esta Música Online'}
+                    </span>
                   </button>
                 </div>
               )}
             </>
           )}
+          </ErrorBoundary>
         </div>
       </div>
     </div>

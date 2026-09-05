@@ -23,6 +23,7 @@ import {
   healContaminatedSongsAsync
 } from './services/cloudWorkspaceSync';
 import { getSemitoneDifference } from './utils/chordEngine';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const MainAppContent: React.FC = () => {
   const { isInRoom, isHost, currentMember, sessionState, selectSong, changeKey, changeCapo } = useLiveRoom();
@@ -244,6 +245,7 @@ const MainAppContent: React.FC = () => {
 
   // Modals state
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const [searchInitialTab, setSearchInitialTab] = useState<'local' | 'online'>('local');
   const [isLiveRoomModalOpen, setIsLiveRoomModalOpen] = useState<boolean>(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [isMetronomeOpen, setIsMetronomeOpen] = useState<boolean>(false);
@@ -327,16 +329,22 @@ const MainAppContent: React.FC = () => {
     setIsPricingOpen(true);
   };
 
+  const handleOpenSearch = (tab?: 'local' | 'online') => {
+    setSearchInitialTab(tab || (songs.length === 0 ? 'online' : 'local'));
+    setIsSearchOpen(true);
+  };
+
   // Handlers
   const handleSelectSong = (song: Song, setlist?: Setlist | null) => {
+    if (!song) return;
     // Add to songs list if it's an online song not yet in catalog
-    if (!songs.some(s => s.id === song.id)) {
+    if (!songs.some(s => s && s.id === song.id)) {
       if (!isPro && songs.length >= 10) {
         handleOpenPricingWithReason('O plano Free permite até 10 músicas no catálogo. Faça upgrade para o Plano Pro para ter músicas ilimitadas!');
         return;
       }
       setSongs(prev => {
-        if (!prev.some(s => s.id === song.id)) {
+        if (!prev.some(s => s && s.id === song.id)) {
           const updated = [song, ...prev];
           if (userProfile?.uid) {
             try {
@@ -618,7 +626,7 @@ const MainAppContent: React.FC = () => {
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col antialiased selection:bg-emerald-500 selection:text-zinc-950">
       {/* Top Navbar */}
       <Navbar
-        onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenSearch={() => handleOpenSearch(songs.length === 0 ? 'online' : 'local')}
         onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
         onOpenUploadModal={() => handleOpenUploadWithPreset()}
         onOpenMetronome={() => setIsMetronomeOpen(true)}
@@ -651,40 +659,42 @@ const MainAppContent: React.FC = () => {
         />
 
         <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 max-w-7xl mx-auto w-full">
-          {currentView === 'discovery' ? (
-            <DiscoveryHub
-              songs={songs}
-              genreFolders={genreFolders}
-              isPro={isPro}
-              onSelectSong={(song) => handleSelectSong(song, null)}
-              onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
-              onOpenSearch={() => setIsSearchOpen(true)}
-              onOpenUploadModal={handleOpenUploadWithPreset}
-              onOpenPricing={handleOpenPricingWithReason}
-              setlists={setlists}
-              onAddToSetlist={handleAddToSetlist}
-              onUpdateSongMoment={handleUpdateSongMoment}
-              onBatchUpdateMoments={handleBatchUpdateMoments}
-              onSaveGenreFolder={handleSaveGenreFolder}
-              onDeleteGenreFolder={handleDeleteGenreFolder}
-            />
-          ) : (
-            <SetlistsManager
-              setlists={setlists}
-              songs={songs}
-              onSelectSong={handleSelectSong}
-              onCreateSetlist={handleCreateSetlist}
-              onDeleteSetlist={handleDeleteSetlist}
-              onUpdateSetlist={handleUpdateSetlist}
-              onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
-              activeSetlistId={activeSetlist?.id}
-              onSelectSetlistId={(id) => {
-                const sl = setlists.find(s => s.id === id);
-                if (sl) setActiveSetlist(sl);
-              }}
-              onOpenPricing={handleOpenPricingWithReason}
-            />
-          )}
+          <ErrorBoundary>
+            {currentView === 'discovery' ? (
+              <DiscoveryHub
+                songs={songs}
+                genreFolders={genreFolders}
+                isPro={isPro}
+                onSelectSong={(song) => handleSelectSong(song, null)}
+                onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
+                onOpenSearch={handleOpenSearch}
+                onOpenUploadModal={handleOpenUploadWithPreset}
+                onOpenPricing={handleOpenPricingWithReason}
+                setlists={setlists}
+                onAddToSetlist={handleAddToSetlist}
+                onUpdateSongMoment={handleUpdateSongMoment}
+                onBatchUpdateMoments={handleBatchUpdateMoments}
+                onSaveGenreFolder={handleSaveGenreFolder}
+                onDeleteGenreFolder={handleDeleteGenreFolder}
+              />
+            ) : (
+              <SetlistsManager
+                setlists={setlists}
+                songs={songs}
+                onSelectSong={handleSelectSong}
+                onCreateSetlist={handleCreateSetlist}
+                onDeleteSetlist={handleDeleteSetlist}
+                onUpdateSetlist={handleUpdateSetlist}
+                onOpenLiveRoomModal={() => setIsLiveRoomModalOpen(true)}
+                activeSetlistId={activeSetlist?.id}
+                onSelectSetlistId={(id) => {
+                  const sl = setlists.find(s => s.id === id);
+                  if (sl) setActiveSetlist(sl);
+                }}
+                onOpenPricing={handleOpenPricingWithReason}
+              />
+            )}
+          </ErrorBoundary>
         </div>
       </div>
 
@@ -717,6 +727,8 @@ const MainAppContent: React.FC = () => {
         onOpenUploadModal={() => handleOpenUploadWithPreset()}
         setlists={setlists}
         onAddToSetlist={handleAddSongDirectToSetlist}
+        initialTab={searchInitialTab}
+        isPro={isPro}
       />
 
       {/* Custom Song Upload & Creation Modal */}
