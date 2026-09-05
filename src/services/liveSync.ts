@@ -1,4 +1,4 @@
-import { BandAlert, LiveMember, LiveSessionState } from '../types';
+import { BandAlert, LiveMember, LiveSessionState, Song } from '../types';
 import { db, isFirebaseConfigured } from '../firebase';
 import {
   doc,
@@ -15,8 +15,10 @@ export type SyncEventType =
   | 'STATE_UPDATE'
   | 'SONG_CHANGE'
   | 'KEY_CHANGE'
+  | 'CAPO_CHANGE'
   | 'SCROLL_SYNC'
   | 'BAND_ALERT'
+  | 'DISMISS_ALERT'
   | 'MEMBER_JOIN'
   | 'MEMBER_LEAVE'
   | 'SETLIST_CHANGE';
@@ -40,6 +42,11 @@ export class LiveSyncEngine {
   private firestoreUnsubscribe: Unsubscribe | null = null;
   private isDestroyed = false;
 
+  // Scroll sync throttler to protect Firestore from rate-limiting
+  private lastScrollSyncTime = 0;
+  private pendingScrollPercentage: number | null = null;
+  private scrollTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(roomId: string) {
     this.roomId = roomId.trim().toUpperCase();
     this.initLocalTransport();
@@ -47,7 +54,7 @@ export class LiveSyncEngine {
   }
 
   /**
-   * Layer 1: Local Browser Transport (BroadcastChannel + Storage for multi-tab)
+   * Layer 1: Local Browser Transport (BroadcastChannel + Storage for instant 0ms multi-tab)
    */
   private initLocalTransport() {
     try {
@@ -110,7 +117,7 @@ export class LiveSyncEngine {
             timestamp: data.lastUpdated || Date.now()
           });
 
-          // If there's an active instant alert, broadcast it
+          // Sync active alert or dismiss if cleared
           if (data.currentAlert) {
             this.notifyListeners({
               type: 'BAND_ALERT',
@@ -119,6 +126,15 @@ export class LiveSyncEngine {
               roomId: this.roomId,
               payload: data.currentAlert,
               timestamp: data.currentAlert.timestamp || Date.now()
+            });
+          } else {
+            this.notifyListeners({
+              type: 'DISMISS_ALERT',
+              senderId: data.hostId || 'cloud',
+              senderName: 'Sistema',
+              roomId: this.roomId,
+              payload: null,
+              timestamp: data.lastUpdated || Date.now()
             });
           }
         },
@@ -141,13 +157,11 @@ export class LiveSyncEngine {
       timestamp: Date.now()
     };
 
-    // 1. Local Broadcast for instant same-device response
+    // 1. Local Broadcast for instant 0ms same-device response
     if (this.channel) {
       try {
         this.channel.postMessage(fullMessage);
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     }
 
     // 2. Persist to localStorage
@@ -174,10 +188,22 @@ export class LiveSyncEngine {
           currentSongId: fullMessage.payload.songId,
           currentKey: fullMessage.payload.key,
           semitoneShift: fullMessage.payload.semitones ?? 0,
+          currentCapo: fullMessage.payload.capo ?? (fullMessage.payload.song?.capo || 0),
           lastUpdated: Date.now()
         };
         if (fullMessage.payload.song) {
-          updateData.currentSong = fullMessage.payload.song;
+          updateData.currentSong = {
+            id: fullMessage.payload.song.id,
+            title: fullMessage.payload.song.title,
+            artist: fullMessage.payload.song.artist,
+            originalKey: fullMessage.payload.song.originalKey,
+            currentKey: fullMessage.payload.song.currentKey || fullMessage.payload.key,
+            capo: fullMessage.payload.song.capo,
+            bpm: fullMessage.payload.song.bpm,
+            timeSignature: fullMessage.payload.song.timeSignature,
+            liturgicalMoment: fullMessage.payload.song.liturgicalMoment,
+            content: fullMessage.payload.song.content
+          };
         }
         await setDoc(roomDocRef, updateData, { merge: true });
       } else if (fullMessage.type === 'KEY_CHANGE') {
@@ -186,9 +212,9 @@ export class LiveSyncEngine {
           semitoneShift: fullMessage.payload.semitones,
           lastUpdated: Date.now()
         }, { merge: true });
-      } else if (fullMessage.type === 'SCROLL_SYNC') {
+      } else if (fullMessage.type === 'CAPO_CHANGE') {
         await setDoc(roomDocRef, {
-          scrollPercentage: fullMessage.payload.scrollPercentage,
+          currentCapo: fullMessage.payload.capo,
           lastUpdated: Date.now()
         }, { merge: true });
       } else if (fullMessage.type === 'BAND_ALERT') {
@@ -196,6 +222,34 @@ export class LiveSyncEngine {
           currentAlert: fullMessage.payload,
           lastUpdated: Date.now()
         }, { merge: true });
+      } else if (fullMessage.type === 'DISMISS_ALERT') {
+        await setDoc(roomDocRef, {
+          currentAlert: null,
+          lastUpdated: Date.now()
+        }, { merge: true });
+      } else if (fullMessage.type === 'SCROLL_SYNC') {
+        // High efficiency scroll sync with 500ms debounce to prevent choking Firestore
+        const now = Date.now();
+        this.pendingScrollPercentage = fullMessage.payload.scrollPercentage;
+
+        if (now - this.lastScrollSyncTime >= 500) {
+          this.lastScrollSyncTime = now;
+          setDoc(roomDocRef, {
+            scrollPercentage: fullMessage.payload.scrollPercentage,
+            lastUpdated: now
+          }, { merge: true }).catch(() => {});
+        } else if (!this.scrollTimer) {
+          this.scrollTimer = setTimeout(() => {
+            this.scrollTimer = null;
+            if (this.pendingScrollPercentage !== null && !this.isDestroyed) {
+              this.lastScrollSyncTime = Date.now();
+              setDoc(roomDocRef, {
+                scrollPercentage: this.pendingScrollPercentage,
+                lastUpdated: Date.now()
+              }, { merge: true }).catch(() => {});
+            }
+          }, 500 - (now - this.lastScrollSyncTime));
+        }
       } else if (fullMessage.type === 'MEMBER_JOIN') {
         const docSnap = await getDoc(roomDocRef);
         if (docSnap.exists()) {
@@ -291,6 +345,10 @@ export class LiveSyncEngine {
 
   public destroy() {
     this.isDestroyed = true;
+    if (this.scrollTimer) {
+      clearTimeout(this.scrollTimer);
+      this.scrollTimer = null;
+    }
     if (this.firestoreUnsubscribe) {
       this.firestoreUnsubscribe();
       this.firestoreUnsubscribe = null;
@@ -314,3 +372,4 @@ export function generateRoomPin(prefix = 'MTS'): string {
   const num = Math.floor(100 + Math.random() * 900);
   return `${prefix}-${num}`;
 }
+

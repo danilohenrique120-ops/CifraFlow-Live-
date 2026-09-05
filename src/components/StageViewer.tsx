@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Song, StageTheme, FontScale, ColumnMode, Setlist, INSTRUMENT_OPTIONS } from '../types';
 import { isChordLine, transposeSongContent, calculateNewKey, detectCapoInText, getInstrumentTranspositionOffset, getSemitoneDifference } from '../utils/chordEngine';
+import { generateSingleSongPdfHtml, printHtmlDocument } from '../utils/pdfGenerator';
 import { useLiveRoom } from '../context/LiveRoomContext';
 import { useAuth } from '../context/AuthContext';
 import { ChordModal } from './ChordTooltip';
@@ -36,7 +37,9 @@ import {
   Check,
   X,
   ListPlus,
-  ListMusic
+  ListMusic,
+  FileText,
+  Printer
 } from 'lucide-react';
 
 interface StageViewerProps {
@@ -51,6 +54,7 @@ interface StageViewerProps {
   onOpenPricing?: (reason?: string) => void;
   onSaveCustomSong?: (newSong: Song) => void;
   onUpdateCustomKey?: (songId: string, newKey: string) => void;
+  onUpdateSong?: (updatedSong: Song) => void;
 }
 
 export const StageViewer: React.FC<StageViewerProps> = ({
@@ -64,22 +68,27 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   onOpenMetronome,
   onOpenPricing,
   onSaveCustomSong,
-  onUpdateCustomKey
+  onUpdateCustomKey,
+  onUpdateSong
 }) => {
   const { userProfile, isPro } = useAuth();
   const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
   const [versionSavedFeedback, setVersionSavedFeedback] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState<string>('Alterações salvas com sucesso no seu catálogo!');
+
   const {
     isInRoom,
     isHost,
     sessionState,
     changeKey,
+    changeCapo,
     broadcastScroll,
     toggleFollowScroll,
     sendBandAlert,
     dismissAlert,
     recentAlert
   } = useLiveRoom();
+
 
   // Target key for the song: checks active setlist item's customKey first, then song.currentKey, then song.originalKey
   const currentSetlistItem = activeSetlist?.items?.find(it => it.songId === song.id);
@@ -172,12 +181,19 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     setSemitoneShift(getSemitoneDifference(song.originalKey, targetKeyForSong));
   }, [song.id, song.originalKey, targetKeyForSong, isInRoom, isHost]);
 
-  // Sync state from Live Room if follower
+  // Sync state from Live Room if follower (Key and Capo)
   useEffect(() => {
     if (isInRoom && !isHost && sessionState?.semitoneShift !== undefined) {
       setSemitoneShift(sessionState.semitoneShift);
     }
   }, [sessionState?.semitoneShift, isInRoom, isHost]);
+
+  useEffect(() => {
+    if (isInRoom && !isHost && sessionState?.currentCapo !== undefined) {
+      setCapoFret(sessionState.currentCapo);
+    }
+  }, [sessionState?.currentCapo, isInRoom, isHost]);
+
 
   // Sync scroll position from Leader if followScroll is active
   useEffect(() => {
@@ -290,7 +306,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     return INSTRUMENT_OPTIONS.find(i => i.label === activeInstrument) || INSTRUMENT_OPTIONS[0];
   }, [activeInstrument]);
 
-  // Handlers for transposition
+  // Handlers for transposition and persistent song saving
   const handleSemitoneChange = (delta: number) => {
     const newShift = semitoneShift + delta;
     setSemitoneShift(newShift);
@@ -301,6 +317,9 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     if (onUpdateCustomKey) {
       onUpdateCustomKey(song.id, newKey);
     }
+    if (onUpdateSong) {
+      onUpdateSong({ ...song, currentKey: newKey });
+    }
   };
 
   const handleResetKey = () => {
@@ -310,6 +329,20 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     }
     if (onUpdateCustomKey) {
       onUpdateCustomKey(song.id, song.originalKey);
+    }
+    if (onUpdateSong) {
+      onUpdateSong({ ...song, currentKey: song.originalKey });
+    }
+  };
+
+  const handleCapoChange = (newCapo: number) => {
+    const validCapo = Math.max(0, Math.min(11, newCapo));
+    setCapoFret(validCapo);
+    if (isInRoom && isHost) {
+      changeCapo(validCapo);
+    }
+    if (onUpdateSong) {
+      onUpdateSong({ ...song, capo: validCapo > 0 ? validCapo : undefined });
     }
   };
 
@@ -327,6 +360,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
   };
 
   // High performance auto-scroll loop with instant speed reaction
+  const lastAutoScrollBroadcastRef = useRef<number>(0);
   useEffect(() => {
     if (!isScrolling) {
       if (animationFrameRef.current) {
@@ -350,10 +384,14 @@ export const StageViewer: React.FC<StageViewerProps> = ({
           const pxToScroll = 32 * scrollSpeedRef.current * delta;
           container.scrollTop += pxToScroll;
 
-          // Broadcast scroll to band if leader
+          // Broadcast scroll to band if leader (throttled to 400ms to keep connection lightweight and fast)
           if (isInRoom && isHost && sessionState?.followScroll && maxScroll > 0) {
-            const percentage = Math.min(100, Math.round((container.scrollTop / maxScroll) * 100));
-            broadcastScroll(percentage);
+            const now = performance.now();
+            if (now - lastAutoScrollBroadcastRef.current > 400) {
+              lastAutoScrollBroadcastRef.current = now;
+              const percentage = Math.min(100, Math.round((container.scrollTop / maxScroll) * 100));
+              broadcastScroll(percentage);
+            }
           }
 
           animationFrameRef.current = requestAnimationFrame(scrollStep);
@@ -362,6 +400,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
         }
       }
     };
+
 
     animationFrameRef.current = requestAnimationFrame(scrollStep);
     return () => {
@@ -392,6 +431,25 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [semitoneShift, song.originalKey, isInRoom, isHost]);
+
+  const handlePrintSong = () => {
+    if (!isPro) {
+      if (onOpenPricing) {
+        onOpenPricing('A exportação e impressão de cifras em folha A4 e PDF diagramado é exclusiva do Plano Pro.');
+      }
+      return;
+    }
+    const html = generateSingleSongPdfHtml({
+      song,
+      effectiveKey: shapeKey,
+      capo: capoFret,
+      instrument: activeInstrument,
+      columnsCount: columnMode === '2' ? '2' : '1',
+      fontSize: fontScale === 'small' ? 'sm' : fontScale === 'large' ? 'lg' : 'base'
+    });
+    const docTitle = `Cifra_${song.title.replace(/\s+/g, '_')}_${shapeKey}_Cifrae`;
+    printHtmlDocument(html, docTitle);
+  };
 
   // Theme styling definitions
   const themeStyles = {
@@ -669,7 +727,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               </div>
             )}
 
-            {/* ✏️ Criar Minha Versão / Revisar Cifra */}
+            {/* ✏️ Editar / Revisar Cifra */}
             <button
               onClick={() => {
                 if (!isPro) {
@@ -685,12 +743,28 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                   ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border-amber-500/40'
                   : 'bg-zinc-800/80 text-zinc-400 hover:text-white border-zinc-700 hover:border-amber-500/40'
               }`}
-              title={isPro ? "Revisar acordes, letra e salvar sua própria versão" : "Criar Minha Versão (Exclusivo Pro)"}
+              title={isPro ? "Editar acordes, letra e personalizar esta cifra" : "Editar Cifra (Exclusivo Pro)"}
             >
               <Edit3 className={`w-3.5 h-3.5 ${isPro ? 'text-amber-400' : 'text-zinc-400'}`} />
-              <span className="hidden sm:inline">Criar Minha Versão</span>
+              <span className="hidden sm:inline">Editar Cifra</span>
               {!isPro && <Lock className="w-3 h-3 text-amber-400 ml-0.5" />}
             </button>
+
+            {/* 📄 Exportar PDF / Imprimir Cifra */}
+            <button
+              onClick={handlePrintSong}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
+                isPro
+                  ? 'bg-zinc-800/90 hover:bg-zinc-700 text-white border-zinc-700 hover:border-emerald-500/50'
+                  : 'bg-zinc-800/80 text-zinc-400 hover:text-white border-zinc-700 hover:border-emerald-500/40'
+              }`}
+              title={isPro ? "Imprimir ou Salvar esta Cifra em PDF A4" : "Exportar em PDF (Exclusivo Pro)"}
+            >
+              <FileText className={`w-3.5 h-3.5 ${isPro ? 'text-emerald-400' : 'text-zinc-400'}`} />
+              <span className="hidden sm:inline">PDF</span>
+              {!isPro && <Lock className="w-3 h-3 text-amber-400 ml-0.5" />}
+            </button>
+
 
             {/* Stage Fullscreen Clean Trigger */}
             <button
@@ -858,7 +932,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                         <button
                           key={fret}
                           onClick={() => {
-                            setCapoFret(fret);
+                            handleCapoChange(fret);
                             setIsCapoPopoverOpen(false);
                           }}
                           className={`py-1.5 px-1 rounded-xl text-xs font-bold transition text-center ${
@@ -871,6 +945,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                         </button>
                       ))}
                     </div>
+
 
                     {capoFret > 0 && (
                       <div className="mt-2.5 pt-2 border-t border-zinc-800 text-[11px] text-zinc-300 flex items-center justify-between">
@@ -1056,7 +1131,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 CAPO
               </span>
               <button
-                onClick={() => setCapoFret(prev => Math.max(0, prev - 1))}
+                onClick={() => handleCapoChange(capoFret - 1)}
                 className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
                 title="Diminuir casa do capotraste"
               >
@@ -1072,13 +1147,14 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 </span>
               </div>
               <button
-                onClick={() => setCapoFret(prev => Math.min(11, prev + 1))}
+                onClick={() => handleCapoChange(capoFret + 1)}
                 className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg flex items-center justify-center transition active:scale-95"
                 title="Aumentar casa do capotraste"
               >
                 +
               </button>
             </div>
+
           </div>
 
           {/* Center: Dynamic Auto-Scroll Controller with Live Multiplier & Stepper */}
@@ -1272,15 +1348,26 @@ export const StageViewer: React.FC<StageViewerProps> = ({
         />
       )}
 
-      {/* ✏️ Modal Criar Minha Versão / Revisar Cifra */}
+      {/* ✏️ Modal Editar / Revisar Cifra */}
       {isReviseModalOpen && (
         <ReviseSongModal
           isOpen={isReviseModalOpen}
           onClose={() => setIsReviseModalOpen(false)}
           song={song}
-          onSaveVersion={(newVersion) => {
-            if (onSaveCustomSong) {
-              onSaveCustomSong(newVersion);
+          onSaveVersion={(savedSong, mode) => {
+            if (mode === 'update') {
+              if (onUpdateSong) {
+                onUpdateSong(savedSong);
+              }
+              if (onSaveCustomSong) {
+                onSaveCustomSong(savedSong);
+              }
+              setFeedbackMessage('Alterações salvas com sucesso nesta música!');
+            } else {
+              if (onSaveCustomSong) {
+                onSaveCustomSong(savedSong);
+              }
+              setFeedbackMessage('Nova versão salva com sucesso no catálogo!');
             }
             setVersionSavedFeedback(true);
             setTimeout(() => setVersionSavedFeedback(false), 3500);
@@ -1291,12 +1378,13 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       {/* Version Saved Notification Toast */}
       {versionSavedFeedback && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4">
-          <div className="px-5 py-3 rounded-2xl bg-amber-500 text-zinc-950 font-black shadow-2xl flex items-center gap-2 text-xs sm:text-sm">
+          <div className="px-5 py-3 rounded-2xl bg-emerald-500 text-zinc-950 font-black shadow-2xl flex items-center gap-2 text-xs sm:text-sm">
             <Check className="w-5 h-5" />
-            <span>Sua versão personalizada foi salva com sucesso no catálogo!</span>
+            <span>{feedbackMessage}</span>
           </div>
         </div>
       )}
     </div>
   );
 };
+

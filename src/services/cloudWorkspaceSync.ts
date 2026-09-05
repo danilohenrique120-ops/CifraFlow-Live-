@@ -1,13 +1,26 @@
 import { doc, getDoc, setDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../firebase';
-import { Setlist, Song, LiturgicalMoment } from '../types';
+import { Setlist, Song, LiturgicalMoment, CategoryTag } from '../types';
 import { INITIAL_SONGS } from '../data/songsData';
 import { formatLyricsWithHarmonics, fetchRealOnlineCifra } from './onlineMusicSearch';
+
+export interface SongOverride {
+  currentKey?: string;
+  originalKey?: string;
+  capo?: number;
+  bpm?: number;
+  timeSignature?: string;
+  liturgicalMoment?: LiturgicalMoment;
+  categories?: CategoryTag[];
+  content?: string;
+  versionName?: string;
+}
 
 export interface CloudWorkspaceData {
   setlists: Setlist[];
   customSongs: Song[];
-  momentOverrides: Record<string, LiturgicalMoment>;
+  songOverrides?: Record<string, Partial<Song>>;
+  momentOverrides?: Record<string, LiturgicalMoment>;
   lastUpdated?: number;
 }
 
@@ -45,13 +58,74 @@ export function extractCustomSongs(songs: Song[]): Song[] {
       s.id.startsWith('custom_') ||
       s.id.startsWith('online_') ||
       s.parentSongId ||
-      s.versionName
+      s.versionName ||
+      !INITIAL_SONGS.some(init => init.id === s.id)
     )
   );
 }
 
 /**
- * Extract liturgical moment overrides for standard catalog songs
+ * Extract all user modifications/edits for standard catalog songs
+ * (last played key, capo, edited lyrics, notes, bpm, genre/moment, etc.)
+ */
+export function extractSongOverrides(songs: Song[]): Record<string, Partial<Song>> {
+  const overrides: Record<string, Partial<Song>> = {};
+  const initialMap = new Map(INITIAL_SONGS.map(s => [s.id, s]));
+
+  for (const song of songs) {
+    const initial = initialMap.get(song.id);
+    if (!initial) continue;
+
+    const diff: Partial<Song> = {};
+    let hasDiff = false;
+
+    if (song.currentKey && song.currentKey !== (initial.currentKey || initial.originalKey)) {
+      diff.currentKey = song.currentKey;
+      hasDiff = true;
+    }
+    if (song.originalKey && song.originalKey !== initial.originalKey) {
+      diff.originalKey = song.originalKey;
+      hasDiff = true;
+    }
+    if (song.capo !== undefined && song.capo !== (initial.capo || 0)) {
+      diff.capo = song.capo;
+      hasDiff = true;
+    }
+    if (song.bpm && song.bpm !== initial.bpm) {
+      diff.bpm = song.bpm;
+      hasDiff = true;
+    }
+    if (song.timeSignature && song.timeSignature !== initial.timeSignature) {
+      diff.timeSignature = song.timeSignature;
+      hasDiff = true;
+    }
+    if (song.liturgicalMoment && song.liturgicalMoment !== initial.liturgicalMoment) {
+      diff.liturgicalMoment = song.liturgicalMoment;
+      hasDiff = true;
+    }
+    if (song.content && song.content.trim() !== initial.content.trim()) {
+      diff.content = song.content;
+      hasDiff = true;
+    }
+    if (song.versionName && song.versionName !== initial.versionName) {
+      diff.versionName = song.versionName;
+      hasDiff = true;
+    }
+    if (song.categories && JSON.stringify(song.categories) !== JSON.stringify(initial.categories)) {
+      diff.categories = song.categories;
+      hasDiff = true;
+    }
+
+    if (hasDiff) {
+      overrides[song.id] = diff;
+    }
+  }
+
+  return overrides;
+}
+
+/**
+ * Extract liturgical moment overrides for standard catalog songs (backwards compatibility)
  */
 export function extractMomentOverrides(songs: Song[]): Record<string, LiturgicalMoment> {
   const overrides: Record<string, LiturgicalMoment> = {};
@@ -71,10 +145,21 @@ export function extractMomentOverrides(songs: Song[]): Record<string, Liturgical
 /**
  * Compute a fast lightweight signature to avoid echoing our own saves
  */
-function computeSignature(setlists: Setlist[], customSongs: Song[]): string {
-  const setlistSig = setlists.map(s => `${s.id}_${s.items.length}_${s.updatedAt}`).join('|');
-  const songSig = customSongs.map(s => `${s.id}_${s.currentKey || s.originalKey}_${s.title}`).join('|');
-  return `${setlistSig}:::${songSig}`;
+function computeSignature(
+  setlists: Setlist[],
+  customSongs: Song[],
+  songOverrides: Record<string, Partial<Song>> = {}
+): string {
+  const setlistSig = setlists
+    .map(s => `${s.id}_${s.items.length}_${s.updatedAt}_${s.items.map(i => `${i.songId}:${i.customKey}`).join(',')}`)
+    .join('|');
+  const songSig = customSongs
+    .map(s => `${s.id}_${s.currentKey || s.originalKey}_${s.capo || 0}_${s.content?.length || 0}_${s.title}`)
+    .join('|');
+  const overrideSig = Object.entries(songOverrides)
+    .map(([id, o]) => `${id}_${o.currentKey}_${o.capo}_${o.bpm}_${o.content?.length || 0}_${o.liturgicalMoment}`)
+    .join('|');
+  return `${setlistSig}:::${songSig}:::${overrideSig}`;
 }
 
 /**
@@ -112,7 +197,8 @@ export async function saveWorkspaceToCloudImmediate(
   try {
     const customSongs = extractCustomSongs(songs);
     const momentOverrides = extractMomentOverrides(songs);
-    const signature = computeSignature(setlists, customSongs);
+    const songOverrides = extractSongOverrides(songs);
+    const signature = computeSignature(setlists, customSongs, songOverrides);
 
     // Skip if identical to last save
     if (signature === lastSavedSignature) return;
@@ -124,6 +210,7 @@ export async function saveWorkspaceToCloudImmediate(
         cloudSetlists: setlists,
         cloudCustomSongs: customSongs,
         cloudMomentOverrides: momentOverrides,
+        cloudSongOverrides: songOverrides,
         lastCloudSync: Date.now()
       },
       { merge: true }
@@ -161,6 +248,7 @@ export async function loadAndMergeCloudWorkspace(
     const data = docSnap.data();
     const cloudSetlists = (data?.cloudSetlists as Setlist[]) || [];
     const cloudCustomSongs = (data?.cloudCustomSongs as Song[]) || [];
+    const cloudSongOverrides = (data?.cloudSongOverrides as Record<string, Partial<Song>>) || {};
     const cloudMomentOverrides = (data?.cloudMomentOverrides as Record<string, LiturgicalMoment>) || {};
 
     // If Cloud is empty but local has items, migrate local to cloud
@@ -193,12 +281,16 @@ export async function loadAndMergeCloudWorkspace(
       }
     }
 
-    // Rebuild full songs catalog: INITIAL_SONGS + overrides + merged custom songs
+    // Rebuild full songs catalog: INITIAL_SONGS + all user song overrides + merged custom songs
     const combinedSongs = INITIAL_SONGS.map(s => {
+      let updated: Song = { ...s };
       if (cloudMomentOverrides[s.id]) {
-        return { ...s, liturgicalMoment: cloudMomentOverrides[s.id] };
+        updated.liturgicalMoment = cloudMomentOverrides[s.id];
       }
-      return s;
+      if (cloudSongOverrides[s.id]) {
+        updated = { ...updated, ...cloudSongOverrides[s.id] };
+      }
+      return updated;
     });
 
     for (const custom of mergedCustomSongsMap.values()) {
@@ -207,7 +299,11 @@ export async function loadAndMergeCloudWorkspace(
       }
     }
 
-    lastSavedSignature = computeSignature(mergedSetlists, Array.from(mergedCustomSongsMap.values()));
+    lastSavedSignature = computeSignature(
+      mergedSetlists,
+      Array.from(mergedCustomSongsMap.values()),
+      cloudSongOverrides
+    );
 
     // If local had new items not in cloud, push merged back to cloud
     if (mergedSetlists.length > cloudSetlists.length || mergedCustomSongsMap.size > cloudCustomSongs.length) {
@@ -286,13 +382,15 @@ export function subscribeToCloudWorkspace(
       const data = docSnap.data();
       const cloudSetlists = data?.cloudSetlists as Setlist[] | undefined;
       const cloudCustomSongs = data?.cloudCustomSongs as Song[] | undefined;
+      const cloudSongOverrides = data?.cloudSongOverrides as Record<string, Partial<Song>> | undefined;
       const cloudMomentOverrides = data?.cloudMomentOverrides as Record<string, LiturgicalMoment> | undefined;
 
-      if (!cloudSetlists && !cloudCustomSongs) return;
+      if (!cloudSetlists && !cloudCustomSongs && !cloudSongOverrides) return;
 
       const setlists = cloudSetlists || [];
       const customSongs = (cloudCustomSongs || []).map(sanitizeSong);
-      const incomingSig = computeSignature(setlists, customSongs);
+      const songOverrides = cloudSongOverrides || {};
+      const incomingSig = computeSignature(setlists, customSongs, songOverrides);
 
       // Avoid looping if the change originated from this same device's save
       if (incomingSig === lastSavedSignature) return;
@@ -302,6 +400,7 @@ export function subscribeToCloudWorkspace(
       onRemoteChange({
         setlists,
         customSongs,
+        songOverrides,
         momentOverrides: cloudMomentOverrides || {},
         lastUpdated: data?.lastCloudSync
       });
@@ -311,3 +410,4 @@ export function subscribeToCloudWorkspace(
     }
   );
 }
+

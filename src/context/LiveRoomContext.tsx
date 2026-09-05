@@ -14,6 +14,7 @@ interface LiveRoomContextType {
   leaveRoom: () => void;
   selectSong: (songId: string, songKey?: string, songData?: Song) => void;
   changeKey: (key: string, semitones: number) => void;
+  changeCapo: (capo: number) => void;
   toggleFollowScroll: (enabled?: boolean) => void;
   broadcastScroll: (percentage: number) => void;
   sendBandAlert: (message: string, type?: BandAlert['type']) => void;
@@ -22,6 +23,7 @@ interface LiveRoomContextType {
   updateMemberName: (name: string, instrument: string) => void;
   recentAlert: BandAlert | null;
 }
+
 
 const LiveRoomContext = createContext<LiveRoomContextType | undefined>(undefined);
 
@@ -109,6 +111,17 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    if (msg.type === 'DISMISS_ALERT') {
+      setRecentAlert(null);
+      setSessionState(prev => prev ? { ...prev, currentAlert: null } : null);
+      return;
+    }
+
+    if (msg.type === 'CAPO_CHANGE') {
+      setSessionState(prev => prev ? { ...prev, currentCapo: msg.payload.capo, lastUpdated: Date.now() } : null);
+      return;
+    }
+
     if (msg.type === 'SONG_CHANGE') {
       setSessionState(prev => {
         if (!prev) return null;
@@ -118,6 +131,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           currentSong: msg.payload.song || prev.currentSong,
           currentKey: msg.payload.key || prev.currentKey,
           semitoneShift: msg.payload.semitones ?? 0,
+          currentCapo: msg.payload.capo ?? (msg.payload.song?.capo || 0),
           lastUpdated: Date.now()
         };
       });
@@ -208,6 +222,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       currentSongId: 'ninguem-te-ama-como-eu',
       currentKey: 'C',
       semitoneShift: 0,
+      currentCapo: 0,
       activeSetlistId: null,
       followScroll: true,
       scrollPercentage: 0,
@@ -266,6 +281,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       currentSong: cloudState?.currentSong || null,
       currentKey: cloudState?.currentKey || 'C',
       semitoneShift: cloudState?.semitoneShift || 0,
+      currentCapo: cloudState?.currentCapo ?? (cloudState?.currentSong?.capo || 0),
       activeSetlistId: cloudState?.activeSetlistId || null,
       followScroll: cloudState?.followScroll ?? true,
       scrollPercentage: cloudState?.scrollPercentage || 0,
@@ -273,6 +289,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       members: cloudState?.members ? [...cloudState.members.filter(m => m.id !== member.id), member] : [member],
       lastUpdated: Date.now()
     };
+
 
     newEngine.subscribe(handleIncomingMessage);
     await newEngine.broadcast({
@@ -317,6 +334,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [sessionState, currentMember]);
 
   const selectSong = useCallback((songId: string, songKey = 'C', songData?: Song) => {
+    const effectiveCapo = songData?.capo ?? 0;
     setSessionState(prev => {
       if (!prev) return null;
       const updated: LiveSessionState = {
@@ -325,6 +343,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         currentSong: songData !== undefined ? songData : prev.currentSong,
         currentKey: songKey,
         semitoneShift: 0,
+        currentCapo: effectiveCapo,
         lastUpdated: Date.now()
       };
       if (engineRef.current && currentMember) {
@@ -332,7 +351,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           type: 'SONG_CHANGE',
           senderId: currentMember.id,
           senderName: currentMember.name,
-          payload: { songId, key: songKey, semitones: 0, song: songData || null }
+          payload: { songId, key: songKey, semitones: 0, capo: effectiveCapo, song: songData || null }
         });
       }
       return updated;
@@ -354,6 +373,26 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           senderId: currentMember.id,
           senderName: currentMember.name,
           payload: { key, semitones }
+        });
+      }
+      return updated;
+    });
+  }, [currentMember]);
+
+  const changeCapo = useCallback((capo: number) => {
+    setSessionState(prev => {
+      if (!prev) return null;
+      const updated: LiveSessionState = {
+        ...prev,
+        currentCapo: capo,
+        lastUpdated: Date.now()
+      };
+      if (engineRef.current && currentMember) {
+        engineRef.current.broadcast({
+          type: 'CAPO_CHANGE',
+          senderId: currentMember.id,
+          senderName: currentMember.name,
+          payload: { capo }
         });
       }
       return updated;
@@ -398,6 +437,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       senderName: currentMember.name
     };
     setRecentAlert(alert);
+    setSessionState(prev => prev ? { ...prev, currentAlert: alert } : null);
     if (engineRef.current) {
       engineRef.current.broadcast({
         type: 'BAND_ALERT',
@@ -410,7 +450,16 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const dismissAlert = useCallback(() => {
     setRecentAlert(null);
-  }, []);
+    setSessionState(prev => prev ? { ...prev, currentAlert: null } : null);
+    if (engineRef.current && currentMember) {
+      engineRef.current.broadcast({
+        type: 'DISMISS_ALERT',
+        senderId: currentMember.id,
+        senderName: currentMember.name,
+        payload: null
+      });
+    }
+  }, [currentMember]);
 
   const setActiveSetlist = useCallback((setlistId: string | null) => {
     setSessionState(prev => {
@@ -459,6 +508,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         leaveRoom,
         selectSong,
         changeKey,
+        changeCapo,
         toggleFollowScroll,
         broadcastScroll,
         sendBandAlert,
@@ -472,6 +522,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     </LiveRoomContext.Provider>
   );
 };
+
 
 export const useLiveRoom = () => {
   const context = useContext(LiveRoomContext);

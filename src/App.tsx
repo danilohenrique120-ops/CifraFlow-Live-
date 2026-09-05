@@ -25,8 +25,9 @@ import {
 import { getSemitoneDifference } from './utils/chordEngine';
 
 const MainAppContent: React.FC = () => {
-  const { isInRoom, isHost, sessionState, selectSong, changeKey } = useLiveRoom();
+  const { isInRoom, isHost, sessionState, selectSong, changeKey, changeCapo } = useLiveRoom();
   const { isPro, userProfile, isLoading } = useAuth();
+
 
   // User-isolated songs and setlists state
   const [songs, setSongs] = useState<Song[]>(() => {
@@ -133,23 +134,38 @@ const MainAppContent: React.FC = () => {
         });
       }
 
-      if (cloudData.customSongs) {
+      if (cloudData.customSongs || cloudData.songOverrides || cloudData.momentOverrides) {
+        const overrides = cloudData.songOverrides || {};
+        const momentOverrides = cloudData.momentOverrides || {};
+        const customSongs = cloudData.customSongs || [];
+
         const updatedSongs = INITIAL_SONGS.map(s => {
-          if (cloudData.momentOverrides && cloudData.momentOverrides[s.id]) {
-            return { ...s, liturgicalMoment: cloudData.momentOverrides[s.id] };
+          let updated: Song = { ...s };
+          if (momentOverrides[s.id]) {
+            updated.liturgicalMoment = momentOverrides[s.id];
           }
-          return s;
+          if (overrides[s.id]) {
+            updated = { ...updated, ...overrides[s.id] };
+          }
+          return updated;
         });
 
-        for (const custom of cloudData.customSongs) {
+        for (const custom of customSongs) {
           if (!updatedSongs.some(s => s.id === custom.id)) {
             updatedSongs.unshift(custom);
+          } else {
+            const idx = updatedSongs.findIndex(s => s.id === custom.id);
+            updatedSongs[idx] = custom;
           }
         }
         setSongs(updatedSongs);
         try {
           localStorage.setItem(userSongsKey, JSON.stringify(updatedSongs));
         } catch (e) {}
+        setSelectedSong(prev => {
+          if (!prev) return null;
+          return updatedSongs.find(s => s.id === prev.id) || prev;
+        });
       }
     });
 
@@ -158,6 +174,7 @@ const MainAppContent: React.FC = () => {
       unsubscribe();
     };
   }, [userProfile?.uid]);
+
 
   // Navigation and active views
   const [currentView, setCurrentView] = useState<'discovery' | 'setlists'>('discovery');
@@ -253,8 +270,12 @@ const MainAppContent: React.FC = () => {
       if (shift !== 0) {
         changeKey(targetKey, shift);
       }
+      if (song.capo !== undefined) {
+        changeCapo(song.capo);
+      }
     }
   };
+
 
   const handleUpdateCustomKey = (songId: string, newKey: string) => {
     if (activeSetlist) {
@@ -267,12 +288,31 @@ const MainAppContent: React.FC = () => {
       setSetlists(prev => prev.map(sl => sl.id === updatedSetlist.id ? updatedSetlist : sl));
     }
     setSongs(prev => prev.map(s => s.id === songId ? { ...s, currentKey: newKey } : s));
+    setSelectedSong(prev => (prev && prev.id === songId ? { ...prev, currentKey: newKey } : prev));
+  };
+
+  const handleUpdateSong = (updatedSong: Song) => {
+    setSongs(prev => {
+      const exists = prev.some(s => s.id === updatedSong.id);
+      if (exists) {
+        return prev.map(s => s.id === updatedSong.id ? { ...s, ...updatedSong } : s);
+      }
+      return [updatedSong, ...prev];
+    });
+    setSelectedSong(prev => (prev && prev.id === updatedSong.id ? { ...prev, ...updatedSong } : prev));
   };
 
   const handleSaveCustomSong = (newSong: Song) => {
-    setSongs(prev => [newSong, ...prev]);
+    setSongs(prev => {
+      const exists = prev.some(s => s.id === newSong.id);
+      if (exists) {
+        return prev.map(s => s.id === newSong.id ? { ...s, ...newSong } : s);
+      }
+      return [newSong, ...prev];
+    });
     setSelectedSong(newSong);
   };
+
 
   const handleNavigateSetlist = (direction: 'prev' | 'next') => {
     if (!activeSetlist || !selectedSong) return;
@@ -520,8 +560,10 @@ const MainAppContent: React.FC = () => {
           onOpenPricing={handleOpenPricingWithReason}
           onSaveCustomSong={handleSaveCustomSong}
           onUpdateCustomKey={handleUpdateCustomKey}
+          onUpdateSong={handleUpdateSong}
         />
       )}
+
 
       {/* Global Search Modal (Local & Online Spotify style Ctrl+K) */}
       <GlobalSearchModal

@@ -39,3 +39,11 @@ html, body {
   user-select: text;
   -webkit-user-select: text;
 }
+
+/* Print optimizations for A4 output */
+@media print {
+  html, body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+}

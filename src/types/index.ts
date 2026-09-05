@@ -85,6 +85,7 @@ export interface SetlistItem {
   customKey: string;
   notes?: string;
   order: number;
+  capo?: number;
 }
 
 export interface Setlist {
@@ -158,6 +159,7 @@ export interface LiveSessionState {
   currentSong?: Song | null;
   currentKey: string;
   semitoneShift: number;
+  currentCapo?: number;
   activeSetlistId: string | null;
   followScroll: boolean;
   scrollPercentage: number;
@@ -165,6 +167,7 @@ export interface LiveSessionState {
   members: LiveMember[];
   lastUpdated: number;
 }
+
 
 export type StageTheme = 'dark-stage' | 'oled' | 'sepia' | 'light-contrast';
 

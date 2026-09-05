@@ -14,14 +14,16 @@ import {
   Sliders,
   Music,
   Plus,
-  HelpCircle
+  HelpCircle,
+  Save,
+  Copy
 } from 'lucide-react';
 
 interface ReviseSongModalProps {
   isOpen: boolean;
   onClose: () => void;
   song: Song;
-  onSaveVersion: (newSongVersion: Song) => void;
+  onSaveVersion: (newSongVersion: Song, mode: 'update' | 'copy') => void;
 }
 
 const KEYS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B', 'Am', 'Em', 'Dm', 'Bm', 'F#m', 'C#m', 'G#m'];
@@ -46,30 +48,30 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
   song,
   onSaveVersion
 }) => {
-  const [title, setTitle] = useState(`${song.title} (Minha Versão)`);
+  const [title, setTitle] = useState(song.title);
   const [artist, setArtist] = useState(song.artist);
-  const [originalKey, setOriginalKey] = useState(song.originalKey);
+  const [originalKey, setOriginalKey] = useState(song.currentKey || song.originalKey);
   const [capo, setCapo] = useState<number>(song.capo || 0);
   const [bpm, setBpm] = useState<number>(song.bpm || 120);
   const [timeSignature, setTimeSignature] = useState(song.timeSignature || '4/4');
   const [liturgicalMoment, setLiturgicalMoment] = useState<MusicGenre>(song.liturgicalMoment || 'Pop Rock');
   const [content, setContent] = useState(song.content || '');
-  const [privacy, setPrivacy] = useState<'private' | 'unlisted' | 'public'>('private');
-  const [versionNotes, setVersionNotes] = useState('Arranjo personalizado para show');
+  const [privacy, setPrivacy] = useState<'private' | 'unlisted' | 'public'>(song.privacy || 'private');
+  const [versionNotes, setVersionNotes] = useState(song.versionName || '');
   const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
     if (isOpen && song) {
-      setTitle(song.title.includes('(Minha Versão)') ? song.title : `${song.title} (Minha Versão)`);
+      setTitle(song.title);
       setArtist(song.artist);
-      setOriginalKey(song.originalKey);
+      setOriginalKey(song.currentKey || song.originalKey);
       setCapo(song.capo || 0);
       setBpm(song.bpm || 120);
       setTimeSignature(song.timeSignature || '4/4');
       setLiturgicalMoment(song.liturgicalMoment || 'Pop Rock');
       setContent(song.content || '');
       setPrivacy(song.privacy || 'private');
-      setVersionNotes(song.versionName || 'Arranjo personalizado para show');
+      setVersionNotes(song.versionName || '');
       setIsPreview(false);
     }
   }, [isOpen, song]);
@@ -95,47 +97,69 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
   };
 
   const handleResetToOriginal = () => {
-    if (window.confirm('Deseja restaurar o texto da cifra original? As suas alterações não salvas serão descartadas.')) {
+    if (window.confirm('Deseja restaurar o texto original da cifra? As alterações feitas serão revertidas.')) {
       setContent(song.content);
       setOriginalKey(song.originalKey);
       setCapo(song.capo || 0);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = (mode: 'update' | 'copy') => {
     if (!title.trim() || !content.trim()) {
-      alert('Por favor, preencha o título e as cifras da sua versão.');
+      alert('Por favor, preencha o título e as cifras da música.');
       return;
     }
 
-    const newSongVersion: Song = {
-      id: `custom_rev_${Date.now()}`,
-      title: title.trim(),
-      artist: artist.trim() || song.artist,
-      originalKey,
-      currentKey: originalKey,
-      capo: capo > 0 ? capo : undefined,
-      bpm: Number(bpm) || 120,
-      timeSignature,
-      liturgicalMoment,
-      categories: song.categories && song.categories.length > 0 ? song.categories : ['Ao Vivo'],
-      coverGradient: song.coverGradient || 'from-emerald-600 to-teal-900',
-      tags: [title.toLowerCase(), artist.toLowerCase(), 'minha versao', 'revisao pessoal', privacy],
-      content: content.trim(),
-      duration: song.duration || '3:30',
-      isCustom: true,
-      parentSongId: song.id,
-      privacy,
-      versionName: versionNotes.trim() || 'Minha Versão',
-      audioPreviewUrl: song.audioPreviewUrl,
-      albumName: song.albumName,
-      coverUrl: song.coverUrl
-    };
+    if (mode === 'update') {
+      const updatedSong: Song = {
+        ...song,
+        title: title.trim(),
+        artist: artist.trim() || song.artist,
+        originalKey,
+        currentKey: originalKey,
+        capo: capo > 0 ? capo : undefined,
+        bpm: Number(bpm) || 120,
+        timeSignature,
+        liturgicalMoment,
+        tags: Array.from(new Set([...(song.tags || []), title.toLowerCase(), artist.toLowerCase(), 'editada'])),
+        content: content.trim(),
+        privacy,
+        versionName: versionNotes.trim() || song.versionName
+      };
 
-    onSaveVersion(newSongVersion);
-    onClose();
+      onSaveVersion(updatedSong, 'update');
+      onClose();
+    } else {
+      const copyTitle = title.includes('(Minha Versão)') ? title.trim() : `${title.trim()} (Minha Versão)`;
+      const newSongVersion: Song = {
+        id: `custom_rev_${Date.now()}`,
+        title: copyTitle,
+        artist: artist.trim() || song.artist,
+        originalKey,
+        currentKey: originalKey,
+        capo: capo > 0 ? capo : undefined,
+        bpm: Number(bpm) || 120,
+        timeSignature,
+        liturgicalMoment,
+        categories: song.categories && song.categories.length > 0 ? song.categories : ['Ao Vivo'],
+        coverGradient: song.coverGradient || 'from-emerald-600 to-teal-900',
+        tags: [copyTitle.toLowerCase(), artist.toLowerCase(), 'minha versao', 'revisao pessoal', privacy],
+        content: content.trim(),
+        duration: song.duration || '3:30',
+        isCustom: true,
+        parentSongId: song.id,
+        privacy,
+        versionName: versionNotes.trim() || 'Minha Versão',
+        audioPreviewUrl: song.audioPreviewUrl,
+        albumName: song.albumName,
+        coverUrl: song.coverUrl
+      };
+
+      onSaveVersion(newSongVersion, 'copy');
+      onClose();
+    }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
@@ -171,21 +195,28 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
         </div>
 
         {/* Content Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave('update');
+          }}
+          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4"
+        >
           {/* Metadata Parameters Grid */}
           <div className="p-4 rounded-2xl bg-zinc-950/70 border border-zinc-800/80 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold text-zinc-300 block mb-1">Título da Sua Versão *</label>
+                <label className="text-xs font-bold text-zinc-300 block mb-1">Título da Música *</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: Tempo Perdido (Versão Simplificada)"
+                  placeholder="Ex: Tempo Perdido"
                   className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
                   required
                 />
               </div>
+
 
               <div>
                 <label className="text-xs font-bold text-zinc-300 block mb-1">Artista / Banda</label>
@@ -438,13 +469,13 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
           </div>
 
           {/* Footer Action Buttons */}
-          <div className="pt-3 border-t border-zinc-800 flex items-center justify-between gap-3">
-            <div className="text-[11px] text-zinc-500 flex items-center gap-1">
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span>A cifra original permanecerá intacta no catálogo.</span>
+          <div className="pt-3 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-[11px] text-zinc-400 flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Suas edições e o último tom tocado ficam salvos na sua conta.</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
               <button
                 type="button"
                 onClick={onClose}
@@ -454,11 +485,23 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
               </button>
 
               <button
-                type="submit"
-                className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-900/30 transition flex items-center gap-2"
+                type="button"
+                onClick={() => handleSave('copy')}
+                className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-amber-500/30 font-bold text-xs transition flex items-center gap-1.5"
+                title="Salva uma versão duplicada separada no catálogo"
               >
-                <Check className="w-4 h-4" />
-                Salvar Minha Versão
+                <Copy className="w-3.5 h-3.5" />
+                Salvar como Nova Cópia
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSave('update')}
+                className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 transition flex items-center gap-2"
+                title="Salva as alterações diretamente nesta música no catálogo"
+              >
+                <Save className="w-4 h-4" />
+                Salvar Alterações
               </button>
             </div>
           </div>
@@ -467,3 +510,4 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
     </div>
   );
 };
+

@@ -54,14 +54,133 @@ function cleanSlug(s: string): string {
     .replace(/\s+/g, '-');
 }
 
-async function fetchFromUG(artist: string, song: string) {
-  const cleanTitle = song.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').trim();
-  const cleanArt = artist.replace(/feat\..*$/i, '').replace(/ao vivo.*$/i, '').trim();
+async function fetchFromCifraClub(artist: string, song: string) {
+  const cleanTitle = song.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').replace(/- ao vivo/gi, '').trim();
+  const cleanArt = artist.replace(/feat\..*$/i, '').replace(/part\..*$/i, '').replace(/ao vivo.*$/i, '').trim();
 
+  // 1. Prioridade Máxima: API Solr de Busca Instantânea do CifraClub (Encontra qualquer variação de nome/feat)
   const queries = [
     `${cleanArt} ${cleanTitle}`,
     `${cleanTitle} ${cleanArt.split(' ')[0]}`,
-    cleanTitle
+    `${cleanTitle}`
+  ];
+
+  for (const q of queries) {
+    try {
+      const solrUrl = `https://solr.sscdn.co/cifraclub/cifras/?q=${encodeURIComponent(q)}&wt=json`;
+      const sRes = await fetch(solrUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+        }
+      });
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        const docs = sData.response?.docs || [];
+        if (docs.length > 0) {
+          // Seleciona o melhor documento validando correspondência de artista/título
+          const bestDoc = docs.find((d: any) => {
+            const dArt = (d.art || '').toLowerCase();
+            const dTxt = (d.txt || '').toLowerCase();
+            const sArt = cleanArt.toLowerCase();
+            const sTxt = cleanTitle.toLowerCase();
+            return (dArt.includes(sArt) || sArt.includes(dArt)) &&
+                   (dTxt.includes(sTxt) || sTxt.includes(dTxt));
+          }) || docs[0];
+
+          if (bestDoc && bestDoc.dns && bestDoc.url) {
+            const pageUrl = `https://www.cifraclub.com.br/${bestDoc.dns}/${bestDoc.url}/`;
+            const pRes = await fetch(pageUrl, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+              }
+            });
+            if (pRes.ok) {
+              const html = await pRes.text();
+              const preMatch = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
+              if (preMatch) {
+                let text = preMatch[1]
+                  .replace(/<span[^>]*class="tablatura"[^>]*>[\s\S]*?<\/span>/gi, '')
+                  .replace(/<b[^>]*>(.*?)<\/b>/gi, '$1')
+                  .replace(/<small[^>]*>(.*?)<\/small>/gi, '$1')
+                  .replace(/<span[^>]*>(.*?)<\/span>/gi, '$1')
+                  .replace(/<div[^>]*>/gi, '')
+                  .replace(/<\/div>/gi, '\n')
+                  .replace(/<br\s*\/?>/gi, '\n')
+                  .replace(/<[^>]+>/g, '');
+
+                text = decodeHtml(text).trim();
+                if (text.length > 50) {
+                  return {
+                    cifra: text,
+                    key: detectKeyFromCifra(text),
+                    capo: detectCapoFromCifra(text),
+                    source: 'cifraclub'
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 2. Fallback por URLs Diretas
+  const artistSlug = cleanSlug(cleanArt);
+  const songSlug = cleanSlug(cleanTitle);
+  const urls = [
+    `https://www.cifraclub.com.br/${artistSlug}/${songSlug}/`,
+    `https://www.cifraclub.com.br/${artistSlug.replace(/-e-/g, '-')}/${songSlug}/`,
+    `https://www.cifraclub.com.br/${artistSlug.replace(/&/g, 'e')}/${songSlug}/`
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+        }
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const preMatch = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
+        if (preMatch) {
+          let text = preMatch[1]
+            .replace(/<span[^>]*class="tablatura"[^>]*>[\s\S]*?<\/span>/gi, '')
+            .replace(/<b[^>]*>(.*?)<\/b>/gi, '$1')
+            .replace(/<small[^>]*>(.*?)<\/small>/gi, '$1')
+            .replace(/<span[^>]*>(.*?)<\/span>/gi, '$1')
+            .replace(/<div[^>]*>/gi, '')
+            .replace(/<\/div>/gi, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]+>/g, '');
+
+          text = decodeHtml(text).trim();
+          if (text.length > 50) {
+            return {
+              cifra: text,
+              key: detectKeyFromCifra(text),
+              capo: detectCapoFromCifra(text),
+              source: 'cifraclub'
+            };
+          }
+        }
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+
+async function fetchFromUG(artist: string, song: string) {
+  const cleanTitle = song.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').replace(/- ao vivo/gi, '').trim();
+  const cleanArt = artist.replace(/feat\..*$/i, '').replace(/part\..*$/i, '').replace(/ao vivo.*$/i, '').trim();
+
+  const queries = [
+    `${cleanArt} ${cleanTitle}`,
+    `${cleanTitle} ${cleanArt.split(' ')[0]}`
   ];
 
   for (const q of queries) {
@@ -81,10 +200,22 @@ async function fetchFromUG(artist: string, song: string) {
       const decoded = match[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&');
       const data = JSON.parse(decoded);
       const results = data.store?.page?.data?.results || [];
-      const chordsTab = results.find((r: any) => r.type === 'Chords');
-      if (!chordsTab || !chordsTab.tab_url) continue;
+      const chordsTabs = results.filter((r: any) => r.type === 'Chords');
+      if (chordsTabs.length === 0) continue;
 
-      const tabRes = await fetch(chordsTab.tab_url, {
+      // Validação estrita para não trazer músicas homônimas de outros artistas
+      const bestMatch = chordsTabs.find((r: any) => {
+        const rArt = (r.artist_name || '').toLowerCase();
+        const rSong = (r.song_name || '').toLowerCase();
+        const sArt = cleanArt.toLowerCase();
+        const sSong = cleanTitle.toLowerCase();
+        return (rArt.includes(sArt) || sArt.includes(rArt)) &&
+               (rSong.includes(sSong) || sSong.includes(rSong));
+      }) || (queries.indexOf(q) === 0 ? chordsTabs[0] : null);
+
+      if (!bestMatch || !bestMatch.tab_url) continue;
+
+      const tabRes = await fetch(bestMatch.tab_url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
@@ -102,7 +233,6 @@ async function fetchFromUG(artist: string, song: string) {
       const capo = tabData.store?.page?.data?.tab_view?.meta?.capo || detectCapoFromCifra(rawContent || '');
 
       if (rawContent && rawContent.length > 50) {
-        // IMPORTANT: Only remove the [ch], [/ch], [tab], [/tab] tags without erasing the lyrics inside!
         let clean = rawContent
           .replace(/\[ch\](.*?)\[\/ch\]/g, '$1')
           .replace(/\[\/?tab\]/g, '');
@@ -121,8 +251,11 @@ async function fetchFromUG(artist: string, song: string) {
 }
 
 async function fetchFromCifrasBr(artist: string, song: string) {
-  const artistSlug = cleanSlug(artist);
-  const songSlug = cleanSlug(song);
+  const cleanTitle = song.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').replace(/- ao vivo/gi, '').trim();
+  const cleanArt = artist.replace(/feat\..*$/i, '').replace(/part\..*$/i, '').replace(/ao vivo.*$/i, '').trim();
+
+  const artistSlug = cleanSlug(cleanArt);
+  const songSlug = cleanSlug(cleanTitle);
 
   const urls = [
     `https://www.cifras.com.br/cifra/${artistSlug}/${songSlug}`,
@@ -167,52 +300,6 @@ async function fetchFromCifrasBr(artist: string, song: string) {
   return null;
 }
 
-async function fetchFromCifraClub(artist: string, song: string) {
-  const artistSlug = cleanSlug(artist);
-  const songSlug = cleanSlug(song);
-
-  const urls = [
-    `https://www.cifraclub.com.br/${artistSlug}/${songSlug}/`,
-    `https://www.cifraclub.com.br/${artistSlug.replace(/-e-/g, '-')}/${songSlug}/`,
-    `https://www.cifraclub.com.br/${artistSlug.replace(/&/g, 'e')}/${songSlug}/`
-  ];
-
-  for (const url of urls) {
-    try {
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
-        }
-      });
-      if (res.ok) {
-        const html = await res.text();
-        const preMatch = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
-        if (preMatch) {
-          let text = preMatch[1]
-            .replace(/<span[^>]*class="tablatura"[^>]*>[\s\S]*?<\/span>/gi, '')
-            .replace(/<b[^>]*>(.*?)<\/b>/gi, '$1')
-            .replace(/<small[^>]*>(.*?)<\/small>/gi, '$1')
-            .replace(/<span[^>]*>(.*?)<\/span>/gi, '$1')
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<[^>]+>/g, '');
-
-          text = decodeHtml(text).trim();
-          if (text.length > 50) {
-            return {
-              cifra: text,
-              key: detectKeyFromCifra(text),
-              capo: detectCapoFromCifra(text),
-              source: 'cifraclub'
-            };
-          }
-        }
-      }
-    } catch (e) {}
-  }
-  return null;
-}
-
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -233,21 +320,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // 1. Tentar Ultimate Guitar (Excelente para catálogo nacional e internacional com acordes alinhados)
-    const ug = await fetchFromUG(artist, title);
-    if (ug) {
-      return res.status(200).json({
-        success: true,
-        title,
-        artist,
-        key: ug.key,
-        capo: ug.capo,
-        cifra: ug.cifra,
-        source: ug.source
-      });
-    }
-
-    // 2. Tentar CifraClub (Líder em músicas brasileiras, gospel, sertanejo, etc.)
+    // 1. Tentar CifraClub Primeiro (Líder em precisão no catálogo brasileiro, gospel, sertanejo, MPB, etc.)
     const cifraClub = await fetchFromCifraClub(artist, title);
     if (cifraClub) {
       return res.status(200).json({
@@ -258,6 +331,20 @@ export default async function handler(req: any, res: any) {
         capo: cifraClub.capo,
         cifra: cifraClub.cifra,
         source: cifraClub.source
+      });
+    }
+
+    // 2. Tentar Ultimate Guitar (Maior base mundial com validação estrita de artista/música)
+    const ug = await fetchFromUG(artist, title);
+    if (ug) {
+      return res.status(200).json({
+        success: true,
+        title,
+        artist,
+        key: ug.key,
+        capo: ug.capo,
+        cifra: ug.cifra,
+        source: ug.source
       });
     }
 
@@ -284,3 +371,4 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: error.message || 'Erro ao buscar cifra online.' });
   }
 }
+
