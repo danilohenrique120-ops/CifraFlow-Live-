@@ -49,10 +49,10 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return {
       id: 'usr_' + Math.random().toString(36).substring(2, 9),
       name: userProfile?.displayName || 'Músico ' + Math.floor(100 + Math.random() * 900),
-      role: 'leader',
+      role: 'member',
       instrument: userProfile?.instrument || 'Violão',
       joinedAt: Date.now(),
-      isHost: true,
+      isHost: false,
       avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
     };
   });
@@ -494,7 +494,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   }, []);
 
-  const isHost = currentMember?.role === 'leader' || sessionState?.hostId === currentMember?.id;
+  const isHost = Boolean(sessionState && currentMember && sessionState.hostId === currentMember.id);
 
   return (
     <LiveRoomContext.Provider
