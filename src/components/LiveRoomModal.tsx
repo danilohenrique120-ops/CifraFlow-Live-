@@ -225,41 +225,63 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                 )}
               </div>
 
-              {/* Connected Musicians Roster */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-emerald-400" />
-                    Músicos Conectados ({sessionState.members.length})
-                  </h3>
+              {/* Connected Musicians Roster - Design idêntico à Landing Page */}
+              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-zinc-300 uppercase tracking-wider text-[11px] flex items-center gap-2">
+                    <Users className="w-3.5 h-3.5 text-emerald-400" />
+                    DISPOSITIVOS CONECTADOS:
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    {sessionState.members.length} {sessionState.members.length === 1 ? 'dispositivo' : 'dispositivos'}
+                  </span>
                 </div>
 
-                <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {sessionState.members.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-950/50 border border-zinc-800/60 text-xs"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-6 h-6 rounded-full ${member.avatarColor} text-zinc-950 font-bold flex items-center justify-center text-[10px]`}>
-                          {member.name.charAt(0).toUpperCase()}
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {sessionState.members.map((member) => {
+                    const isCurrent = member.id === currentMember?.id;
+                    const isLeader = member.role === 'leader' || member.isHost;
+
+                    return (
+                      <div
+                        key={member.id}
+                        className={`flex items-center justify-between p-3 rounded-2xl border transition ${
+                          isLeader
+                            ? 'bg-zinc-900/90 border-zinc-700/90 shadow-sm'
+                            : 'bg-zinc-950/80 border-zinc-800/80 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {/* Dot verde brilhante para indicar conexão ativa */}
+                          <span className={`w-2.5 h-2.5 rounded-full flex-none ${isLeader ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50 animate-pulse' : 'bg-emerald-500/80'}`} />
+                          
+                          <div className="truncate">
+                            <span className="font-bold text-white text-xs sm:text-sm tracking-tight block truncate">
+                              {member.name}
+                              <span className="text-zinc-400 font-normal ml-1">
+                                ({isLeader ? 'Líder / ' : ''}{member.instrument || 'Músico'})
+                              </span>
+                              {isCurrent && (
+                                <span className="ml-1.5 text-[10px] font-semibold text-emerald-400/90">(Você)</span>
+                              )}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-bold text-white block">
-                            {member.name} {member.id === currentMember?.id && '(Você)'}
-                          </span>
-                          <span className="text-[10px] text-zinc-400">{member.instrument}</span>
+
+                        <div className="flex items-center gap-2 flex-none ml-2">
+                          {isLeader ? (
+                            <span className="text-[11px] font-black tracking-wider text-emerald-400 uppercase bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/20">
+                              HOST
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-medium text-zinc-400">
+                              Sincronizado
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                        member.role === 'leader'
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          : 'bg-zinc-800 text-zinc-400'
-                      }`}>
-                        {member.role === 'leader' ? 'Líder' : 'Banda'}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

@@ -621,62 +621,74 @@ export const StageViewer: React.FC<StageViewerProps> = ({
 
       {/* Top Navbar / Control Bar */}
       {!isCleanStage && (
-        <header className="flex-none border-b border-zinc-800/80 px-4 py-2.5 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between gap-2 z-30">
-          <div className="flex items-center gap-2">
+        <header className="flex-none border-b border-zinc-800/80 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between gap-1.5 sm:gap-2 z-30">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             <button
               onClick={onBack}
-              className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+              className="p-1.5 sm:p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition flex-none"
               title="Voltar ao Catálogo"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold text-white truncate max-w-[180px] sm:max-w-md">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="text-sm sm:text-lg font-bold text-white truncate max-w-[120px] xs:max-w-[150px] sm:max-w-md">
                   {song.title}
                 </h1>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="hidden sm:inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 truncate max-w-[100px]">
                   {song.liturgicalMoment}
                 </span>
                 {song.isCustom && (
-                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-zinc-950 shadow-sm">
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded-full bg-amber-500 text-zinc-950 shadow-sm flex-none">
                     Própria
                   </span>
                 )}
               </div>
-              <p className="text-xs text-zinc-400 truncate">{song.artist}</p>
+              <p className="text-[11px] sm:text-xs text-zinc-400 truncate">{song.artist}</p>
             </div>
           </div>
 
           {/* Quick Action Tools */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-none">
+            {/* Stage Fullscreen Clean Trigger (Prioritized on Mobile & Desktop) */}
+            <button
+              onClick={() => setIsCleanStage(true)}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-900/30 transition flex-none"
+              title="Entrar no Modo Palco Limpo (Full Screen)"
+            >
+              <Tv className="w-4 h-4" />
+              <span className="inline">Modo Palco</span>
+            </button>
+
             {/* Live Room Status Indicator */}
             {isInRoom ? (
               <button
                 onClick={onOpenLiveRoomModal}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold animate-pulse hover:bg-emerald-500/30 transition"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold animate-pulse hover:bg-emerald-500/30 transition flex-none"
+                title="Status da Sala Ao Vivo"
               >
                 <Radio className="w-3.5 h-3.5 text-emerald-400" />
                 <span className="hidden sm:inline">SALA: {sessionState?.pin}</span>
-                <span className="sm:hidden">{sessionState?.pin}</span>
+                <span className="sm:hidden text-[11px] font-mono">{sessionState?.pin}</span>
               </button>
             ) : (
               <button
                 onClick={onOpenLiveRoomModal}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 text-xs font-semibold transition"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 text-xs font-semibold transition"
+                title="Abrir Modo Ensaio Ao Vivo"
               >
                 <Share2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Modo Ensaio Ao Vivo</span>
+                <span>Modo Ensaio Ao Vivo</span>
               </button>
             )}
 
             {/* Metronome Shortcut */}
             <button
               onClick={onOpenMetronome}
-              className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+              className="p-1.5 sm:p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition flex-none"
               title="Abrir Metrônomo"
             >
-              <Music className="w-5 h-5" />
+              <Music className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             {/* 📋 Adicionar ao Repertório Button & Dropdown */}
@@ -684,7 +696,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               <div className="relative" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => setIsSetlistDropdownOpen(prev => !prev)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
+                  className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
                     isSetlistDropdownOpen
                       ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-extrabold'
                       : 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 border-zinc-700 hover:border-emerald-500/40'
@@ -757,7 +769,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 }
                 setIsReviseModalOpen(true);
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
+              className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
                 isPro
                   ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border-amber-500/40'
                   : 'bg-zinc-800/80 text-zinc-400 hover:text-white border-zinc-700 hover:border-amber-500/40'
@@ -772,7 +784,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
             {/* 📄 Exportar PDF / Imprimir Cifra */}
             <button
               onClick={handlePrintSong}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
+              className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
                 isPro
                   ? 'bg-zinc-800/90 hover:bg-zinc-700 text-white border-zinc-700 hover:border-emerald-500/50'
                   : 'bg-zinc-800/80 text-zinc-400 hover:text-white border-zinc-700 hover:border-emerald-500/40'
@@ -782,17 +794,6 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               <FileText className={`w-3.5 h-3.5 ${isPro ? 'text-emerald-400' : 'text-zinc-400'}`} />
               <span className="hidden sm:inline">PDF</span>
               {!isPro && <Lock className="w-3 h-3 text-amber-400 ml-0.5" />}
-            </button>
-
-
-            {/* Stage Fullscreen Clean Trigger */}
-            <button
-              onClick={() => setIsCleanStage(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-900/30 transition"
-              title="Entrar no Modo Palco Limpo (Full Screen)"
-            >
-              <Tv className="w-4 h-4" />
-              <span className="hidden md:inline">Modo Palco</span>
             </button>
           </div>
         </header>
@@ -1298,6 +1299,15 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               title={columnMode === '2-col' ? 'Mudar para 1 Coluna' : 'Mudar para 2 Colunas (Tablets / Monitores)'}
             >
               <Columns className="w-4 h-4" />
+            </button>
+
+            {/* Quick Modo Palco Button in Footer */}
+            <button
+              onClick={() => setIsCleanStage(true)}
+              className="p-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 transition"
+              title="Entrar no Modo Palco Limpo (Tela Cheia)"
+            >
+              <Tv className="w-4 h-4" />
             </button>
 
             {/* Stage Themes */}

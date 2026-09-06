@@ -33,6 +33,7 @@ interface SidebarProps {
   onOpenTuner: () => void;
   onOpenPricing: () => void;
   onOpenProfile: () => void;
+  onOpenLandingPage?: () => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
   activeSetlistId?: string | null;
@@ -67,6 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenTuner,
   onOpenPricing,
   onOpenProfile,
+  onOpenLandingPage,
   isOpenMobile,
   onCloseMobile,
   activeSetlistId
@@ -197,16 +199,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 Conhecer Planos
               </button>
+
+              {onOpenLandingPage && (
+                <button
+                  onClick={() => {
+                    onOpenLandingPage();
+                    onCloseMobile();
+                  }}
+                  className="w-full py-1 text-[10px] font-bold text-zinc-400 hover:text-emerald-400 transition text-center block"
+                >
+                  ✨ Ver apresentação completa do app
+                </button>
+              )}
             </div>
           ) : (
-            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                <div>
-                  <span className="text-xs font-black text-white block">Assinante Pro</span>
-                  <span className="text-[10px] text-emerald-400">Live Sync Liberado</span>
+            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  <div>
+                    <span className="text-xs font-black text-white block">Assinante Pro</span>
+                    <span className="text-[10px] text-emerald-400">Live Sync Liberado</span>
+                  </div>
                 </div>
               </div>
+              {onOpenLandingPage && (
+                <button
+                  onClick={() => {
+                    onOpenLandingPage();
+                    onCloseMobile();
+                  }}
+                  className="w-full text-left pt-1 border-t border-emerald-500/20 text-[10px] font-bold text-zinc-400 hover:text-emerald-300 transition"
+                >
+                  Ver novidades & recursos Pro →
+                </button>
+              )}
             </div>
           )}
 

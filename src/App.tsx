@@ -24,6 +24,7 @@ import {
 } from './services/cloudWorkspaceSync';
 import { getSemitoneDifference } from './utils/chordEngine';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { LandingPage } from './components/LandingPage';
 
 const MainAppContent: React.FC = () => {
   const { isInRoom, isHost, currentMember, sessionState, selectSong, changeKey, changeCapo } = useLiveRoom();
@@ -242,6 +243,21 @@ const MainAppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<'discovery' | 'setlists'>('discovery');
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [activeSetlist, setActiveSetlist] = useState<Setlist | null>(null);
+
+  // Landing Page view state: Shows for new visitors who are not logged in and haven't entered the app in this session, or when requested via URL (?landing=true)
+  const [isShowingLanding, setIsShowingLanding] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('landing') === 'true') return true;
+    // Se já está logado, nunca força landing page
+    const savedProfile = localStorage.getItem('cifraflow_user_profile');
+    if (savedProfile) return false;
+    // Se já clicou em entrar no app nesta sessão de navegação, respeita a escolha
+    const hasSkipped = sessionStorage.getItem('cifrae_entered_app');
+    if (hasSkipped === 'true') return false;
+    // Novo visitante que não está logado
+    return true;
+  });
 
   // Modals state
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
@@ -605,7 +621,51 @@ const MainAppContent: React.FC = () => {
     }));
   };
 
-  // 🔒 OPÇÃO B: Bloqueio Total Obrigatório para qualquer visitante deslogado
+  // Handler para quando o visitante clica em "Testar Grátis no Navegador" ou fecha a landing
+  const handleEnterApp = () => {
+    sessionStorage.setItem('cifrae_entered_app', 'true');
+    setIsShowingLanding(false);
+  };
+
+  // 🌟 Landing Page Magnética de Alta Conversão
+  // Apresentada para novos visitantes não logados que ainda não entraram no app nesta sessão
+  // ou para qualquer usuário que solicitar explicitamente (via link da Sidebar ou ?landing=true)
+  if (isShowingLanding) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col antialiased">
+        <LandingPage
+          onEnterApp={handleEnterApp}
+          onOpenPricing={(reason) => handleOpenPricingWithReason(reason)}
+          onOpenAuth={() => setIsAuthOpen(true)}
+        />
+
+        {/* Pricing Modal aberto direto da Landing Page com checkout Stripe */}
+        <PricingModal
+          isOpen={isPricingOpen}
+          onClose={() => {
+            setIsPricingOpen(false);
+            setPricingReason(undefined);
+          }}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          featureReason={pricingReason}
+        />
+
+        {/* Auth Modal aberto direto da Landing Page */}
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => {
+            setIsAuthOpen(false);
+            // Se logou com sucesso, sai da landing page
+            if (userProfile) {
+              setIsShowingLanding(false);
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
+  // 🔒 OPÇÃO B: Bloqueio Total Obrigatório para qualquer visitante deslogado que tenta acessar o app direto sem login
   if (!userProfile && !isLoading) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
@@ -653,6 +713,7 @@ const MainAppContent: React.FC = () => {
           onOpenTuner={() => setIsTunerOpen(true)}
           onOpenPricing={() => handleOpenPricingWithReason()}
           onOpenProfile={() => setIsProfileOpen(true)}
+          onOpenLandingPage={() => setIsShowingLanding(true)}
           isOpenMobile={isMobileMenuOpen}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
           activeSetlistId={activeSetlist?.id}
