@@ -13,7 +13,11 @@ import {
   Compass,
   User,
   Crown,
-  Upload
+  Upload,
+  Wifi,
+  WifiOff,
+  Zap,
+  ShieldCheck
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -39,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   onToggleMobileMenu
 }) => {
-  const { isInRoom, sessionState } = useLiveRoom();
+  const { isInRoom, sessionState, transportMode, isNetworkOnline, p2pPeersCount } = useLiveRoom();
   const { userProfile, isPro } = useAuth();
 
   return (
@@ -136,26 +140,58 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         )}
 
-        {/* Live Band Sync Pill Indicator */}
+        {/* Live Band Sync Pill Indicator (Híbrido Nuvem + P2P Local + Offline) */}
         {isInRoom && sessionState ? (
           <button
             onClick={onOpenLiveRoomModal}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition text-xs font-bold shadow-lg shadow-emerald-950/60"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition text-xs font-bold shadow-lg ${
+              transportMode === 'p2p_local'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 shadow-amber-950/60'
+                : transportMode === 'local_cache'
+                ? 'bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700'
+                : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 shadow-emerald-950/60'
+            }`}
           >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span
+              className={`w-2 h-2 rounded-full ${
+                transportMode === 'p2p_local'
+                  ? 'bg-amber-400 animate-pulse'
+                  : transportMode === 'local_cache'
+                  ? 'bg-zinc-400'
+                  : 'bg-emerald-400 animate-ping'
+              }`}
+            />
             <span className="font-mono">SALA: {sessionState.pin}</span>
-            <span className="hidden md:inline text-[10px] text-emerald-400/80">
-              ({sessionState.members.length} online)
-            </span>
+            {transportMode === 'p2p_local' ? (
+              <span className="hidden md:flex items-center gap-1 text-[10px] text-amber-300/90 font-black">
+                <Zap className="w-3 h-3" /> P2P Palco
+              </span>
+            ) : transportMode === 'local_cache' ? (
+              <span className="hidden md:flex items-center gap-1 text-[10px] text-zinc-400 font-medium">
+                <ShieldCheck className="w-3 h-3 text-emerald-400" /> Local
+              </span>
+            ) : (
+              <span className="hidden md:inline text-[10px] text-emerald-400/80">
+                ({sessionState.members.length} online)
+              </span>
+            )}
           </button>
         ) : (
-          <button
-            onClick={onOpenLiveRoomModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-zinc-900 hover:bg-emerald-600 hover:text-white text-zinc-300 border border-zinc-800 hover:border-emerald-500 text-xs font-bold transition shadow-sm"
-          >
-            <Radio className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">Conectar Ensaio</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {!isNetworkOnline && (
+              <span className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 text-[11px] font-semibold">
+                <WifiOff className="w-3 h-3 text-amber-400" />
+                <span>100% Offline</span>
+              </span>
+            )}
+            <button
+              onClick={onOpenLiveRoomModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-zinc-900 hover:bg-emerald-600 hover:text-white text-zinc-300 border border-zinc-800 hover:border-emerald-500 text-xs font-bold transition shadow-sm"
+            >
+              <Radio className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Conectar Ensaio</span>
+            </button>
+          </div>
         )}
 
         {/* User Profile Avatar with Pro Indicator */}

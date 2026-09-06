@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { BandAlert, LiveMember, LiveSessionState, Song, UserRole } from '../types';
-import { generateRoomPin, LiveSyncEngine, SyncMessage } from '../services/liveSync';
+import { generateRoomPin, LiveSyncEngine, SyncMessage, TransportMode } from '../services/liveSync';
+import { networkStatus } from '../services/pwaService';
 import { useAuth } from './AuthContext';
 
 interface LiveRoomContextType {
@@ -9,6 +10,9 @@ interface LiveRoomContextType {
   currentMember: LiveMember | null;
   sessionState: LiveSessionState | null;
   engine: LiveSyncEngine | null;
+  transportMode: TransportMode;
+  isNetworkOnline: boolean;
+  p2pPeersCount: number;
   createRoom: (roomName?: string, memberName?: string, instrument?: string, initialSong?: Song | null) => Promise<string>;
   joinRoom: (pin: string, memberName?: string, instrument?: string) => Promise<boolean>;
   leaveRoom: () => void;
@@ -22,6 +26,9 @@ interface LiveRoomContextType {
   setActiveSetlist: (setlistId: string | null) => void;
   updateMemberName: (name: string, instrument: string) => void;
   recentAlert: BandAlert | null;
+  createP2POffer: () => Promise<string>;
+  acceptP2POffer: (offer: string) => Promise<string>;
+  acceptP2PAnswer: (answer: string) => Promise<void>;
 }
 
 
@@ -60,7 +67,28 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [sessionState, setSessionState] = useState<LiveSessionState | null>(null);
   const [engine, setEngine] = useState<LiveSyncEngine | null>(null);
   const [recentAlert, setRecentAlert] = useState<BandAlert | null>(null);
+  const [transportMode, setTransportMode] = useState<TransportMode>('cloud');
+  const [isNetworkOnline, setIsNetworkOnline] = useState<boolean>(networkStatus.getStatus());
+  const [p2pPeersCount, setP2pPeersCount] = useState<number>(0);
   const engineRef = useRef<LiveSyncEngine | null>(null);
+
+  // Monitorar conectividade de rede global
+  useEffect(() => {
+    const unsub = networkStatus.subscribe((online) => {
+      setIsNetworkOnline(online);
+    });
+    return unsub;
+  }, []);
+
+  // Monitorar modo de transporte do engine ativo
+  useEffect(() => {
+    if (!engine) return;
+    const unsub = engine.onTransportModeChange((mode) => {
+      setTransportMode(mode);
+      setP2pPeersCount(engine.getActivePeersCount());
+    });
+    return unsub;
+  }, [engine]);
 
   // Keep member details in sync with AuthProfile
   useEffect(() => {
@@ -525,6 +553,21 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   }, []);
 
+  const createP2POffer = useCallback(async (): Promise<string> => {
+    if (!engineRef.current) throw new Error('Sala ao vivo não inicializada.');
+    return engineRef.current.createP2POffer();
+  }, []);
+
+  const acceptP2POffer = useCallback(async (offer: string): Promise<string> => {
+    if (!engineRef.current) throw new Error('Sala ao vivo não inicializada.');
+    return engineRef.current.acceptP2POffer(offer);
+  }, []);
+
+  const acceptP2PAnswer = useCallback(async (answer: string): Promise<void> => {
+    if (!engineRef.current) return;
+    return engineRef.current.acceptP2PAnswer(answer);
+  }, []);
+
   const isHost = Boolean(
     sessionState && (
       currentMember?.isHost === true ||
@@ -542,6 +585,9 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         currentMember,
         sessionState,
         engine,
+        transportMode,
+        isNetworkOnline,
+        p2pPeersCount,
         createRoom,
         joinRoom,
         leaveRoom,
@@ -554,7 +600,10 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         dismissAlert,
         setActiveSetlist,
         updateMemberName,
-        recentAlert
+        recentAlert,
+        createP2POffer,
+        acceptP2POffer,
+        acceptP2PAnswer
       }}
     >
       {children}

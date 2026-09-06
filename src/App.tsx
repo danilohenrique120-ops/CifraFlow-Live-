@@ -25,6 +25,7 @@ import {
 import { getSemitoneDifference } from './utils/chordEngine';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LandingPage } from './components/LandingPage';
+import { localDB } from './services/storageService';
 
 const MainAppContent: React.FC = () => {
   const { isInRoom, isHost, currentMember, sessionState, selectSong, changeKey, changeCapo } = useLiveRoom();
@@ -273,8 +274,18 @@ const MainAppContent: React.FC = () => {
   const [pricingReason, setPricingReason] = useState<string | undefined>(undefined);
   const [uploadPresetMoment, setUploadPresetMoment] = useState<LiturgicalMoment | undefined>(undefined);
 
-  // Save changes isolated per user to both local storage and Cloud Firestore
+  // Save changes isolated per user to IndexedDB Local-First, local storage and Cloud Firestore
   useEffect(() => {
+    if (songs.length > 0) {
+      localDB.saveSongs(songs);
+    }
+    if (setlists.length > 0) {
+      localDB.saveSetlists(setlists);
+    }
+    if (genreFolders.length > 0) {
+      localDB.saveFolders(genreFolders);
+    }
+
     if (userProfile?.uid) {
       try {
         localStorage.setItem(`cifrae_songs_${userProfile.uid}`, JSON.stringify(songs));

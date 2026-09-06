@@ -19,7 +19,9 @@ import {
   QrCode,
   ShieldCheck,
   Music,
-  Share2
+  Share2,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 
 interface LiveRoomModalProps {
@@ -52,12 +54,18 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
     isHost,
     sessionState,
     currentMember,
+    transportMode,
+    isNetworkOnline,
+    p2pPeersCount,
     createRoom,
     joinRoom,
     leaveRoom,
     toggleFollowScroll,
     sendBandAlert,
-    updateMemberName
+    updateMemberName,
+    createP2POffer,
+    acceptP2POffer,
+    acceptP2PAnswer
   } = useLiveRoom();
 
   const { isPro } = useAuth();
@@ -68,6 +76,10 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
   const [selectedInstrument, setSelectedInstrument] = useState(currentMember?.instrument || 'Violão');
   const [customAlertInput, setCustomAlertInput] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showOfflineGuide, setShowOfflineGuide] = useState(false);
+  const [p2pOfferCode, setP2pOfferCode] = useState('');
+  const [p2pInputToken, setP2pInputToken] = useState('');
+  const [p2pFeedback, setP2pFeedback] = useState('');
 
   if (!isOpen) return null;
 
@@ -126,8 +138,26 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 Sincronização ao Vivo
                 {isInRoom && (
-                  <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                    CONECTADO
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border flex items-center gap-1 ${
+                    transportMode === 'p2p_local'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : transportMode === 'local_cache'
+                      ? 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  }`}>
+                    {transportMode === 'p2p_local' ? (
+                      <>
+                        <Zap className="w-3 h-3 text-amber-400" /> P2P PALCO
+                      </>
+                    ) : transportMode === 'local_cache' ? (
+                      <>
+                        <ShieldCheck className="w-3 h-3 text-emerald-400" /> LOCAL OFFLINE
+                      </>
+                    ) : (
+                      <>
+                        <Wifi className="w-3 h-3 text-emerald-400" /> NUVEM GLOBAL
+                      </>
+                    )}
                   </span>
                 )}
               </h2>
@@ -222,6 +252,55 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                     />
                     <span className="text-zinc-300 font-medium">Guiar Rolagem (Follow Scroll)</span>
                   </label>
+                )}
+              </div>
+
+              {/* Bulletproof Offline & Local Network Stage Card */}
+              <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-zinc-300 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    Confiabilidade Offline no Palco
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowOfflineGuide(!showOfflineGuide)}
+                    className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 underline"
+                  >
+                    {showOfflineGuide ? 'Ocultar Dicas' : 'Como usar sem internet?'}
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 text-[11px] text-zinc-400">
+                  <span className="flex items-center gap-1">
+                    {isNetworkOnline ? (
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                    ) : (
+                      <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                    )}
+                    {isNetworkOnline ? 'Internet Online' : 'Sem Internet (Modo Palco)'}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {transportMode === 'p2p_local'
+                      ? `Conectado via P2P Local (${p2pPeersCount} conectados)`
+                      : transportMode === 'local_cache'
+                      ? 'Local-First (100% no Aparelho)'
+                      : 'Nuvem Global Ativa'}
+                  </span>
+                </div>
+
+                {showOfflineGuide && (
+                  <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 space-y-2">
+                    <p className="font-bold text-emerald-400">
+                      ⚡ Para sincronizar a banda sem internet ou em locais sem sinal:
+                    </p>
+                    <ol className="list-decimal list-inside space-y-1 text-[11px] text-zinc-400">
+                      <li>O líder ativa o <strong>Roteador Wi-Fi (Hotspot)</strong> do celular (não precisa de dados 4G/5G).</li>
+                      <li>Os músicos conectam seus celulares/tablets no Wi-Fi gerado pelo líder.</li>
+                      <li>O CifraFlow sincroniza troca de tom, músicas e rolagem com latência menor que 5ms!</li>
+                    </ol>
+                  </div>
                 )}
               </div>
 
