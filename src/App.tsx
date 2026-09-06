@@ -28,8 +28,8 @@ import { LandingPage } from './components/LandingPage';
 import { localDB } from './services/storageService';
 
 const MainAppContent: React.FC = () => {
-  const { isInRoom, isHost, currentMember, sessionState, selectSong, changeKey, changeCapo } = useLiveRoom();
-  const { isPro, userProfile, isLoading } = useAuth();
+  const { isInRoom, isHost, currentMember, sessionState, selectSong, changeKey, changeCapo, isNetworkOnline } = useLiveRoom();
+  const { isPro, userProfile, isLoading, loginAsOfflineGuest } = useAuth();
 
 
   // Helper to extract custom/online songs from raw list
@@ -47,10 +47,19 @@ const MainAppContent: React.FC = () => {
   };
 
   // User-isolated songs and setlists state
+  // User-isolated songs and setlists state (com suporte a restauração imediata do UID salvo offline)
   const [songs, setSongs] = useState<Song[]>(() => {
-    if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_SONGS;
-    const userSongsKey = `cifrae_songs_${userProfile.uid}`;
-    const userCatalogVerKey = `cifrae_catalog_ver_${userProfile.uid}`;
+    if (typeof window === 'undefined') return INITIAL_SONGS;
+    let uid = userProfile?.uid;
+    if (!uid) {
+      const savedProf = localStorage.getItem('cifraflow_user_profile');
+      if (savedProf) {
+        try { uid = JSON.parse(savedProf).uid; } catch (e) {}
+      }
+    }
+    if (!uid) return INITIAL_SONGS;
+    const userSongsKey = `cifrae_songs_${uid}`;
+    const userCatalogVerKey = `cifrae_catalog_ver_${uid}`;
     const savedVer = localStorage.getItem(userCatalogVerKey);
     const saved = localStorage.getItem(userSongsKey);
 
@@ -66,9 +75,17 @@ const MainAppContent: React.FC = () => {
   });
 
   const [setlists, setSetlists] = useState<Setlist[]>(() => {
-    if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_SETLISTS;
-    const userSetlistsKey = `cifrae_setlists_${userProfile.uid}`;
-    const fallbackSetlistsKey = `cifrasync_setlists_${userProfile.uid}`;
+    if (typeof window === 'undefined') return INITIAL_SETLISTS;
+    let uid = userProfile?.uid;
+    if (!uid) {
+      const savedProf = localStorage.getItem('cifraflow_user_profile');
+      if (savedProf) {
+        try { uid = JSON.parse(savedProf).uid; } catch (e) {}
+      }
+    }
+    if (!uid) return INITIAL_SETLISTS;
+    const userSetlistsKey = `cifrae_setlists_${uid}`;
+    const fallbackSetlistsKey = `cifrasync_setlists_${uid}`;
     const saved = localStorage.getItem(userSetlistsKey) || localStorage.getItem(fallbackSetlistsKey);
     if (saved) {
       try {
@@ -82,8 +99,16 @@ const MainAppContent: React.FC = () => {
   });
 
   const [genreFolders, setGenreFolders] = useState<GenreFolder[]>(() => {
-    if (typeof window === 'undefined' || !userProfile?.uid) return INITIAL_GENRE_FOLDERS;
-    const userFoldersKey = `cifrae_folders_${userProfile.uid}`;
+    if (typeof window === 'undefined') return INITIAL_GENRE_FOLDERS;
+    let uid = userProfile?.uid;
+    if (!uid) {
+      const savedProf = localStorage.getItem('cifraflow_user_profile');
+      if (savedProf) {
+        try { uid = JSON.parse(savedProf).uid; } catch (e) {}
+      }
+    }
+    if (!uid) return INITIAL_GENRE_FOLDERS;
+    const userFoldersKey = `cifrae_folders_${uid}`;
     const saved = localStorage.getItem(userFoldersKey);
     if (saved) {
       try {
@@ -98,7 +123,21 @@ const MainAppContent: React.FC = () => {
 
   // Automatically load and sync the workspace in real time across all devices for the logged-in user
   useEffect(() => {
-    if (!userProfile?.uid) {
+    let uid = userProfile?.uid;
+    if (!uid && typeof window !== 'undefined') {
+      const savedProf = localStorage.getItem('cifraflow_user_profile');
+      if (savedProf) {
+        try { uid = JSON.parse(savedProf).uid; } catch (e) {}
+      }
+    }
+
+    if (!uid) {
+      if (!isNetworkOnline) {
+        localDB.getAllSongs().then((s) => { if (s && s.length > 0) setSongs(s); });
+        localDB.getAllSetlists().then((l) => { if (l && l.length > 0) setSetlists(l); });
+        localDB.getAllFolders().then((f) => { if (f && f.length > 0) setGenreFolders(f); });
+        return;
+      }
       setSongs(INITIAL_SONGS);
       setSetlists(INITIAL_SETLISTS);
       setGenreFolders(INITIAL_GENRE_FOLDERS);
@@ -107,7 +146,6 @@ const MainAppContent: React.FC = () => {
       return;
     }
 
-    const uid = userProfile.uid;
     const userSongsKey = `cifrae_songs_${uid}`;
     const userSetlistsKey = `cifrae_setlists_${uid}`;
     const userFoldersKey = `cifrae_folders_${uid}`;
@@ -676,8 +714,13 @@ const MainAppContent: React.FC = () => {
     );
   }
 
-  // 🔒 OPÇÃO B: Bloqueio Total Obrigatório para qualquer visitante deslogado que tenta acessar o app direto sem login
+  // 🔒 OPÇÃO B: Bloqueio Total Obrigatório para visitante online sem login
   if (!userProfile && !isLoading) {
+    if (!isNetworkOnline) {
+      // Offline no palco: nunca travar o músico com tela de login! Libera acesso direto às músicas salvas
+      loginAsOfflineGuest();
+      return null;
+    }
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
         <AuthModal

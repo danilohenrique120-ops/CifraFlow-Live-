@@ -25,7 +25,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandatory = false }) => {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, loginAsOfflineGuest } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -87,6 +87,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
     }
     if (msg.includes('auth/unauthorized-domain')) {
       return 'O domínio da Vercel precisa ser autorizado no Firebase Console. Entre digitando seu e-mail e senha!';
+    }
+    if (msg.includes('auth/network-request-failed') || msg.includes('sem conexão') || msg.includes('offline') || msg.includes('network')) {
+      return 'Você está sem conexão com a internet. Toque no botão "Modo Offline" abaixo para abrir e tocar com suas músicas salvas no aparelho.';
     }
     return msg;
   };
@@ -255,6 +258,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
             )}
           </button>
         </form>
+
+        {/* Acesso Offline no Palco */}
+        <div className="pt-2 border-t border-zinc-800">
+          <button
+            type="button"
+            onClick={() => {
+              loginAsOfflineGuest();
+              onClose();
+            }}
+            className="w-full py-2.5 px-4 rounded-2xl bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-bold transition flex items-center justify-center gap-2 border border-zinc-700 shadow-sm"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>Continuar no Modo Offline (Tocar no Palco)</span>
+          </button>
+        </div>
 
         {/* Toggle Login/SignUp */}
         <div className="pt-2 text-center text-xs text-zinc-400">

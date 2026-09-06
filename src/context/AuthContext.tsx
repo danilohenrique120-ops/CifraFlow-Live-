@@ -11,6 +11,7 @@ import {
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, googleProvider, db, isFirebaseConfigured } from '../firebase';
 import { UserProfile, UserSubscription } from '../types';
+import { networkStatus } from '../services/pwaService';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -21,6 +22,7 @@ interface AuthContextType {
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, name: string, instrument?: string) => Promise<void>;
   signOutUser: () => Promise<void>;
+  loginAsOfflineGuest: (name?: string, instrument?: string) => void;
   updateUserInstrument: (instrument: string) => Promise<void>;
   verifyStripeSubscription: (targetEmail?: string) => Promise<boolean>;
   isDemoMode: boolean;
@@ -58,12 +60,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isDemoMode, setIsDemoMode] = useState<boolean>(!isFirebaseConfigured);
 
-  // Sync profile with localStorage
+  // Sync profile with localStorage (apenas grava quando existe, nunca apaga passivamente ao recarregar offline)
   useEffect(() => {
     if (userProfile) {
       localStorage.setItem('cifraflow_user_profile', JSON.stringify(userProfile));
-    } else {
-      localStorage.removeItem('cifraflow_user_profile');
     }
   }, [userProfile]);
 
@@ -264,7 +264,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       } else {
         if (unsubscribeProfile) unsubscribeProfile();
-        setUserProfile(null);
+        // Se estiver sem conexão ou se já houver perfil salvo neste dispositivo,
+        // NÃO desloga o músico no palco! Mantém os dados locais ativos.
+        const saved = typeof window !== 'undefined' ? localStorage.getItem('cifraflow_user_profile') : null;
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setUserProfile(parsed);
+          } catch (e) {
+            setUserProfile(null);
+          }
+        } else {
+          setUserProfile(null);
+        }
         setIsLoading(false);
       }
     });
@@ -349,6 +361,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
       }
+
+      // Se estiver offline ou a requisição falhar por falta de rede:
+      if (!networkStatus.getStatus() || err.code === 'auth/network-request-failed' || err.message?.includes('network')) {
+        const saved = typeof window !== 'undefined' ? localStorage.getItem('cifraflow_user_profile') : null;
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed.email?.toLowerCase() === cleanEmail) {
+              setUserProfile(parsed);
+              return;
+            }
+          } catch (e) {}
+        }
+        if (special && pass === special.pass) {
+          const offlineAdmin: UserProfile = {
+            uid: 'admin_local_' + cleanEmail,
+            email: cleanEmail,
+            displayName: special.name,
+            photoURL: null,
+            role: 'pro',
+            instrument: 'Violão',
+            avatarColor: special.avatar,
+            subscription: DEFAULT_PRO_SUBSCRIPTION,
+            createdAt: Date.now(),
+            lastLoginAt: Date.now()
+          };
+          setUserProfile(offlineAdmin);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('cifraflow_user_profile', JSON.stringify(offlineAdmin));
+          }
+          return;
+        }
+        throw new Error('Você está sem conexão com a internet. Toque em "Continuar no Modo Offline" para acessar suas músicas no aparelho.');
+      }
       throw err;
     }
   };
@@ -400,6 +446,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserProfile(newProfile);
   };
 
+  const loginAsOfflineGuest = (name = 'Músico Convidado', instrument = 'Violão') => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('cifraflow_user_profile') : null;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setUserProfile(parsed);
+        setIsLoading(false);
+        return;
+      } catch (e) {}
+    }
+
+    const offlineProfile: UserProfile = {
+      uid: 'offline_guest_' + Date.now(),
+      email: 'offline@cifraflow.app',
+      displayName: name,
+      photoURL: null,
+      role: 'free',
+      instrument,
+      avatarColor: 'bg-emerald-500',
+      subscription: DEFAULT_FREE_SUBSCRIPTION,
+      createdAt: Date.now(),
+      lastLoginAt: Date.now()
+    };
+    setUserProfile(offlineProfile);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cifraflow_user_profile', JSON.stringify(offlineProfile));
+    }
+    setIsLoading(false);
+  };
+
   const signOutUser = async () => {
     if (isFirebaseConfigured) {
       await signOut(auth);
@@ -432,6 +508,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithEmail,
         signUpWithEmail,
         signOutUser,
+        loginAsOfflineGuest,
         updateUserInstrument,
         verifyStripeSubscription,
         isDemoMode
