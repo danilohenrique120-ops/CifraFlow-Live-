@@ -42,6 +42,12 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.hostId == request.auth.uid;
     }
 
+    // Regras para repertórios compartilhados (links públicos / códigos PIN)
+    match /shared_setlists/{shareCode} {
+      allow read: if true; // Qualquer pessoa com o link ou código pode ler e importar
+      allow write: if true; // Permite publicar repertórios para a banda
+    }
+
     // Catálogo público de músicas
     match /songs/{songId} {
       allow read: if true;

@@ -31,6 +31,21 @@ export function generateShareCode(prefix = 'REP'): string {
 }
 
 /**
+ * Normaliza qualquer código digitado pelo usuário (com ou sem espaços, maiúsculas ou só números)
+ * Ex: "REP - 348" -> "REP-348", "348" -> "REP-348", "rep348" -> "REP-348"
+ */
+export function normalizeShareCode(raw: string): string {
+  if (!raw) return '';
+  let clean = raw.trim().replace(/\s+/g, '').toUpperCase();
+  if (/^\d{3,4}$/.test(clean)) {
+    clean = `REP-${clean}`;
+  } else if (/^REP\d{3,4}$/.test(clean)) {
+    clean = `REP-${clean.slice(3)}`;
+  }
+  return clean;
+}
+
+/**
  * Publica um repertório para compartilhamento na nuvem e no cache local
  */
 export async function publishSharedSetlist(
@@ -44,7 +59,7 @@ export async function publishSharedSetlist(
   const songIdsInSetlist = new Set(setlist.items.map((it) => it.songId));
   const relevantSongs = allSongs.filter((s) => songIdsInSetlist.has(s.id));
 
-  const payload: SharedSetlistPayload = {
+  const rawPayload: SharedSetlistPayload = {
     shareCode,
     setlist: {
       ...setlist,
@@ -52,16 +67,19 @@ export async function publishSharedSetlist(
     },
     songs: relevantSongs,
     authorName: author?.displayName || 'Líder da Banda',
-    authorEmail: author?.email || undefined,
+    authorEmail: author?.email || '',
     authorUid: author?.uid || 'anonymous_pro',
     createdAt: Date.now(),
     totalSongs: setlist.items.length
   };
 
-  // 1. Salvar no localStorage e IndexedDB local para contingência instantânea
+  // Limpeza de segurança para eliminar qualquer campo undefined que o Firestore rejeite
+  const cleanPayload: SharedSetlistPayload = JSON.parse(JSON.stringify(rawPayload));
+
+  // 1. Salvar no localStorage local para contingência instantânea
   if (typeof window !== 'undefined') {
     try {
-      localStorage.setItem(`${SHARED_STORAGE_PREFIX}${shareCode}`, JSON.stringify(payload));
+      localStorage.setItem(`${SHARED_STORAGE_PREFIX}${shareCode}`, JSON.stringify(cleanPayload));
     } catch (e) {}
   }
 
@@ -69,20 +87,23 @@ export async function publishSharedSetlist(
   if (isFirebaseConfigured) {
     try {
       const docRef = doc(db, 'shared_setlists', shareCode);
-      await setDoc(docRef, payload);
+      await setDoc(docRef, cleanPayload);
+      console.log('✅ Repertório publicado no Firestore com código:', shareCode);
     } catch (err) {
-      console.warn('Falha ao sincronizar repertório compartilhado no Firestore:', err);
+      console.error('❌ Falha ao salvar repertório compartilhado no Firestore:', err);
+      throw err;
     }
   }
 
-  return payload;
+  return cleanPayload;
 }
 
 /**
- * Busca um repertório compartilhado a partir do código PIN (ex: REP-742)
+ * Busca um repertório compartilhado a partir do código PIN (ex: REP-742, 742, rep-742)
  */
 export async function fetchSharedSetlist(shareCode: string): Promise<SharedSetlistPayload | null> {
-  const cleanCode = shareCode.trim().toUpperCase();
+  const cleanCode = normalizeShareCode(shareCode);
+  if (!cleanCode) return null;
 
   // 1. Tentar buscar no Cloud Firestore primeiro
   if (isFirebaseConfigured) {

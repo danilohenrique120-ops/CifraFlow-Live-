@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Setlist, Song } from '../types';
-import { fetchSharedSetlist, prepareImportedSetlist, SharedSetlistPayload } from '../services/shareSetlistService';
+import { fetchSharedSetlist, prepareImportedSetlist, SharedSetlistPayload, normalizeShareCode } from '../services/shareSetlistService';
 import { AppLogo } from './AppLogo';
 import confetti from 'canvas-confetti';
 import {
@@ -54,7 +54,7 @@ export const ImportSetlistModal: React.FC<ImportSetlistModalProps> = ({
   if (!isOpen) return null;
 
   const handleFetch = async (codeToFetch: string) => {
-    const cleanCode = codeToFetch.trim().toUpperCase();
+    const cleanCode = normalizeShareCode(codeToFetch);
     if (!cleanCode) return;
 
     setIsLoading(true);

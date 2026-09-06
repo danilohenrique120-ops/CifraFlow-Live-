@@ -34,24 +34,33 @@ export const ShareSetlistModal: React.FC<ShareSetlistModalProps> = ({
   const { userProfile } = useAuth();
   const [sharedPayload, setSharedPayload] = useState<SharedSetlistPayload | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const handlePublish = () => {
+    if (!setlist) return;
+    setIsPublishing(true);
+    setPublishError(null);
+    publishSharedSetlist(setlist, songs, userProfile)
+      .then((payload) => {
+        setSharedPayload(payload);
+        setIsPublishing(false);
+      })
+      .catch((err) => {
+        console.error('Erro ao publicar repertório:', err);
+        setPublishError('Não foi possível sincronizar o repertório na nuvem. Verifique sua conexão e tente novamente.');
+        setIsPublishing(false);
+      });
+  };
 
   useEffect(() => {
     if (isOpen && setlist) {
-      setIsPublishing(true);
-      publishSharedSetlist(setlist, songs, userProfile)
-        .then((payload) => {
-          setSharedPayload(payload);
-          setIsPublishing(false);
-        })
-        .catch((err) => {
-          console.error('Erro ao publicar repertório:', err);
-          setIsPublishing(false);
-        });
+      handlePublish();
     } else {
       setSharedPayload(null);
+      setPublishError(null);
     }
-  }, [isOpen, setlist, songs, userProfile]);
+  }, [isOpen, setlist?.id]);
 
   if (!isOpen || !setlist) return null;
 
@@ -137,6 +146,16 @@ export const ShareSetlistModal: React.FC<ShareSetlistModalProps> = ({
             <div className="p-8 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col items-center justify-center space-y-3">
               <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
               <p className="text-xs text-zinc-400 font-medium">Empacotando cifras e gerando código seguro...</p>
+            </div>
+          ) : publishError ? (
+            <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center space-y-3">
+              <p className="text-xs text-rose-300 font-medium">{publishError}</p>
+              <button
+                onClick={handlePublish}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-md"
+              >
+                Tentar Novamente
+              </button>
             </div>
           ) : sharedPayload ? (
             <div className="space-y-5">
