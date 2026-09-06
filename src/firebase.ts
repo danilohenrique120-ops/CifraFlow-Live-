@@ -18,9 +18,13 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
 // Initialize Firestore with ignoreUndefinedProperties to prevent setDoc crashes
-export const db = initializeFirestore(app, {
-  ignoreUndefinedProperties: true
-});
+export const db = (() => {
+  try {
+    return initializeFirestore(app, { ignoreUndefinedProperties: true });
+  } catch (e) {
+    return getFirestore(app);
+  }
+})();
 
 // Check if running with real Firebase credentials
 export const isFirebaseConfigured = Boolean(
