@@ -340,6 +340,11 @@ const MainAppContent: React.FC = () => {
   }, []);
 
   const handleImportSetlistSuccess = (importedSetlist: Setlist, newSongs: Song[]) => {
+    if (!isPro && setlists.length >= 3) {
+      handleOpenPricingWithReason('Você atingiu o limite de 3 repertórios do Plano Gratuito. Assine o Plano Pro para importar e gerenciar repertórios ilimitados na nuvem!');
+      return;
+    }
+
     if (newSongs.length > 0) {
       setSongs(prev => {
         const map = new Map<string, Song>();
@@ -979,6 +984,9 @@ const MainAppContent: React.FC = () => {
         initialCode={importSetlistCode}
         existingSongs={songs}
         onImportComplete={handleImportSetlistSuccess}
+        isPro={isPro}
+        currentSetlistsCount={setlists.length}
+        onOpenPricing={(reason) => handleOpenPricingWithReason(reason)}
       />
     </div>
   );

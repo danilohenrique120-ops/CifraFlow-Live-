@@ -14,7 +14,8 @@ import {
   Sparkles,
   Calendar,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Crown
 } from 'lucide-react';
 
 interface ImportSetlistModalProps {
@@ -23,6 +24,9 @@ interface ImportSetlistModalProps {
   initialCode?: string;
   existingSongs: Song[];
   onImportComplete: (importedSetlist: Setlist, newSongs: Song[]) => void;
+  isPro?: boolean;
+  currentSetlistsCount?: number;
+  onOpenPricing?: (reason?: string) => void;
 }
 
 export const ImportSetlistModal: React.FC<ImportSetlistModalProps> = ({
@@ -30,8 +34,12 @@ export const ImportSetlistModal: React.FC<ImportSetlistModalProps> = ({
   onClose,
   initialCode = '',
   existingSongs,
-  onImportComplete
+  onImportComplete,
+  isPro = false,
+  currentSetlistsCount = 0,
+  onOpenPricing
 }) => {
+  const isLimitReached = !isPro && currentSetlistsCount >= 3;
   const [codeInput, setCodeInput] = useState(initialCode);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -77,6 +85,12 @@ export const ImportSetlistModal: React.FC<ImportSetlistModalProps> = ({
 
   const handleImport = () => {
     if (!previewPayload) return;
+
+    if (isLimitReached) {
+      onClose();
+      onOpenPricing?.('Você atingiu o limite de 3 repertórios do Plano Gratuito. Assine o Plano Pro para ter repertórios ilimitados!');
+      return;
+    }
 
     const { importedSetlist, songsToAdd } = prepareImportedSetlist(previewPayload, existingSongs);
 
@@ -220,24 +234,52 @@ export const ImportSetlistModal: React.FC<ImportSetlistModalProps> = ({
               </div>
 
               {/* Action to Import */}
-              <button
-                type="button"
-                onClick={handleImport}
-                disabled={isSuccess}
-                className="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm shadow-xl shadow-emerald-950/50 transition flex items-center justify-center gap-2"
-              >
-                {isSuccess ? (
-                  <>
-                    <Check className="w-4 h-4 text-zinc-950" />
-                    <span>Repertório Importado com Sucesso!</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    <span>Importar para Meus Repertórios</span>
-                  </>
-                )}
-              </button>
+              {isLimitReached ? (
+                <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <Crown className="w-5 h-5 text-amber-400 flex-none mt-0.5" />
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-black text-amber-200 uppercase tracking-wider">
+                        Limite de 3 Repertórios Atingido ({currentSetlistsCount}/3)
+                      </h4>
+                      <p className="text-xs text-zinc-300 leading-relaxed">
+                        No Plano Gratuito você pode ter até <strong>3 repertórios</strong> simultâneos. Para importar este novo repertório, faça o upgrade para o <strong>Plano Pro (Ilimitado)</strong> ou exclua um repertório antigo para liberar espaço.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenPricing?.('Você atingiu o limite de 3 repertórios do Plano Gratuito. Assine o Plano Pro para importar e criar repertórios ilimitados na nuvem!');
+                    }}
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black text-sm shadow-xl shadow-amber-950/50 transition flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <Crown className="w-4 h-4 fill-current text-zinc-950" />
+                    <span>Fazer Upgrade para o Pro e Importar</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleImport}
+                  disabled={isSuccess}
+                  className="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm shadow-xl shadow-emerald-950/50 transition flex items-center justify-center gap-2"
+                >
+                  {isSuccess ? (
+                    <>
+                      <Check className="w-4 h-4 text-zinc-950" />
+                      <span>Repertório Importado com Sucesso!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>Importar para Meus Repertórios</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>
