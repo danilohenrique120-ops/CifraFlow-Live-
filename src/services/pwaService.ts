@@ -4,13 +4,15 @@
 
 export function registerServiceWorker() {
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
+    const register = () => {
       navigator.serviceWorker
         .register('/sw.js')
         .then((reg) => {
           console.log('[PWA] Service Worker registrado com sucesso:', reg.scope);
 
-          // Verificar atualizações
+          // Forçar atualização do SW se houver nova versão
+          reg.update().catch(() => {});
+
           reg.onupdatefound = () => {
             const installingWorker = reg.installing;
             if (installingWorker) {
@@ -29,7 +31,13 @@ export function registerServiceWorker() {
         .catch((err) => {
           console.warn('[PWA] Falha ao registrar Service Worker:', err);
         });
-    });
+    };
+
+    if (document.readyState === 'complete') {
+      register();
+    } else {
+      window.addEventListener('load', register);
+    }
   }
 }
 
