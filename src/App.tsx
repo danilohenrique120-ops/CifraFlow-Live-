@@ -290,6 +290,10 @@ const MainAppContent: React.FC = () => {
     if (typeof window === 'undefined') return false;
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('landing') === 'true') return true;
+    // Se o visitante acessou via link de compartilhamento de repertório ou sala ao vivo, entra direto sem bloquear na landing
+    if (urlParams.get('repertorio') || urlParams.get('setlist') || urlParams.get('sala') || urlParams.get('room')) {
+      return false;
+    }
     // Se já está logado, nunca força landing page
     const savedProfile = localStorage.getItem('cifraflow_user_profile');
     if (savedProfile) return false;
