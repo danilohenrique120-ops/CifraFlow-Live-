@@ -16,6 +16,8 @@ import { PricingModal } from './components/PricingModal';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { UploadSongModal } from './components/UploadSongModal';
+import { ShareSetlistModal } from './components/ShareSetlistModal';
+import { ImportSetlistModal } from './components/ImportSetlistModal';
 import {
   saveWorkspaceToCloudDebounced,
   loadAndMergeCloudWorkspace,
@@ -311,6 +313,48 @@ const MainAppContent: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [pricingReason, setPricingReason] = useState<string | undefined>(undefined);
   const [uploadPresetMoment, setUploadPresetMoment] = useState<LiturgicalMoment | undefined>(undefined);
+  const [isShareSetlistModalOpen, setIsShareSetlistModalOpen] = useState<boolean>(false);
+  const [sharingSetlist, setSharingSetlist] = useState<Setlist | null>(null);
+  const [isImportSetlistModalOpen, setIsImportSetlistModalOpen] = useState<boolean>(false);
+  const [importSetlistCode, setImportSetlistCode] = useState<string>('');
+
+  // Check for shared setlist URL parameter (e.g. ?repertorio=REP-842 ou ?setlist=REP-842)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const repCode = params.get('repertorio') || params.get('setlist');
+      if (repCode) {
+        setImportSetlistCode(repCode);
+        setIsImportSetlistModalOpen(true);
+        // Clean URL parameter without reload
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('repertorio');
+        newUrl.searchParams.delete('setlist');
+        window.history.replaceState({}, document.title, newUrl.toString());
+      }
+    }
+  }, []);
+
+  const handleImportSetlistSuccess = (importedSetlist: Setlist, newSongs: Song[]) => {
+    if (newSongs.length > 0) {
+      setSongs(prev => {
+        const map = new Map<string, Song>();
+        prev.forEach(s => map.set(s.id, s));
+        newSongs.forEach(s => map.set(s.id, s));
+        return Array.from(map.values());
+      });
+      localDB.saveSongs(newSongs);
+    }
+
+    setSetlists(prev => {
+      const updated = [importedSetlist, ...prev.filter(s => s.id !== importedSetlist.id)];
+      localDB.saveSetlists(updated);
+      return updated;
+    });
+
+    setActiveSetlist(importedSetlist);
+    setCurrentView('setlists');
+  };
 
   // Save changes isolated per user to IndexedDB Local-First, local storage and Cloud Firestore
   useEffect(() => {
@@ -807,6 +851,14 @@ const MainAppContent: React.FC = () => {
                   if (sl) setActiveSetlist(sl);
                 }}
                 onOpenPricing={handleOpenPricingWithReason}
+                onOpenShareModal={(s) => {
+                  setSharingSetlist(s);
+                  setIsShareSetlistModalOpen(true);
+                }}
+                onOpenImportModal={() => {
+                  setImportSetlistCode('');
+                  setIsImportSetlistModalOpen(true);
+                }}
               />
             )}
           </ErrorBoundary>
@@ -900,6 +952,29 @@ const MainAppContent: React.FC = () => {
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         onOpenPricing={() => handleOpenPricingWithReason()}
+      />
+
+      {/* Share Setlist Modal (Exclusivo Pro) */}
+      <ShareSetlistModal
+        isOpen={isShareSetlistModalOpen}
+        onClose={() => {
+          setIsShareSetlistModalOpen(false);
+          setSharingSetlist(null);
+        }}
+        setlist={sharingSetlist}
+        songs={songs}
+      />
+
+      {/* Import Setlist Modal */}
+      <ImportSetlistModal
+        isOpen={isImportSetlistModalOpen}
+        onClose={() => {
+          setIsImportSetlistModalOpen(false);
+          setImportSetlistCode('');
+        }}
+        initialCode={importSetlistCode}
+        existingSongs={songs}
+        onImportComplete={handleImportSetlistSuccess}
       />
     </div>
   );

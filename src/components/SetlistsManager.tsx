@@ -23,7 +23,8 @@ import {
   Radio,
   Clock,
   Search,
-  Lock
+  Lock,
+  Download
 } from 'lucide-react';
 
 interface SetlistsManagerProps {
@@ -37,6 +38,8 @@ interface SetlistsManagerProps {
   activeSetlistId?: string | null;
   onSelectSetlistId?: (id: string) => void;
   onOpenPricing?: (reason?: string) => void;
+  onOpenShareModal?: (setlist: Setlist) => void;
+  onOpenImportModal?: () => void;
 }
 
 const SETLIST_THEMES: Record<string, { gradient: string; iconColor: string; badge: string }> = {
@@ -67,7 +70,9 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
   onOpenLiveRoomModal,
   activeSetlistId,
   onSelectSetlistId,
-  onOpenPricing
+  onOpenPricing,
+  onOpenShareModal,
+  onOpenImportModal
 }) => {
   const { isInRoom, isHost, selectSong, setActiveSetlist } = useLiveRoom();
   const { isPro } = useAuth();
@@ -237,13 +242,24 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => setIsCreating(true)}
-          className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs sm:text-sm shadow-xl shadow-emerald-900/40 transition flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Repertório
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={onOpenImportModal}
+            className="px-4 py-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 font-bold text-xs sm:text-sm shadow-md transition flex items-center gap-2"
+            title="Importar repertório compartilhado com código PIN ou link"
+          >
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>Importar por Código</span>
+          </button>
+
+          <button
+            onClick={() => setIsCreating(true)}
+            className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs sm:text-sm shadow-xl shadow-emerald-900/40 transition flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Repertório
+          </button>
+        </div>
       </div>
 
       {/* 🎴 Horizontal Attractive Carousel of Setlists */}
@@ -382,6 +398,31 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                 >
                   <FileText className="w-4 h-4" />
                   <span>Exportar PDF</span>
+                  {!isPro && <Lock className="w-3.5 h-3.5 text-amber-400 ml-0.5" />}
+                </button>
+
+                {/* 🔗 Compartilhar Repertório (Plano Pro) */}
+                <button
+                  onClick={() => {
+                    if (!isPro) {
+                      if (onOpenPricing) {
+                        onOpenPricing('O compartilhamento de repertórios com outros músicos e equipes é exclusivo do Plano Pro.');
+                      }
+                      return;
+                    }
+                    if (onOpenShareModal) {
+                      onOpenShareModal(currentSetlist);
+                    }
+                  }}
+                  className={`px-4 py-3 rounded-2xl font-black text-xs sm:text-sm shadow-xl transition flex items-center gap-2 border ${
+                    isPro
+                      ? 'bg-white hover:bg-zinc-100 text-zinc-950 border-white'
+                      : 'bg-black/40 hover:bg-black/60 text-white border-white/20'
+                  }`}
+                  title={isPro ? "Compartilhar Repertório com Músicos da Banda" : "Compartilhar Repertório (Exclusivo Pro)"}
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>Compartilhar</span>
                   {!isPro && <Lock className="w-3.5 h-3.5 text-amber-400 ml-0.5" />}
                 </button>
 
