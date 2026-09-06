@@ -107,10 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="space-y-5 overflow-y-auto pr-1 scrollbar-none">
           <div className="flex items-center justify-between pb-2 border-b border-zinc-850">
             <div className="flex items-center gap-2.5">
-              <AppLogo size={32} variant="circle" />
-              <span className="text-base font-black text-white flex items-center">
-                Cifra<span className="text-emerald-400">ê</span>
-              </span>
+              <AppLogo size={30} variant="squircle" showText={true} />
             </div>
             <button
               onClick={onCloseMobile}

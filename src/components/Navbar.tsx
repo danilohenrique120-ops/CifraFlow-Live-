@@ -58,12 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         <div className="flex items-center gap-2.5">
-          <AppLogo size={36} variant="circle" />
-          <div>
-            <span className="text-base sm:text-lg font-black tracking-tight text-white flex items-center">
-              Cifra<span className="text-emerald-400">ê</span>
-            </span>
-          </div>
+          <AppLogo size={34} variant="squircle" showText={true} />
         </div>
       </div>
 

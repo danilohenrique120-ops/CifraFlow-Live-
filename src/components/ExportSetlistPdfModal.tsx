@@ -104,7 +104,7 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
       text += `\n`;
     });
 
-    text += `\n✨ _Gerado via Cifraê Pro_`;
+    text += `\n✨ _Gerado via Cadencē Pro_`;
 
     navigator.clipboard.writeText(text);
     setCopiedWhatsapp(true);

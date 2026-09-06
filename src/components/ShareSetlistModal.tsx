@@ -78,7 +78,7 @@ export const ShareSetlistModal: React.FC<ShareSetlistModalProps> = ({
   const handleShareWhatsapp = () => {
     if (!sharedPayload || !shareableUrl) return;
     const text = `🎸 *${setlist.title}* (${setlist.targetEvent})\n` +
-      `Fala galera da banda! Preparei o repertório com ${setlist.items.length} músicas, tons e cifras completas no CifraFlow.\n\n` +
+      `Fala galera da banda! Preparei o repertório com ${setlist.items.length} músicas, tons e cifras completas no Cadencē.\n\n` +
       `👉 Acesse e importe para seu app aqui:\n${shareableUrl}`;
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');

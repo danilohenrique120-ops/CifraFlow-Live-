@@ -1,11 +1,11 @@
 {
-  "name": "Cifraê",
-  "short_name": "Cifraê",
-  "description": "Cifras, Descoberta Litúrgica e Sincronização em Tempo Real para Ensaios e Palco Conectado",
+  "name": "Cadencē",
+  "short_name": "Cadencē",
+  "description": "O palco é seu. O fluxo também. Cifras sincronizadas em tempo real e rolagem inteligente para músicos ao vivo.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#10b981",
+  "background_color": "#050505",
+  "theme_color": "#F59E0B",
   "icons": [
     {
       "src": "/favicon.svg",

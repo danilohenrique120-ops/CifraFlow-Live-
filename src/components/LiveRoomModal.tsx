@@ -298,7 +298,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                     <ol className="list-decimal list-inside space-y-1 text-[11px] text-zinc-400">
                       <li>O líder ativa o <strong>Roteador Wi-Fi (Hotspot)</strong> do celular (não precisa de dados 4G/5G).</li>
                       <li>Os músicos conectam seus celulares/tablets no Wi-Fi gerado pelo líder.</li>
-                      <li>O CifraFlow sincroniza troca de tom, músicas e rolagem com latência menor que 5ms!</li>
+                      <li>O Cadencē sincroniza troca de tom, músicas e rolagem com latência menor que 5ms!</li>
                     </ol>
                   </div>
                 )}
