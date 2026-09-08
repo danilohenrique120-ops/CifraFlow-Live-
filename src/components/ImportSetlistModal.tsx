@@ -155,13 +155,13 @@ export const ImportSetlistModal: React.FC<ImportSetlistModalProps> = ({
                 value={codeInput}
                 onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
                 placeholder="Ex: REP-742"
-                className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm font-mono tracking-wider text-emerald-400 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 uppercase"
+                className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm font-mono tracking-wider text-amber-400 placeholder-zinc-500 focus:outline-none focus:border-amber-500 uppercase"
               />
               <button
                 type="button"
                 onClick={() => handleFetch(codeInput)}
                 disabled={isLoading || !codeInput.trim()}
-                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs transition flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-500 disabled:opacity-50 text-white font-bold text-xs transition flex items-center gap-1.5"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Buscar'}
               </button>
@@ -184,7 +184,7 @@ export const ImportSetlistModal: React.FC<ImportSetlistModalProps> = ({
                   <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">
                     {previewPayload.setlist.targetEvent}
                   </span>
-                  <span className="text-[11px] font-medium text-emerald-400">
+                  <span className="text-[11px] font-medium text-amber-400">
                     Por: {previewPayload.authorName}
                   </span>
                 </div>
@@ -193,7 +193,7 @@ export const ImportSetlistModal: React.FC<ImportSetlistModalProps> = ({
                   <p className="text-xs text-zinc-400">{previewPayload.setlist.description}</p>
                 )}
                 <div className="pt-2 flex items-center gap-2 text-xs text-zinc-400 font-mono">
-                  <Music className="w-3.5 h-3.5 text-emerald-400" />
+                  <Music className="w-3.5 h-3.5 text-amber-400" />
                   <span>{previewPayload.songs.length} músicas incluídas com tons definidos</span>
                 </div>
               </div>
@@ -224,7 +224,7 @@ export const ImportSetlistModal: React.FC<ImportSetlistModalProps> = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-none">
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-bold text-[11px]">
+                        <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono font-bold text-[11px]">
                           Tom: {item.customKey || s?.originalKey || 'C'}
                         </span>
                       </div>
@@ -265,7 +265,7 @@ export const ImportSetlistModal: React.FC<ImportSetlistModalProps> = ({
                   type="button"
                   onClick={handleImport}
                   disabled={isSuccess}
-                  className="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm shadow-xl shadow-emerald-950/50 transition flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-black text-sm shadow-xl shadow-amber-950/40 transition flex items-center justify-center gap-2"
                 >
                   {isSuccess ? (
                     <>

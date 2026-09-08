@@ -107,12 +107,12 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
         {/* Header */}
         <div className="flex-none p-6 pb-4 border-b border-zinc-800 bg-zinc-950/60 flex items-center justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black uppercase tracking-wider mb-1">
-              <Layers className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black uppercase tracking-wider mb-1">
+              <Layers className="w-3.5 h-3.5 text-amber-400" />
               Gerenciador de Estilos & Blocos
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white">
-              Estilo / Bloco: <span className="text-emerald-400">{moment}</span>
+              Estilo / Bloco: <span className="text-amber-400">{moment}</span>
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
               Adicione, remova ou organize as músicas que compõem este gênero musical ou bloco do seu show.
@@ -133,7 +133,7 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
             onClick={() => setActiveTab('current')}
             className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
               activeTab === 'current'
-                ? 'bg-emerald-600 text-white shadow-md'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-zinc-950 font-black shadow-md'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             }`}
           >
@@ -145,7 +145,7 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
             onClick={() => setActiveTab('add')}
             className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
               activeTab === 'add'
-                ? 'bg-emerald-600 text-white shadow-md'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-zinc-950 font-black shadow-md'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             }`}
           >
@@ -174,7 +174,7 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
                     onClose();
                     onOpenUploadModal(moment);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-emerald-400 text-xs font-bold transition border border-zinc-700"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-400 text-xs font-bold transition border border-zinc-700"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   <span>Subir Nova Cifra</span>
@@ -205,7 +205,7 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
                           <div className="flex items-center gap-2 text-xs text-zinc-400">
                             <span>{song.artist}</span>
                             <span>•</span>
-                            <span className="font-mono text-emerald-400 font-semibold">Tom {song.originalKey}</span>
+                            <span className="font-mono text-amber-400 font-semibold">Tom {song.originalKey}</span>
                           </div>
                         </div>
                       </div>
@@ -215,7 +215,7 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
                         <select
                           value={song.liturgicalMoment}
                           onChange={(e) => handleQuickMove(song.id, e.target.value as MusicGenre)}
-                          className="bg-zinc-900 border border-zinc-700 text-xs font-semibold rounded-xl px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-emerald-500"
+                          className="bg-zinc-900 border border-zinc-700 text-xs font-semibold rounded-xl px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-amber-500"
                           title="Mover para outro estilo"
                         >
                           {ALL_GENRES.map((m) => (
@@ -247,7 +247,7 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar no catálogo por título ou artista..."
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
                 />
               </div>
 
@@ -261,14 +261,14 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
                       onClick={() => handleToggleAdd(song.id)}
                       className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between gap-3 ${
                         isChecked
-                          ? 'bg-emerald-500/10 border-emerald-500/60 shadow-md'
+                          ? 'bg-amber-500/10 border-amber-500/60 shadow-md'
                           : 'bg-zinc-950/60 border-zinc-800/80 hover:border-zinc-700'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition ${
                           isChecked
-                            ? 'bg-emerald-500 border-emerald-400 text-zinc-950 font-black'
+                            ? 'bg-amber-500 border-amber-400 text-zinc-950 font-black'
                             : 'border-zinc-600 bg-zinc-900'
                         }`}>
                           {isChecked && <Check className="w-3.5 h-3.5" />}
@@ -284,7 +284,7 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
                         </div>
                       </div>
 
-                      <span className="text-xs font-mono font-bold text-emerald-400 px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">
+                      <span className="text-xs font-mono font-bold text-amber-400 px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">
                         {song.originalKey}
                       </span>
                     </div>
@@ -308,7 +308,7 @@ export const MomentManagerModal: React.FC<MomentManagerModalProps> = ({
             <button
               onClick={handleApplyChanges}
               disabled={selectedToAdd.length === 0}
-              className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 transition flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-950/40 transition flex items-center gap-2"
             >
               <Check className="w-4 h-4" />
               <span>Adicionar ({selectedToAdd.length}) ao estilo {moment}</span>

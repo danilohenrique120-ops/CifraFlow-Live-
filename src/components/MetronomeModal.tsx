@@ -146,7 +146,7 @@ export const MetronomeModal: React.FC<MetronomeModalProps> = ({
       >
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Ferramenta de Palco</span>
+            <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider">Ferramenta de Palco</span>
             <h3 className="text-xl font-black">Metrônomo Digital</h3>
           </div>
           <button
@@ -162,7 +162,7 @@ export const MetronomeModal: React.FC<MetronomeModalProps> = ({
 
         {/* BPM Display & Flashers */}
         <div className="text-center space-y-4">
-          <div className="text-6xl font-black font-mono text-emerald-400 tracking-tight">
+          <div className="text-6xl font-black font-mono text-amber-400 tracking-tight">
             {bpm}
             <span className="text-xs text-zinc-400 font-sans ml-2">BPM</span>
           </div>
@@ -176,7 +176,7 @@ export const MetronomeModal: React.FC<MetronomeModalProps> = ({
                   isPlaying && currentBeat === idx
                     ? idx === 0
                       ? 'bg-amber-400 border-amber-300 scale-125 shadow-lg shadow-amber-500/50'
-                      : 'bg-emerald-400 border-emerald-300 scale-125 shadow-lg shadow-emerald-500/50'
+                      : 'bg-amber-400 border-amber-300 scale-125 shadow-lg shadow-amber-500/40'
                     : 'bg-zinc-800 border-zinc-700'
                 }`}
               />
@@ -199,7 +199,7 @@ export const MetronomeModal: React.FC<MetronomeModalProps> = ({
               max="240"
               value={bpm}
               onChange={(e) => setBpm(Number(e.target.value))}
-              className="flex-1 accent-emerald-500 h-2 bg-zinc-800 rounded-lg cursor-pointer"
+              className="flex-1 accent-amber-500 h-2 bg-zinc-800 rounded-lg cursor-pointer"
             />
             <button
               onClick={() => setBpm(prev => Math.min(240, prev + 1))}
@@ -217,7 +217,7 @@ export const MetronomeModal: React.FC<MetronomeModalProps> = ({
                 onClick={() => setBeatsPerBar(num)}
                 className={`px-3 py-1 rounded-xl text-xs font-bold font-mono transition ${
                   beatsPerBar === num
-                    ? 'bg-emerald-500 text-zinc-950 shadow-md'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md'
                     : 'bg-zinc-800 text-zinc-400 hover:text-white'
                 }`}
               >
@@ -241,7 +241,7 @@ export const MetronomeModal: React.FC<MetronomeModalProps> = ({
             className={`py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-xl ${
               isPlaying
                 ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
+                : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black shadow-lg shadow-amber-950/40 shadow-amber-950/30'
             }`}
           >
             {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}

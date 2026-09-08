@@ -115,7 +115,7 @@ export const ChordModal: React.FC<ChordModalProps> = ({
         {/* Header with Title & Audio button */}
         <div className="flex items-center justify-between pr-8">
           <div>
-            <span className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-400 block">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-amber-400 block">
               Dicionário de Acordes Adaptativo
             </span>
             <h3 className="text-3xl font-black text-white tracking-tight">{chord}</h3>
@@ -123,7 +123,7 @@ export const ChordModal: React.FC<ChordModalProps> = ({
           <button
             onClick={playChordAudio}
             title="Ouvir som do Acorde"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition text-xs font-bold"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition text-xs font-bold"
           >
             <Volume2 className="w-4 h-4" />
             Ouvir Som
@@ -148,7 +148,7 @@ export const ChordModal: React.FC<ChordModalProps> = ({
                 onClick={() => handleTabClick(item.id as InstrumentDiagramTab)}
                 className={`flex-1 min-w-[72px] py-1.5 px-2 rounded-xl font-bold transition flex items-center justify-center gap-1 text-[11px] whitespace-nowrap ${
                   isTabActive
-                    ? 'bg-emerald-500 text-zinc-950 font-black shadow-md'
+                    ? 'bg-amber-500 text-zinc-950 font-black shadow-md'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                 }`}
               >
@@ -188,7 +188,7 @@ export const ChordModal: React.FC<ChordModalProps> = ({
                     <span
                       key={sIdx}
                       className={`w-3 text-center ${
-                        fret === 'x' ? 'text-rose-400' : fret === '0' ? 'text-emerald-400' : 'text-zinc-400'
+                        fret === 'x' ? 'text-rose-400' : fret === '0' ? 'text-amber-400' : 'text-zinc-400'
                       }`}
                     >
                       {fret}
@@ -207,7 +207,7 @@ export const ChordModal: React.FC<ChordModalProps> = ({
                     <div
                       key={sIdx}
                       style={{ left: `calc(${leftPercent}% - 7px)`, top: `${topPx - 7}px` }}
-                      className="absolute w-3.5 h-3.5 rounded-full bg-emerald-400 shadow-md shadow-emerald-500/50 border border-zinc-950 flex items-center justify-center text-[8px] font-black text-zinc-950 z-10"
+                      className="absolute w-3.5 h-3.5 rounded-full bg-amber-400 shadow-md shadow-amber-500/40 border border-zinc-950 flex items-center justify-center text-[8px] font-black text-zinc-950 z-10"
                     >
                       ●
                     </div>
@@ -231,7 +231,7 @@ export const ChordModal: React.FC<ChordModalProps> = ({
             <div className="flex flex-col items-center w-full">
               <span className="text-xs font-bold text-zinc-400 mb-3 flex items-center gap-1.5">
                 Teclas do Piano / Teclado: 
-                <strong className="text-emerald-400">{keyboardNotesClean.join(' - ')}</strong>
+                <strong className="text-amber-400">{keyboardNotesClean.join(' - ')}</strong>
               </span>
 
               {/* Interactive Mini Piano Keyboard */}
@@ -244,7 +244,7 @@ export const ChordModal: React.FC<ChordModalProps> = ({
                       key={idx}
                       className={`relative w-8 sm:w-9 h-32 rounded-b-lg border border-zinc-400 transition flex flex-col justify-end items-center pb-2 ${
                         isHighlighted
-                          ? 'bg-emerald-400 text-zinc-950 font-black shadow-lg shadow-emerald-500/40'
+                          ? 'bg-amber-400 text-zinc-950 font-black shadow-lg shadow-amber-500/50'
                           : 'bg-zinc-100 text-zinc-600 font-bold'
                       }`}
                     >
@@ -301,7 +301,7 @@ export const ChordModal: React.FC<ChordModalProps> = ({
                     <span
                       key={sIdx}
                       className={`w-3 text-center ${
-                        fret === 'x' ? 'text-rose-400' : fret === '0' ? 'text-emerald-400' : 'text-zinc-400'
+                        fret === 'x' ? 'text-rose-400' : fret === '0' ? 'text-amber-400' : 'text-zinc-400'
                       }`}
                     >
                       {fret}
@@ -320,7 +320,7 @@ export const ChordModal: React.FC<ChordModalProps> = ({
                     <div
                       key={sIdx}
                       style={{ left: `calc(${leftPercent}% - 7px)`, top: `${topPx - 7}px` }}
-                      className="absolute w-3.5 h-3.5 rounded-full bg-emerald-400 shadow-md shadow-emerald-500/50 border border-zinc-950 flex items-center justify-center text-[8px] font-black text-zinc-950 z-10"
+                      className="absolute w-3.5 h-3.5 rounded-full bg-amber-400 shadow-md shadow-amber-500/40 border border-zinc-950 flex items-center justify-center text-[8px] font-black text-zinc-950 z-10"
                     >
                       ●
                     </div>
@@ -363,7 +363,7 @@ export const ChordModal: React.FC<ChordModalProps> = ({
                     <span
                       key={sIdx}
                       className={`w-3 text-center ${
-                        fret === 'x' ? 'text-rose-400' : fret === '0' ? 'text-emerald-400' : 'text-zinc-400'
+                        fret === 'x' ? 'text-rose-400' : fret === '0' ? 'text-amber-400' : 'text-zinc-400'
                       }`}
                     >
                       {fret}
@@ -405,7 +405,7 @@ export const ChordModal: React.FC<ChordModalProps> = ({
               <span className="text-xs font-bold text-zinc-400">Guia da Tônica / Baixo:</span>
               <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-700 w-full">
                 <span className="text-xs text-zinc-400 block mb-1">Nota Fundamental do Contrabaixo:</span>
-                <span className="text-2xl font-black text-emerald-400 font-mono">
+                <span className="text-2xl font-black text-amber-400 font-mono">
                   {diagram?.bassNote || chord.split('/')[0]}
                 </span>
                 {chord.includes('/') && (
@@ -423,16 +423,16 @@ export const ChordModal: React.FC<ChordModalProps> = ({
         {!isPro && (
           <div
             onClick={() => onOpenPricing && onOpenPricing('Desbloqueie diagramas e transposições automáticas para Teclado, Ukulele, Cavaquinho e Sopros com o Plano Pro.')}
-            className="p-3 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-zinc-900 to-zinc-900 border border-emerald-500/40 flex items-center justify-between gap-3 cursor-pointer hover:border-emerald-500 transition"
+            className="p-3 rounded-2xl bg-gradient-to-r from-amber-950/70 via-zinc-900 to-zinc-900 border border-amber-500/40 flex items-center justify-between gap-3 cursor-pointer hover:border-amber-500 transition"
           >
             <div className="flex items-center gap-2.5">
-              <Sparkles className="w-4 h-4 text-emerald-400 flex-none" />
+              <Sparkles className="w-4 h-4 text-amber-400 flex-none" />
               <div>
                 <span className="text-xs font-extrabold text-white block">Adaptação Inteligente de Instrumentos</span>
                 <span className="text-[10px] text-zinc-400">Disponível no Plano Pro (Teclado, Ukulele, Cavaco e Sopros)</span>
               </div>
             </div>
-            <span className="px-2 py-1 rounded-lg bg-emerald-500 text-zinc-950 text-[10px] font-black uppercase">
+            <span className="px-2 py-1 rounded-lg bg-amber-500 text-zinc-950 text-[10px] font-black uppercase">
               Pro
             </span>
           </div>

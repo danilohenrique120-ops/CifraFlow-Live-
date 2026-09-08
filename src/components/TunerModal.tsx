@@ -58,7 +58,7 @@ export const TunerModal: React.FC<TunerModalProps> = ({ isOpen, onClose }) => {
       >
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Afinação & Referência</span>
+            <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider">Afinação & Referência</span>
             <h3 className="text-xl font-black">Tom de Referência Vocal</h3>
           </div>
           <button
@@ -80,11 +80,11 @@ export const TunerModal: React.FC<TunerModalProps> = ({ isOpen, onClose }) => {
               onClick={() => playPitch(item.note, item.freq)}
               className={`p-3 rounded-2xl border text-center transition flex flex-col items-center justify-center gap-1 ${
                 playingNote === item.note
-                  ? 'bg-emerald-500 text-zinc-950 border-emerald-400 scale-105 shadow-lg shadow-emerald-500/40 font-black'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black border-amber-400 scale-105 shadow-lg shadow-amber-500/40 font-black'
                   : 'bg-zinc-950/80 border-zinc-800 hover:border-zinc-700 text-zinc-200 hover:bg-zinc-800'
               }`}
             >
-              <Volume2 className="w-4 h-4 text-emerald-400" />
+              <Volume2 className="w-4 h-4 text-amber-400" />
               <span className="text-xl font-black font-mono">{item.note}</span>
               <span className="text-[10px] text-zinc-400 font-medium">{item.label}</span>
             </button>

@@ -52,7 +52,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (typeof window === 'undefined') return null;
     const saved = localStorage.getItem('cifraflow_user_profile');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.email === 'offline@cifraflow.app') {
+          parsed.email = 'offline@cadence.app';
+          localStorage.setItem('cifraflow_user_profile', JSON.stringify(parsed));
+        }
+        return parsed;
+      } catch (e) {}
     }
     return null;
   });
@@ -459,12 +466,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const offlineProfile: UserProfile = {
       uid: 'offline_guest_' + Date.now(),
-      email: 'offline@cifraflow.app',
+      email: 'offline@cadence.app',
       displayName: name,
       photoURL: null,
       role: 'free',
       instrument,
-      avatarColor: 'bg-emerald-500',
+      avatarColor: 'bg-amber-500',
       subscription: DEFAULT_FREE_SUBSCRIPTION,
       createdAt: Date.now(),
       lastLoginAt: Date.now()

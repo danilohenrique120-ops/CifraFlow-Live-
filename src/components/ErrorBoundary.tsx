@@ -57,7 +57,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           <div className="flex items-center gap-2">
             <button
               onClick={this.handleReset}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md active:scale-95"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black shadow-lg shadow-amber-950/40 text-xs font-bold transition flex items-center gap-1.5 shadow-md active:scale-95"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Tentar Novamente</span>

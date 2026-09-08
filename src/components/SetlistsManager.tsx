@@ -47,7 +47,7 @@ const SETLIST_THEMES: Record<string, { gradient: string; iconColor: string; badg
   'Barzinho / Voz e Violão': { gradient: 'from-amber-600 to-orange-800', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
   'Casamento / Cerimônia': { gradient: 'from-rose-600 to-pink-900', iconColor: 'text-rose-200', badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
   'Ensaio Geral': { gradient: 'from-blue-600 to-cyan-900', iconColor: 'text-blue-200', badge: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  'Celebração / Louvor': { gradient: 'from-emerald-600 to-teal-800', iconColor: 'text-emerald-200', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+  'Celebração / Louvor': { gradient: 'from-amber-700 to-yellow-900', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
   'Festa / Evento': { gradient: 'from-yellow-600 to-amber-900', iconColor: 'text-yellow-200', badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
   'Geral': { gradient: 'from-zinc-700 to-zinc-900', iconColor: 'text-zinc-200', badge: 'bg-zinc-700/30 text-zinc-300 border-zinc-700' }
 };
@@ -129,8 +129,8 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
     const gradient = DEFAULT_GRADIENTS[index % DEFAULT_GRADIENTS.length];
     return {
       gradient,
-      iconColor: 'text-emerald-200',
-      badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+      iconColor: 'text-amber-200',
+      badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
     };
   };
 
@@ -230,12 +230,12 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
       {/* 🚀 Header & Create Action */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-black uppercase tracking-wider mb-2">
-            <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-black uppercase tracking-wider mb-2">
+            <ListMusic className="w-3.5 h-3.5 text-amber-400" />
             Gestão de Repertórios & Palco
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-            Meus Repertórios & <span className="text-emerald-400">Playlists</span>
+            Meus Repertórios & <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500 bg-clip-text text-transparent">Playlists</span>
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl">
             Crie seleções de músicas organizadas para cada celebração, ajuste tons específicos por música e conduza sua banda ao vivo.
@@ -248,13 +248,13 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
             className="px-4 py-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 font-bold text-xs sm:text-sm shadow-md transition flex items-center gap-2"
             title="Importar repertório compartilhado com código PIN ou link"
           >
-            <Download className="w-4 h-4 text-emerald-400" />
+            <Download className="w-4 h-4 text-amber-400" />
             <span>Importar por Código</span>
           </button>
 
           <button
             onClick={() => setIsCreating(true)}
-            className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs sm:text-sm shadow-xl shadow-emerald-900/40 transition flex items-center gap-2"
+            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-black text-xs sm:text-sm shadow-xl shadow-amber-950/40 transition flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Novo Repertório
@@ -284,7 +284,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                 onClick={() => handleCardClick(setlist.id)}
                 className={`group relative p-4 rounded-3xl border transition-all cursor-pointer overflow-hidden shadow-xl flex flex-col justify-between ${
                   isSelected
-                    ? 'bg-zinc-900 border-emerald-500 ring-2 ring-emerald-500/40 scale-[1.01]'
+                    ? 'bg-zinc-900 border-amber-500/70 ring-2 ring-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.2)] scale-[1.01]'
                     : 'bg-zinc-900/80 border-zinc-800/90 hover:border-zinc-700 hover:scale-[1.01]'
                 }`}
               >
@@ -297,13 +297,13 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                       {setlist.targetEvent || 'Show'}
                     </span>
                     <span className="text-xs text-zinc-400 font-mono font-bold flex items-center gap-1">
-                      <Music className="w-3.5 h-3.5 text-emerald-400" />
+                      <Music className="w-3.5 h-3.5 text-amber-400" />
                       {setlist.items.length} {setlist.items.length === 1 ? 'música' : 'músicas'}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-base font-extrabold text-white group-hover:text-emerald-400 transition truncate">
+                    <h3 className="text-base font-extrabold text-white group-hover:text-amber-400 transition truncate">
                       {setlist.title}
                     </h3>
                     <p className="text-xs text-zinc-400 line-clamp-2 mt-1 leading-relaxed">
@@ -319,7 +319,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                     {setlist.date || 'Hoje'}
                   </span>
 
-                  <span className="text-xs font-bold text-emerald-400 group-hover:underline flex items-center gap-1">
+                  <span className="text-xs font-bold text-amber-400 group-hover:underline flex items-center gap-1">
                     <span>Ver faixas</span>
                     <Play className="w-3 h-3 fill-current ml-0.5" />
                   </span>
@@ -331,9 +331,9 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
           {/* Quick Create Card */}
           <div
             onClick={() => setIsCreating(true)}
-            className="p-5 rounded-3xl border-2 border-dashed border-zinc-800 hover:border-emerald-500/60 bg-zinc-950/40 hover:bg-zinc-900/40 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-2 min-h-[160px]"
+            className="p-5 rounded-3xl border-2 border-dashed border-zinc-800 hover:border-amber-500/60 bg-zinc-950/40 hover:bg-zinc-900/40 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-2 min-h-[160px]"
           >
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <Plus className="w-5 h-5" />
             </div>
             <div>
@@ -348,7 +348,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
       {currentSetlist && (
         <div className="rounded-3xl bg-zinc-900/90 border border-zinc-800/80 shadow-2xl overflow-hidden space-y-6">
           {/* Hero Banner for Selected Setlist */}
-          <div className={`p-6 sm:p-8 bg-gradient-to-r ${currentTheme?.gradient || 'from-emerald-950 to-zinc-950'} border-b border-white/10 text-white relative`}>
+          <div className={`p-6 sm:p-8 bg-gradient-to-r ${currentTheme?.gradient || 'from-[#18140E] to-zinc-950'} border-b border-white/10 text-white relative`}>
             <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
               <div className="space-y-2 max-w-xl">
                 <div className="flex items-center gap-2">
@@ -391,7 +391,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                   }}
                   className={`px-4 py-3 rounded-2xl font-black text-xs sm:text-sm shadow-xl transition flex items-center gap-2 border ${
                     isPro
-                      ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 border-emerald-400'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 border-amber-400'
                       : 'bg-black/40 hover:bg-black/60 text-white border-white/20'
                   }`}
                   title={isPro ? "Exportar Repertório em PDF para Impressão" : "Exportar em PDF (Exclusivo Pro)"}
@@ -442,7 +442,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-1 border-b border-zinc-800/50">
               <div>
                 <h3 className="text-base font-black text-white flex items-center gap-2">
-                  <Music className="w-4 h-4 text-emerald-400" />
+                  <Music className="w-4 h-4 text-amber-400" />
                   Músicas no Repertório ({currentSetlist.items.length})
                 </h3>
                 <span className="text-xs text-zinc-400">
@@ -461,7 +461,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Buscar música por título, artista ou tom..."
-                    className="w-full bg-zinc-950/80 border border-zinc-700/80 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition"
+                    className="w-full bg-zinc-950/80 border border-zinc-700/80 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition"
                   />
                   {searchQuery && (
                     <button
@@ -488,7 +488,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                     className="p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80 hover:border-zinc-700 transition flex flex-wrap items-center justify-between gap-3 group"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-xl bg-zinc-850 text-emerald-400 font-mono text-xs font-black flex items-center justify-center border border-zinc-750">
+                      <span className="w-8 h-8 rounded-xl bg-zinc-850 text-amber-400 font-mono text-xs font-black flex items-center justify-center border border-zinc-750">
                         {originalIndex + 1}
                       </span>
 
@@ -496,9 +496,9 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                         onClick={() => onSelectSong(song, currentSetlist)}
                         className="cursor-pointer"
                       >
-                        <h4 className="text-sm font-extrabold text-white group-hover:text-emerald-400 transition flex items-center gap-2">
+                        <h4 className="text-sm font-extrabold text-white group-hover:text-amber-400 transition flex items-center gap-2">
                           {song.title}
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
                             {song.liturgicalMoment}
                           </span>
                         </h4>
@@ -515,7 +515,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                           type="text"
                           value={item.customKey || song.originalKey}
                           onChange={(e) => handleUpdateCustomKey(item.songId, e.target.value)}
-                          className="w-10 bg-transparent text-xs font-mono font-bold text-emerald-400 focus:outline-none text-center"
+                          className="w-10 bg-transparent text-xs font-mono font-bold text-amber-400 focus:outline-none text-center"
                         />
                       </div>
 
@@ -531,7 +531,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                           />
                           <button
                             onClick={() => handleSaveNotes(item.songId)}
-                            className="p-1.5 rounded-lg bg-emerald-500 text-zinc-950 font-bold"
+                            className="p-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black font-bold"
                           >
                             <Check className="w-3.5 h-3.5" />
                           </button>
@@ -574,7 +574,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                       {/* Play / Open in Stage */}
                       <button
                         onClick={() => onSelectSong(song, currentSetlist)}
-                        className="p-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 transition shadow-md"
+                        className="p-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 transition shadow-md"
                         title="Abrir Cifra no Palco"
                       >
                         <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
@@ -628,7 +628,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
           <div className="w-full max-w-md rounded-3xl bg-zinc-900 border border-zinc-700/80 p-6 text-white shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <h3 className="text-lg font-black flex items-center gap-2">
-                <ListMusic className="w-5 h-5 text-emerald-400" />
+                <ListMusic className="w-5 h-5 text-amber-400" />
                 Criar Novo Repertório
               </h3>
               <button onClick={() => setIsCreating(false)} className="p-1 rounded-full text-zinc-400 hover:text-white">
@@ -644,7 +644,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Ex: Show de Sexta / Ensaio da Banda"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
                   required
                 />
               </div>
@@ -654,7 +654,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                 <select
                   value={newEvent}
                   onChange={(e) => setNewEvent(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
                   <option value="Show / Apresentação">Show / Apresentação</option>
                   <option value="Barzinho / Voz e Violão">Barzinho / Voz e Violão</option>
@@ -673,7 +673,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                   onChange={(e) => setNewDesc(e.target.value)}
                   placeholder="Observações para os músicos da banda..."
                   rows={2}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
                 />
               </div>
 
@@ -687,7 +687,7 @@ export const SetlistsManager: React.FC<SetlistsManagerProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-950 transition flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 text-xs font-black uppercase tracking-wider shadow-lg shadow-amber-950/40 transition flex items-center gap-1.5"
                 >
                   <Check className="w-4 h-4" />
                   Salvar Repertório

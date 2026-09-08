@@ -44,7 +44,7 @@ const SETLIST_THEMES: Record<string, { gradient: string; iconColor: string; badg
   'Barzinho / Voz e Violão': { gradient: 'from-amber-500 to-orange-700', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
   'Casamento / Cerimônia': { gradient: 'from-rose-500 to-pink-800', iconColor: 'text-rose-200', badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
   'Ensaio Geral': { gradient: 'from-blue-600 to-cyan-900', iconColor: 'text-blue-200', badge: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  'Celebração / Louvor': { gradient: 'from-emerald-500 to-teal-800', iconColor: 'text-emerald-200', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+  'Celebração / Louvor': { gradient: 'from-emerald-500 to-teal-800', iconColor: 'text-amber-200', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
   'Festa / Evento': { gradient: 'from-yellow-500 to-amber-800', iconColor: 'text-yellow-200', badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
   'Geral': { gradient: 'from-zinc-700 to-zinc-900', iconColor: 'text-zinc-200', badge: 'bg-zinc-700/30 text-zinc-300 border-zinc-700' }
 };
@@ -82,8 +82,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const gradient = DEFAULT_GRADIENTS[index % DEFAULT_GRADIENTS.length];
     return {
       gradient,
-      iconColor: 'text-emerald-200',
-      badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+      iconColor: 'text-amber-200',
+      badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
     };
   };
 
@@ -126,7 +126,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition ${
                 currentView === 'discovery'
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm'
+                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-sm shadow-amber-950/20'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
@@ -141,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition ${
                 currentView === 'setlists'
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm'
+                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-sm shadow-amber-950/20'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
@@ -159,9 +159,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onOpenUploadModal();
                 onCloseMobile();
               }}
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-zinc-400 hover:text-emerald-400 hover:bg-zinc-900 transition"
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-zinc-400 hover:text-amber-300 hover:bg-zinc-900 transition"
             >
-              <Upload className="w-5 h-5 text-emerald-400" />
+              <Upload className="w-5 h-5 text-amber-400" />
               Subir Minha Cifra
             </button>
 
@@ -170,16 +170,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onOpenLiveRoomModal();
                 onCloseMobile();
               }}
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-zinc-400 hover:text-emerald-400 hover:bg-zinc-900 transition"
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-zinc-400 hover:text-amber-300 hover:bg-zinc-900 transition"
             >
-              <Radio className="w-5 h-5 text-emerald-400" />
+              <Radio className="w-5 h-5 text-amber-400" />
               Sincronização ao Vivo
             </button>
           </nav>
 
           {/* Pro Upgrade Banner in Sidebar */}
           {!isPro ? (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/20 via-zinc-900 to-zinc-900 border border-amber-500/30 space-y-2">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/20 via-zinc-900 to-zinc-900 border border-amber-500/30 space-y-2 shadow-lg shadow-amber-950/20">
               <div className="flex items-center gap-2">
                 <Crown className="w-4 h-4 text-amber-400" />
                 <span className="text-xs font-black text-white">Plano Pro</span>
@@ -192,7 +192,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onOpenPricing();
                   onCloseMobile();
                 }}
-                className="w-full py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs uppercase tracking-wider transition shadow-md"
+                className="w-full py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-xs uppercase tracking-wider transition shadow-md shadow-amber-950/40"
               >
                 Conhecer Planos
               </button>
@@ -203,20 +203,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onOpenLandingPage();
                     onCloseMobile();
                   }}
-                  className="w-full py-1 text-[10px] font-bold text-zinc-400 hover:text-emerald-400 transition text-center block"
+                  className="w-full py-1 text-[10px] font-bold text-zinc-400 hover:text-amber-300 transition text-center block"
                 >
                   ✨ Ver apresentação completa do app
                 </button>
               )}
             </div>
           ) : (
-            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-1.5">
+            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-1.5 shadow-sm shadow-amber-950/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  <Sparkles className="w-4 h-4 text-amber-400" />
                   <div>
                     <span className="text-xs font-black text-white block">Assinante Pro</span>
-                    <span className="text-[10px] text-emerald-400">Live Sync Liberado</span>
+                    <span className="text-[10px] text-amber-300">Live Sync Liberado</span>
                   </div>
                 </div>
               </div>
@@ -226,7 +226,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onOpenLandingPage();
                     onCloseMobile();
                   }}
-                  className="w-full text-left pt-1 border-t border-emerald-500/20 text-[10px] font-bold text-zinc-400 hover:text-emerald-300 transition"
+                  className="w-full text-left pt-1 border-t border-amber-500/20 text-[10px] font-bold text-zinc-400 hover:text-amber-300 transition"
                 >
                   Ver novidades & recursos Pro →
                 </button>
@@ -269,7 +269,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="pt-4 border-t border-zinc-850 space-y-2.5">
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-2">
-                <ListMusic className="w-4 h-4 text-emerald-400" />
+                <ListMusic className="w-4 h-4 text-amber-400" />
                 <span className="text-[11px] uppercase font-black tracking-wider text-zinc-300">
                   Seus Repertórios
                 </span>
@@ -283,7 +283,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onNavigate('setlists');
                   onCloseMobile();
                 }}
-                className="p-1.5 rounded-lg bg-zinc-900 hover:bg-emerald-500/20 text-zinc-400 hover:text-emerald-300 border border-zinc-800 transition"
+                className="p-1.5 rounded-lg bg-zinc-900 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-300 border border-zinc-800 transition"
                 title="Criar Novo Repertório"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -306,7 +306,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }}
                     className={`group relative p-2.5 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${
                       isSelected
-                        ? 'bg-gradient-to-r from-emerald-950/70 via-zinc-900 to-zinc-900 border-emerald-500/60 shadow-lg shadow-emerald-950/50'
+                        ? 'bg-gradient-to-r from-[#18140E] via-zinc-900 to-zinc-900 border-amber-500/60 shadow-lg shadow-amber-950/40'
                         : 'bg-zinc-900/60 border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900'
                     }`}
                   >
@@ -321,7 +321,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                     {/* Setlist Title & Meta */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-black text-white group-hover:text-emerald-400 transition truncate">
+                      <h4 className="text-xs font-black text-white group-hover:text-amber-400 transition truncate">
                         {setlist.title}
                       </h4>
                       <div className="flex items-center gap-1.5 mt-0.5 text-[10px]">
@@ -336,7 +336,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                     {/* Active Pulsing Indicator */}
                     {isSelected && (
-                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-none shadow-md shadow-emerald-400" />
+                      <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-none shadow-md shadow-amber-400" />
                     )}
                   </div>
                 );
@@ -348,7 +348,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onNavigate('setlists');
                     onCloseMobile();
                   }}
-                  className="p-3.5 rounded-2xl border-2 border-dashed border-zinc-800 hover:border-emerald-500/50 text-center cursor-pointer transition bg-zinc-950/40"
+                  className="p-3.5 rounded-2xl border-2 border-dashed border-zinc-800 hover:border-amber-500/50 text-center cursor-pointer transition bg-zinc-950/40"
                 >
                   <p className="text-xs font-bold text-zinc-400">+ Criar Primeiro Repertório</p>
                   <p className="text-[10px] text-zinc-600 mt-0.5">Monte listas personalizadas para seus shows e ensaios</p>
@@ -378,7 +378,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-zinc-500 block truncate">{userProfile.instrument}</span>
                   {isPro ? (
-                    <span className="text-[8px] font-black uppercase px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    <span className="text-[8px] font-black uppercase px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
                       PRO
                     </span>
                   ) : (
@@ -393,7 +393,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="text-center text-[10px] text-zinc-600 flex flex-col items-center gap-1.5">
             <AppLogo size={22} variant="circle" />
-            <p className="font-bold text-zinc-400">Cifra<span className="text-emerald-400">ê</span> v2.0</p>
+            <p className="font-bold text-white">Cadencē v2.0</p>
             <p>PWA & Sincronização ao Vivo Ready</p>
           </div>
         </div>

@@ -130,12 +130,12 @@ export const ShareSetlistModal: React.FC<ShareSetlistModalProps> = ({
               </span>
               <h3 className="text-lg font-black text-white">{setlist.title}</h3>
               <p className="text-xs text-zinc-400 flex items-center gap-1">
-                <Music className="w-3.5 h-3.5 text-emerald-400" />
+                <Music className="w-3.5 h-3.5 text-amber-400" />
                 {setlist.items.length} músicas incluídas com tons e anotações
               </p>
             </div>
             <div className="text-right">
-              <span className="text-xs px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
+              <span className="text-xs px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20">
                 Pronto para envio
               </span>
             </div>
@@ -144,7 +144,7 @@ export const ShareSetlistModal: React.FC<ShareSetlistModalProps> = ({
           {/* Loading or Generated Share Box */}
           {isPublishing ? (
             <div className="p-8 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col items-center justify-center space-y-3">
-              <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+              <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
               <p className="text-xs text-zinc-400 font-medium">Empacotando cifras e gerando código seguro...</p>
             </div>
           ) : publishError ? (
@@ -168,7 +168,7 @@ export const ShareSetlistModal: React.FC<ShareSetlistModalProps> = ({
                   <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">
                     Código de Importação
                   </span>
-                  <div className="text-3xl font-black text-emerald-400 font-mono tracking-wider">
+                  <div className="text-3xl font-black text-amber-400 font-mono tracking-wider">
                     {sharedPayload.shareCode}
                   </div>
                   <p className="text-xs text-zinc-400">
@@ -183,13 +183,13 @@ export const ShareSetlistModal: React.FC<ShareSetlistModalProps> = ({
                   onClick={handleCopyLink}
                   className="w-full py-3 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs shadow-md border border-zinc-700 transition flex items-center justify-center gap-2"
                 >
-                  {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  {copied ? <Check className="w-4 h-4 text-amber-400" /> : <Copy className="w-4 h-4" />}
                   {copied ? 'Link Copiado!' : 'Copiar Link Direto'}
                 </button>
 
                 <button
                   onClick={handleShareWhatsapp}
-                  className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-950/40 transition flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-bold text-xs shadow-lg shadow-amber-950/40 transition flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="w-4 h-4 fill-current" />
                   Enviar no WhatsApp

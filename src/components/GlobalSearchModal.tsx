@@ -282,7 +282,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       >
         {/* Feedback notification toast */}
         {feedbackSongSetlist && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl bg-emerald-500 text-zinc-950 font-black text-xs shadow-2xl shadow-emerald-900/50 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md shadow-amber-950/40 font-black text-xs shadow-2xl shadow-amber-950/30 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
             <Check className="w-4 h-4" />
             <span>Música adicionada ao repertório "{feedbackSongSetlist.setlistTitle}"!</span>
           </div>
@@ -290,7 +290,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
         {/* Search Input Bar */}
         <div className="p-4 border-b border-zinc-800 bg-zinc-950/90 flex items-center gap-3">
-          <Search className="w-5 h-5 text-emerald-400 flex-none" />
+          <Search className="w-5 h-5 text-amber-400 flex-none" />
           <input
             type="text"
             autoFocus
@@ -322,7 +322,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               onClick={() => setActiveTab('local')}
               className={`px-3.5 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 ${
                 activeTab === 'local'
-                  ? 'bg-emerald-500 text-zinc-950 shadow-md'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md shadow-amber-950/40 shadow-md'
                   : 'bg-zinc-800 text-zinc-400 hover:text-white'
               }`}
             >
@@ -334,13 +334,13 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               onClick={() => setActiveTab('online')}
               className={`px-3.5 py-1.5 rounded-full font-bold transition flex items-center gap-1.5 ${
                 activeTab === 'online'
-                  ? 'bg-emerald-500 text-zinc-950 shadow-md'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md shadow-amber-950/40 shadow-md'
                   : 'bg-zinc-800 text-zinc-400 hover:text-white'
               }`}
             >
-              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+              <Globe className="w-3.5 h-3.5 text-amber-400" />
               <span>Buscar Online</span>
-              {isSearchingOnline && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />}
+              {isSearchingOnline && <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />}
             </button>
           </div>
 
@@ -350,7 +350,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                 onClose();
                 onOpenUploadModal();
               }}
-              className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 hover:underline"
+              className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 hover:underline"
             >
               <Plus className="w-3 h-3" />
               Upload Próprio
@@ -369,7 +369,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                     <Globe className="w-4 h-4" />
                     Músicas Encontradas Online Globalmente
                   </h3>
@@ -379,7 +379,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                 </div>
                 {isSearchingOnline && (
                   <span className="text-xs text-zinc-400 font-mono flex items-center gap-1.5">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
                     Buscando online...
                   </span>
                 )}
@@ -396,7 +396,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                       <div
                         key={`${track.trackId}_${trackIdx}`}
                         onClick={() => handleSelectOnlineTrack(track)}
-                        className="group relative p-3 rounded-2xl bg-zinc-950/70 border border-zinc-800 hover:border-emerald-500/80 hover:bg-zinc-850 transition cursor-pointer flex items-center justify-between gap-3 shadow-md"
+                        className="group relative p-3 rounded-2xl bg-zinc-950/70 border border-zinc-800 hover:border-amber-500/80 hover:bg-zinc-850 transition cursor-pointer flex items-center justify-between gap-3 shadow-md"
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
                           {/* Album Art or Cover with Play overlay */}
@@ -426,7 +426,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                 title={isPlaying ? 'Pausar Prévia' : 'Ouvir 30s de Prévia'}
                               >
                                 {isPlaying ? (
-                                  <Pause className="w-5 h-5 text-emerald-400 fill-current animate-pulse" />
+                                  <Pause className="w-5 h-5 text-amber-400 fill-current animate-pulse" />
                                 ) : (
                                   <Play className="w-5 h-5 text-white fill-current ml-0.5" />
                                 )}
@@ -435,7 +435,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                           </div>
 
                           <div className="min-w-0">
-                            <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition truncate">
+                            <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition truncate">
                               {track.trackName}
                             </h4>
                             <p className="text-xs text-zinc-400 truncate">
@@ -454,8 +454,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                               }}
                               className={`p-2 rounded-xl transition flex items-center gap-1.5 text-xs font-bold ${
                                 isDropdownOpen
-                                  ? 'bg-emerald-500 text-zinc-950'
-                                  : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-emerald-400 border border-zinc-800'
+                                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md shadow-amber-950/40'
+                                  : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-400 border border-zinc-800'
                               }`}
                               title="Adicionar a um Repertório"
                             >
@@ -467,7 +467,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                             {isDropdownOpen && (
                               <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
                                 <div className="px-2 py-1 border-b border-zinc-800 mb-1 flex items-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-zinc-400">
-                                  <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
+                                  <ListMusic className="w-3.5 h-3.5 text-amber-400" />
                                   <span>Escolha o Repertório:</span>
                                 </div>
 
@@ -481,18 +481,18 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                       onClick={(e) => handleAddOnlineTrackToSetlist(track, setlist, e)}
                                       className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold truncate transition flex items-center justify-between group/item ${
                                         isAlreadyIn
-                                          ? 'bg-emerald-500/10 text-emerald-300 opacity-80 cursor-default'
+                                          ? 'bg-amber-500/10 text-amber-300 opacity-80 cursor-default'
                                           : 'hover:bg-zinc-800 text-zinc-200'
                                       }`}
                                     >
                                       <span className="truncate">{setlist.title || 'Repertório sem nome'}</span>
                                       {isAlreadyIn ? (
-                                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 flex-none ml-1">
+                                        <span className="flex items-center gap-1 text-[10px] font-bold text-amber-400 flex-none ml-1">
                                           <Check className="w-3.5 h-3.5" />
                                           Adicionada
                                         </span>
                                       ) : (
-                                        <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
+                                        <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-amber-400 flex-none ml-1" />
                                       )}
                                     </button>
                                   );
@@ -513,7 +513,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                               e.stopPropagation();
                               handleSelectOnlineTrack(track);
                             }}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-75 text-white text-xs font-bold transition flex items-center gap-1 shadow-md"
+                            className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-500 disabled:opacity-75 text-white text-xs font-bold transition flex items-center gap-1 shadow-md"
                           >
                             {loadingTrackId === track.trackId ? (
                               <>
@@ -542,7 +542,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                         onOpenUploadModal();
                       }
                     }}
-                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-emerald-400 border border-zinc-700 transition"
+                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-amber-400 border border-zinc-700 transition"
                   >
                     + Criar e Subir Esta Cifra Manualmente
                   </button>
@@ -569,19 +569,19 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                         onClose();
                       }
                     }}
-                    className="group relative p-4 rounded-2xl bg-gradient-to-r from-zinc-800/90 to-zinc-900 border border-zinc-700/80 hover:border-emerald-500/80 transition-all cursor-pointer flex flex-wrap items-center justify-between gap-3 shadow-lg"
+                    className="group relative p-4 rounded-2xl bg-gradient-to-r from-zinc-800/90 to-zinc-900 border border-zinc-700/80 hover:border-amber-500/80 transition-all cursor-pointer flex flex-wrap items-center justify-between gap-3 shadow-lg"
                   >
                     <div className="flex items-center gap-3.5">
                       <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${localResults.topResult.coverGradient} flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform`}>
                         <Music className="w-7 h-7" />
                       </div>
                       <div>
-                        <h3 className="text-base font-extrabold text-white group-hover:text-emerald-400 transition">
+                        <h3 className="text-base font-extrabold text-white group-hover:text-amber-400 transition">
                           {localResults.topResult.title}
                         </h3>
                         <p className="text-xs text-zinc-400">{localResults.topResult.artist}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
                             {localResults.topResult.liturgicalMoment}
                           </span>
                           <span className="text-[10px] text-zinc-400 font-mono">
@@ -604,8 +604,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                           }}
                           className={`px-3 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
                             activeDropdownSongId === `top_${localResults.topResult.id}`
-                              ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
-                              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-emerald-400 border-zinc-700'
+                              ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md shadow-amber-950/40 border-amber-400'
+                              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-amber-400 border-zinc-700'
                           }`}
                           title="Adicionar a um Repertório"
                         >
@@ -616,7 +616,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                         {activeDropdownSongId === `top_${localResults.topResult.id}` && (
                           <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
                             <div className="px-2 py-1 border-b border-zinc-800 mb-1 flex items-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-zinc-400">
-                              <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
+                              <ListMusic className="w-3.5 h-3.5 text-amber-400" />
                               <span>Escolha o Repertório:</span>
                             </div>
 
@@ -629,7 +629,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                   className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-zinc-800 text-xs font-semibold text-zinc-200 truncate transition flex items-center justify-between group/item"
                                 >
                                   <span className="truncate">{setlist.title || 'Repertório sem nome'}</span>
-                                  <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
+                                  <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-amber-400 flex-none ml-1" />
                                 </button>
                               );
                             })}
@@ -643,7 +643,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                         )}
                       </div>
 
-                      <div className="w-10 h-10 rounded-full bg-emerald-500 text-zinc-950 flex items-center justify-center opacity-90 group-hover:opacity-100 group-hover:scale-110 shadow-lg transition">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md shadow-amber-950/40 flex items-center justify-center opacity-90 group-hover:opacity-100 group-hover:scale-110 shadow-lg transition">
                         <Play className="w-5 h-5 fill-current ml-0.5" />
                       </div>
                     </div>
@@ -676,7 +676,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                               <Music className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
-                              <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition truncate">
+                              <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition truncate">
                                 {song.title}
                               </h4>
                               <p className="text-xs text-zinc-400 truncate">{song.artist}</p>
@@ -687,7 +687,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                             <span className="hidden sm:inline text-[10px] px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 font-semibold border border-zinc-700">
                               {song.liturgicalMoment || 'Geral'}
                             </span>
-                            <span className="text-xs font-bold text-emerald-400 font-mono">
+                            <span className="text-xs font-bold text-amber-400 font-mono">
                               {song.originalKey || 'G'}
                             </span>
 
@@ -700,7 +700,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                 }}
                                 className={`p-1.5 rounded-xl transition flex items-center gap-1 text-xs ${
                                   isDropdownOpen
-                                    ? 'bg-emerald-500 text-zinc-950 font-bold'
+                                    ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md shadow-amber-950/40 font-bold'
                                     : 'text-zinc-400 hover:text-white hover:bg-zinc-700'
                                 }`}
                                 title="Adicionar ao Repertório"
@@ -712,7 +712,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                               {isDropdownOpen && (
                                 <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
                                   <div className="px-2 py-1 border-b border-zinc-800 mb-1 flex items-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-zinc-400">
-                                    <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
+                                    <ListMusic className="w-3.5 h-3.5 text-amber-400" />
                                     <span>Escolha o Repertório:</span>
                                   </div>
                                   {Array.isArray(setlists) && setlists.map((setlist) => {
@@ -725,18 +725,18 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                                         onClick={(e) => handleAddSongToSetlist(song, setlist, e)}
                                         className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold truncate transition flex items-center justify-between group/item ${
                                           isAlreadyIn
-                                            ? 'bg-emerald-500/10 text-emerald-300 opacity-80 cursor-default'
+                                            ? 'bg-amber-500/10 text-amber-300 opacity-80 cursor-default'
                                             : 'hover:bg-zinc-800 text-zinc-200'
                                         }`}
                                       >
                                         <span className="truncate">{setlist.title || 'Repertório sem nome'}</span>
                                         {isAlreadyIn ? (
-                                          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 flex-none ml-1">
+                                          <span className="flex items-center gap-1 text-[10px] font-bold text-amber-400 flex-none ml-1">
                                             <Check className="w-3.5 h-3.5" />
                                             Adicionada
                                           </span>
                                         ) : (
-                                          <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-emerald-400 flex-none ml-1" />
+                                          <Plus className="w-3.5 h-3.5 text-zinc-500 group-hover/item:text-amber-400 flex-none ml-1" />
                                         )}
                                       </button>
                                     );
@@ -794,7 +794,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                       <button
                         key={genre}
                         onClick={() => setSearchTerm(genre)}
-                        className="px-3 py-1.5 rounded-xl bg-zinc-950/80 border border-zinc-800 hover:border-emerald-500 hover:bg-emerald-500/10 text-xs font-semibold text-zinc-300 transition"
+                        className="px-3 py-1.5 rounded-xl bg-zinc-950/80 border border-zinc-800 hover:border-amber-500 hover:bg-amber-500/10 text-xs font-semibold text-zinc-300 transition"
                       >
                         {genre}
                       </button>
@@ -812,7 +812,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   </p>
                   <button
                     onClick={() => setActiveTab('online')}
-                    className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition flex items-center gap-2 mx-auto active:scale-95"
+                    className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black shadow-lg shadow-amber-950/40 text-xs font-bold shadow-md transition flex items-center gap-2 mx-auto active:scale-95"
                   >
                     <Globe className="w-4 h-4" />
                     <span>

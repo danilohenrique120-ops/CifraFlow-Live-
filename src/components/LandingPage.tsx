@@ -328,7 +328,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* Micro-callout */}
           <div className="mt-6 pt-4 border-t border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-400 font-mono">
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
               Rolagem contínua por física orgânica sem saltos
             </span>
             <button
@@ -386,10 +386,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
               <div className="flex-1 w-full p-4 rounded-2xl bg-[#050505] border border-white/10 flex items-center justify-between">
                 <div className="space-y-1">
-                  <span className="text-[10px] uppercase font-mono font-bold text-emerald-400">TECLADO • CELULAR</span>
+                  <span className="text-[10px] uppercase font-mono font-bold text-amber-400">TECLADO • CELULAR</span>
                   <p className="text-xs font-bold text-white">Sincronizado em G</p>
                 </div>
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span className="w-2 h-2 rounded-full bg-amber-400" />
               </div>
             </div>
           </div>
@@ -419,7 +419,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* 3. Bento Card Médio: Confiabilidade Offline-First */}
           <div className="rounded-3xl bg-[#0A0A0C] border border-white/5 p-8 relative overflow-hidden flex flex-col justify-between hover:border-amber-500/20 transition group">
             <div className="space-y-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
@@ -432,7 +432,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             <div className="mt-6 p-4 rounded-2xl bg-[#050505] border border-white/10 flex items-center justify-between text-xs font-mono">
               <span className="text-zinc-400">Conexão</span>
-              <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">100% Offline Safe</span>
+              <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">100% Offline Safe</span>
             </div>
           </div>
 

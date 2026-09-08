@@ -105,8 +105,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
           <div className="flex items-center gap-3">
             <AppLogo size={42} variant="circle" />
             <div>
-              <h3 className="text-base sm:text-lg font-black tracking-tight flex items-center">
-                Cifra<span className="text-emerald-400">ê</span>
+              <h3 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center">
+                Cadencē
               </h3>
               <p className="text-[11px] text-zinc-400">
                 {isSignUp ? 'Crie sua conta para começar' : 'Acesse sua conta para entrar no app'}
@@ -175,7 +175,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Digite seu nome completo"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
                   required
                 />
               </div>
@@ -191,7 +191,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
                 required
               />
             </div>
@@ -206,7 +206,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 6 caracteres"
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
                 required
               />
             </div>
@@ -216,12 +216,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-bold text-zinc-300">Instrumento Inicial</label>
-                <span className="text-[10px] text-emerald-400 font-semibold">Gratuito: Violão / Guitarra</span>
+                <span className="text-[10px] text-amber-400 font-semibold">Gratuito: Violão / Guitarra</span>
               </div>
               <select
                 value={instrument}
                 onChange={(e) => setInstrument(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-medium"
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium"
               >
                 {INSTRUMENT_OPTIONS.map((inst) => {
                   const isFree = inst.id === 'guitar';
@@ -241,7 +241,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-emerald-950/50 transition flex items-center justify-center gap-2 mt-4"
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-amber-950/40 transition flex items-center justify-center gap-2 mt-4"
           >
             {isLoading ? (
               'Processando...'
@@ -269,7 +269,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
             }}
             className="w-full py-2.5 px-4 rounded-2xl bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-bold transition flex items-center justify-center gap-2 border border-zinc-700 shadow-sm"
           >
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <ShieldCheck className="w-4 h-4 text-amber-400" />
             <span>Continuar no Modo Offline (Tocar no Palco)</span>
           </button>
         </div>
@@ -282,7 +282,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
               <button
                 type="button"
                 onClick={() => setIsSignUp(false)}
-                className="text-emerald-400 font-bold hover:underline"
+                className="text-amber-400 font-bold hover:underline"
               >
                 Faça login
               </button>
@@ -293,7 +293,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
               <button
                 type="button"
                 onClick={() => setIsSignUp(true)}
-                className="text-emerald-400 font-bold hover:underline"
+                className="text-amber-400 font-bold hover:underline"
               >
                 Cadastre-se gratuitamente
               </button>

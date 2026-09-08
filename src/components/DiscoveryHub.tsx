@@ -116,15 +116,15 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
   return (
     <div className="space-y-8 pb-12">
       {/* 🚀 Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950 via-zinc-900 to-zinc-950 border border-emerald-500/20 p-6 sm:p-10 shadow-2xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#18140E] via-[#0E0E10] to-[#0A0A0C] border border-amber-500/25 p-6 sm:p-10 shadow-2xl shadow-black/80">
         <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black uppercase tracking-wider">
-            <Radio className="w-3.5 h-3.5 animate-pulse text-emerald-400" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-black uppercase tracking-wider shadow-sm">
+            <Radio className="w-3.5 h-3.5 animate-pulse text-amber-400" />
             Sincronização ao Vivo - Modo Ensaio e Palco
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-none">
-            Cifras, Transposição e <span className="text-emerald-400">Palco Conectado</span>
+            Cifras, Transposição e <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500 bg-clip-text text-transparent">Palco Conectado</span>
           </h1>
 
           <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
@@ -134,7 +134,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
           <div className="pt-2 flex flex-wrap gap-3">
             <button
               onClick={onOpenLiveRoomModal}
-              className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm shadow-xl shadow-emerald-900/40 transition flex items-center gap-2"
+              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:brightness-110 text-zinc-950 font-black text-sm shadow-xl shadow-amber-950/50 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition flex items-center gap-2"
             >
               <Radio className="w-4 h-4" />
               Conectar Sessão ao Vivo
@@ -142,9 +142,9 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
 
             <button
               onClick={() => onOpenUploadModal()}
-              className="px-5 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm border border-zinc-700 transition flex items-center gap-2"
+              className="px-5 py-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-white font-bold text-sm border border-zinc-800 hover:border-amber-500/40 transition flex items-center gap-2"
             >
-              <Upload className="w-4 h-4 text-emerald-400" />
+              <Upload className="w-4 h-4 text-amber-400" />
               Subir Minha Cifra / Upload
             </button>
 
@@ -152,14 +152,14 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
               onClick={() => onOpenSearch('online')}
               className="px-4 py-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-sm border border-zinc-800 transition flex items-center gap-2"
             >
-              <Globe className="w-4 h-4 text-blue-400" />
+              <Globe className="w-4 h-4 text-amber-400/90" />
               Buscar Online
             </button>
           </div>
         </div>
 
         {/* Decorative ambient gradients */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-emerald-500/10 to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-amber-500/10 to-transparent pointer-events-none" />
       </div>
 
       {/* 📊 Capacidade do Catálogo (Plano Free vs Pro) */}
@@ -173,7 +173,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                   Plano Free
                 </span>
               ) : (
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1">
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold flex items-center gap-1 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
                   <Crown className="w-3 h-3 text-amber-400" /> PRO Ilimitado
                 </span>
               )}
@@ -188,7 +188,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                   /{songsLimit} músicas • <strong>{genreFolders.length}</strong>/{foldersLimit} pastas
                 </span>
               ) : (
-                <span className="text-emerald-400 font-bold">
+                <span className="text-amber-300 font-bold">
                   {songs.length} músicas • {genreFolders.length} pastas (Ilimitado)
                 </span>
               )}
@@ -199,7 +199,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
             <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  songs.length >= songsLimit ? 'bg-amber-500' : 'bg-emerald-500'
+                  songs.length >= songsLimit ? 'bg-amber-500' : 'bg-gradient-to-r from-amber-500 to-yellow-400'
                 }`}
                 style={{ width: `${songsUsagePercent}%` }}
               />
@@ -225,14 +225,14 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
             onClick={() => setSelectedGenre('all')}
             className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition flex-none flex items-center gap-1.5 ${
               selectedGenre === 'all'
-                ? 'bg-emerald-500 text-zinc-950 shadow-md'
-                : 'bg-zinc-900/90 text-zinc-300 hover:text-white border border-zinc-800 hover:bg-zinc-800'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 shadow-md shadow-amber-950/40 font-black'
+                : 'bg-zinc-900/90 text-zinc-300 hover:text-white border border-zinc-800 hover:border-amber-500/30 hover:bg-zinc-800'
             }`}
           >
             <span>Todas as Músicas</span>
             <span
               className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                selectedGenre === 'all' ? 'bg-zinc-950/25 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
+                selectedGenre === 'all' ? 'bg-zinc-950/30 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
               }`}
             >
               {songs.length}
@@ -249,14 +249,14 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                 onClick={() => setSelectedGenre(isSelected ? 'all' : f.name)}
                 className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition flex-none flex items-center gap-1.5 ${
                   isSelected
-                    ? 'bg-emerald-500 text-zinc-950 shadow-md'
-                    : 'bg-zinc-900/90 text-zinc-300 hover:text-white border border-zinc-800 hover:bg-zinc-800'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 shadow-md shadow-amber-950/40 font-black'
+                    : 'bg-zinc-900/90 text-zinc-300 hover:text-white border border-zinc-800 hover:border-amber-500/30 hover:bg-zinc-800'
                 }`}
               >
                 <span>{f.name}</span>
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    isSelected ? 'bg-zinc-950/25 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
+                    isSelected ? 'bg-zinc-950/30 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
                   }`}
                 >
                   {count}
@@ -272,7 +272,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-              <Folder className="w-5 h-5 text-emerald-400" />
+              <Folder className="w-5 h-5 text-amber-400" />
               Pastas & Estilos Musicais
             </h2>
             <p className="text-xs text-zinc-400">
@@ -284,7 +284,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
             {selectedGenre !== 'all' && (
               <button
                 onClick={() => setSelectedGenre('all')}
-                className="text-xs font-bold text-emerald-400 hover:underline mr-2"
+                className="text-xs font-bold text-amber-400 hover:underline mr-2"
               >
                 Ver todas
               </button>
@@ -292,7 +292,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
 
             <button
               onClick={handleCreateFolderClick}
-              className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-emerald-400 border border-zinc-700 text-xs font-bold transition flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-300 border border-zinc-700 hover:border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5"
               title={!isPro && genreFolders.length >= 3 ? 'Limite de 3 pastas no Free (faça upgrade)' : 'Criar Nova Pasta'}
             >
               <Plus className="w-3.5 h-3.5" />
@@ -318,8 +318,8 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                 }}
                 className={`group relative p-4 rounded-2xl bg-gradient-to-br ${item.color || 'from-zinc-800 to-zinc-950'} text-left transition-all overflow-hidden border shadow-lg cursor-pointer ${
                   isSelected
-                    ? 'border-white scale-[1.02] ring-2 ring-emerald-400'
-                    : 'border-white/10 hover:border-white/30 hover:scale-[1.01]'
+                    ? 'border-amber-400 scale-[1.02] ring-2 ring-amber-400/50 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
+                    : 'border-white/10 hover:border-amber-500/30 hover:scale-[1.01]'
                 }`}
               >
                 <div className="relative z-10 flex flex-col justify-between h-full min-h-[90px]">
@@ -358,9 +358,9 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
           {/* Quick Add Folder Card */}
           <button
             onClick={handleCreateFolderClick}
-            className="p-4 rounded-2xl border-2 border-dashed border-zinc-800 hover:border-emerald-500/50 bg-zinc-900/40 hover:bg-zinc-900/80 transition-all flex flex-col items-center justify-center text-center gap-2 min-h-[110px] group"
+            className="p-4 rounded-2xl border-2 border-dashed border-zinc-800 hover:border-amber-500/50 bg-zinc-900/40 hover:bg-zinc-900/80 transition-all flex flex-col items-center justify-center text-center gap-2 min-h-[110px] group"
           >
-            <div className="w-9 h-9 rounded-xl bg-zinc-800 group-hover:bg-emerald-500/20 text-zinc-400 group-hover:text-emerald-400 flex items-center justify-center transition">
+            <div className="w-9 h-9 rounded-xl bg-zinc-800 group-hover:bg-amber-500/20 text-zinc-400 group-hover:text-amber-400 flex items-center justify-center transition">
               <Plus className="w-5 h-5" />
             </div>
             <div>
@@ -376,13 +376,13 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
 
         {/* Dedicated Focused Genre Customization Banner */}
         {selectedGenre !== 'all' && (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-zinc-900 to-zinc-950 border border-emerald-500/40 flex flex-wrap items-center justify-between gap-3 shadow-xl animate-in fade-in">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#18140E] via-zinc-900 to-zinc-950 border border-amber-500/40 flex flex-wrap items-center justify-between gap-3 shadow-xl animate-in fade-in">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
                 <Folder className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider block">
+                <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider block">
                   Pasta Selecionada
                 </span>
                 <h3 className="text-lg font-black text-white">
@@ -394,7 +394,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setActiveGenreForModal(selectedGenre)}
-                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 transition flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-950/40 transition flex items-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
                 <span>Gerenciar Músicas desta Pasta</span>
@@ -404,7 +404,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                 onClick={() => onOpenUploadModal(selectedGenre)}
                 className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-bold transition flex items-center gap-1.5"
               >
-                <Upload className="w-3.5 h-3.5 text-emerald-400" />
+                <Upload className="w-3.5 h-3.5 text-amber-400" />
                 <span>Adicionar Cifra em {selectedGenre}</span>
               </button>
             </div>
@@ -431,7 +431,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
             {selectedGenre !== 'all' && (
               <button
                 onClick={() => setActiveGenreForModal(selectedGenre)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition hover:bg-emerald-500/30"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold transition hover:bg-amber-500/30"
               >
                 <Settings2 className="w-3.5 h-3.5" />
                 <span>Gerenciar este Estilo</span>
@@ -440,7 +440,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
 
             <button
               onClick={() => onOpenUploadModal(selectedGenre !== 'all' ? selectedGenre : undefined)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-emerald-400 border border-zinc-800 hover:border-emerald-500/50 text-xs font-bold transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-zinc-800 hover:border-amber-500/50 text-xs font-bold transition"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Adicionar Minha Cifra</span>
@@ -451,7 +451,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
         {/* Estado 1: Catálogo Totalmente Vazio */}
         {songs.length === 0 ? (
           <div className="p-8 sm:p-12 rounded-3xl bg-zinc-900/60 border border-zinc-800 text-center flex flex-col items-center justify-center space-y-4 shadow-xl">
-            <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-inner">
+            <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-inner">
               <Music className="w-8 h-8" />
             </div>
 
@@ -467,7 +467,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
             <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
               <button
                 onClick={() => onOpenSearch('online')}
-                className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm shadow-xl shadow-emerald-900/40 transition flex items-center gap-2"
+                className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black text-sm shadow-xl shadow-amber-950/40 transition flex items-center gap-2"
               >
                 <Globe className="w-4 h-4" />
                 Buscar Cifras Online
@@ -477,7 +477,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                 onClick={() => onOpenUploadModal()}
                 className="px-5 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm border border-zinc-700 transition flex items-center gap-2"
               >
-                <Upload className="w-4 h-4 text-emerald-400" />
+                <Upload className="w-4 h-4 text-amber-400" />
                 Digitar / Subir Minha Cifra
               </button>
             </div>
@@ -497,7 +497,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
             <div className="pt-2 flex items-center gap-2">
               <button
                 onClick={() => onOpenUploadModal(selectedGenre !== 'all' ? selectedGenre : undefined)}
-                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black text-xs transition flex items-center gap-1.5"
               >
                 <Upload className="w-3.5 h-3.5" />
                 Adicionar Cifra Aqui
@@ -517,7 +517,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
               <div
                 key={song.id}
                 onClick={() => onSelectSong(song)}
-                className="group p-4 rounded-3xl bg-zinc-900/90 border border-zinc-800/80 hover:border-emerald-500/80 hover:bg-zinc-850 transition-all cursor-pointer flex flex-col justify-between shadow-xl relative"
+                className="group p-4 rounded-3xl bg-zinc-900/90 border border-zinc-800/80 hover:border-amber-500/70 hover:shadow-[0_4px_25px_rgba(245,158,11,0.15)] hover:bg-zinc-850 transition-all cursor-pointer flex flex-col justify-between shadow-xl relative"
               >
                 {/* Card Header with Cover */}
                 <div className="space-y-3">
@@ -534,14 +534,14 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
 
                     {/* Play Button Overlay */}
                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-emerald-500 text-zinc-950 flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-zinc-950 flex items-center justify-center shadow-xl shadow-amber-950/50 transform scale-75 group-hover:scale-100 transition">
                         <Play className="w-6 h-6 fill-current ml-1" />
                       </div>
                     </div>
 
                     {/* Genre Tag Pill */}
                     <span
-                      className="absolute top-2 left-2 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full backdrop-blur-md border bg-zinc-950/80 text-emerald-300 border-zinc-700"
+                      className="absolute top-2 left-2 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full backdrop-blur-md border bg-zinc-950/80 text-amber-300 border-zinc-700"
                       title={`Pasta Musical: ${song.liturgicalMoment}`}
                     >
                       {song.liturgicalMoment}
@@ -556,7 +556,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                   </div>
 
                   <div>
-                    <h3 className="text-base font-extrabold text-white group-hover:text-emerald-400 transition truncate">
+                    <h3 className="text-base font-extrabold text-white group-hover:text-amber-400 transition truncate">
                       {song.title}
                     </h3>
                     <p className="text-xs text-zinc-400 truncate mt-0.5">{song.artist}</p>
@@ -566,7 +566,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                 {/* Card Footer / Metadata */}
                 <div className="pt-3 mt-3 border-t border-zinc-800/60 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-emerald-300 font-mono font-bold border border-zinc-700">
+                    <span className="px-2 py-0.5 rounded-md bg-zinc-850 text-amber-300 font-mono font-bold border border-zinc-700/80">
                       Tom {song.originalKey}
                     </span>
                     {song.capo && song.capo > 0 && (
@@ -583,7 +583,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                     <select
                       value={song.liturgicalMoment}
                       onChange={(e) => onUpdateSongMoment(song.id, e.target.value as MusicGenre)}
-                      className="bg-zinc-950 border border-zinc-700 text-[10px] font-bold rounded-lg px-2 py-1 text-zinc-300 focus:outline-none focus:border-emerald-500 max-w-[100px] truncate"
+                      className="bg-zinc-950 border border-zinc-700 text-[10px] font-bold rounded-lg px-2 py-1 text-zinc-300 focus:outline-none focus:border-amber-500 max-w-[100px] truncate"
                       title="Alterar a pasta desta música"
                     >
                       {genreFolders.map((f) => (
@@ -599,7 +599,7 @@ export const DiscoveryHub: React.FC<DiscoveryHubProps> = ({
                         title="Adicionar ao Repertório"
                       >
                         {feedbackAdded === song.id ? (
-                          <Check className="w-4 h-4 text-emerald-400" />
+                          <Check className="w-4 h-4 text-amber-400" />
                         ) : (
                           <Plus className="w-4 h-4" />
                         )}

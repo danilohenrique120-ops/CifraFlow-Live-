@@ -202,7 +202,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
       >
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800 flex-none bg-zinc-950/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
               <Upload className="w-5 h-5" />
             </div>
             <div>
@@ -220,7 +220,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-          <div className="relative border-2 border-dashed border-zinc-700/80 hover:border-emerald-500/60 rounded-2xl p-4 bg-zinc-950/40 text-center transition cursor-pointer group">
+          <div className="relative border-2 border-dashed border-zinc-700/80 hover:border-amber-500/60 rounded-2xl p-4 bg-zinc-950/40 text-center transition cursor-pointer group">
             <input
               type="file"
               accept=".txt,.cifra,.chordpro"
@@ -228,7 +228,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
             <div className="flex flex-col items-center gap-1.5 pointer-events-none">
-              <FolderOpen className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <FolderOpen className="w-6 h-6 text-amber-400 group-hover:scale-110 transition-transform" />
               <p className="text-xs font-bold text-zinc-200">
                 {fileName ? `Arquivo carregado: ${fileName}` : 'Clique para carregar arquivo TXT/Cifra ou arraste aqui'}
               </p>
@@ -245,7 +245,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ex: Tempo Perdido"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
                   required
                 />
               </div>
@@ -257,7 +257,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                   value={artist}
                   onChange={(e) => setArtist(e.target.value)}
                   placeholder="Ex: Legião Urbana"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
             </div>
@@ -268,7 +268,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                 <select
                   value={originalKey}
                   onChange={(e) => setOriginalKey(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
                 >
                   {KEYS.map((k) => (
                     <option key={k} value={k}>{k}</option>
@@ -298,7 +298,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                   max="240"
                   value={bpm}
                   onChange={(e) => setBpm(Number(e.target.value))}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
                 />
               </div>
 
@@ -307,7 +307,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                 <select
                   value={timeSignature}
                   onChange={(e) => setTimeSignature(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
                 >
                   <option value="4/4">4/4</option>
                   <option value="3/4">3/4</option>
@@ -321,7 +321,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                 <select
                   value={liturgicalMoment}
                   onChange={(e) => setLiturgicalMoment(e.target.value as MusicGenre)}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
                   {MUSIC_GENRES.map((m) => (
                     <option key={m} value={m}>{m}</option>
@@ -344,7 +344,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                       onClick={() => handleCategoryToggle(cat)}
                       className={`px-3 py-1 rounded-xl text-xs font-semibold transition ${
                         isChecked
-                          ? 'bg-emerald-500 text-zinc-950 shadow-sm font-bold'
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-sm font-bold'
                           : 'bg-zinc-950 text-zinc-400 border border-zinc-800 hover:text-white'
                       }`}
                     >
@@ -359,7 +359,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-zinc-300 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-emerald-400" />
+                  <FileText className="w-4 h-4 text-amber-400" />
                   Letra com Cifras Alinhadas *
                 </label>
 
@@ -367,7 +367,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                   <button
                     type="button"
                     onClick={handleAutoFormat}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-emerald-400 border border-zinc-700 font-semibold transition"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-amber-400 border border-zinc-700 font-semibold transition"
                     title="Identificar e formatar tags como [Intro], [Refrão], etc."
                   >
                     <Sparkles className="w-3.5 h-3.5" />
@@ -395,7 +395,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
                   onChange={(e) => setContent(e.target.value)}
                   placeholder={`Cole aqui sua cifra completa.\n\nExemplo:\n[Intro] G  D/F#  Em  C\n\nG                  D/F#\nTodos os dias quando acordo...`}
                   rows={9}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl p-3.5 font-mono text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-500 leading-relaxed"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl p-3.5 font-mono text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500 leading-relaxed"
                   required
                 />
               )}
@@ -413,7 +413,7 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
 
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/30 transition flex items-center gap-2"
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-950/30 transition flex items-center gap-2"
               >
                 <Check className="w-4 h-4" />
                 Salvar Cifra no Meu Catálogo

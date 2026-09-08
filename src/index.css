@@ -22,13 +22,13 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.8);
+  background: rgba(245, 158, 11, 0.75);
 }
 
 /* Base Body */
 html, body {
   font-family: var(--font-sans);
-  background-color: #09090b;
+  background-color: #060608;
   color: #f4f4f5;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;

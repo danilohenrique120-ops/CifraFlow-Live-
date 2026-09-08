@@ -120,7 +120,7 @@ export function generateSetlistPdfHtml(options: ExportPdfOptions): string {
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Repertório - ${escapeHtml(setlist.title)} | Cifraê</title>
+  <title>Repertório - ${escapeHtml(setlist.title)} | Cadencē</title>
   <style>
     @page {
       size: A4 portrait;
@@ -403,7 +403,7 @@ export function generateSetlistPdfHtml(options: ExportPdfOptions): string {
   <div class="index-cover">
     <div class="header-banner">
       <div class="brand-row">
-        <span class="brand-logo">🎵 CIFRAÊ &bull; REPERTÓRIO OFICIAL</span>
+        <span class="brand-logo">🎵 CADENCĒ &bull; REPERTÓRIO OFICIAL</span>
         <span class="event-badge">${escapeHtml(setlist.targetEvent || 'Show')}</span>
       </div>
 
@@ -500,7 +500,7 @@ export function generateSingleSongPdfHtml(options: SingleSongPdfOptions): string
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>${escapeHtml(song.title)} - ${escapeHtml(song.artist)} | Cifraê</title>
+  <title>${escapeHtml(song.title)} - ${escapeHtml(song.artist)} | Cadencē</title>
   <style>
     @page {
       size: A4 portrait;
@@ -534,7 +534,7 @@ export function generateSingleSongPdfHtml(options: SingleSongPdfOptions): string
     .brand-tag {
       font-size: 10px;
       font-weight: 900;
-      color: #059669;
+      color: #D97706;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 2px;
@@ -572,9 +572,9 @@ export function generateSingleSongPdfHtml(options: SingleSongPdfOptions): string
     }
 
     .meta-key {
-      background: #ecfdf5;
-      border-color: #a7f3d0;
-      color: #065f46;
+      background: #fef3c7;
+      border-color: #fde68a;
+      color: #92400e;
       font-size: 12.5px;
     }
 
@@ -634,7 +634,7 @@ export function generateSingleSongPdfHtml(options: SingleSongPdfOptions): string
 <body>
   <div class="song-header">
     <div>
-      <div class="brand-tag">🎵 CIFRAÊ &bull; CIFRA OFICIAL</div>
+      <div class="brand-tag">🎵 CADENCĒ &bull; CIFRA OFICIAL</div>
       <h1 class="song-title">${escapeHtml(song.title)}</h1>
       <div class="song-artist">${escapeHtml(song.artist)} &bull; ${escapeHtml(song.liturgicalMoment || 'Geral')}</div>
     </div>

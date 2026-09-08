@@ -143,7 +143,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                       : transportMode === 'local_cache'
                       ? 'bg-zinc-800 text-zinc-300 border-zinc-700'
-                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                   }`}>
                     {transportMode === 'p2p_local' ? (
                       <>
@@ -151,11 +151,11 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                       </>
                     ) : transportMode === 'local_cache' ? (
                       <>
-                        <ShieldCheck className="w-3 h-3 text-emerald-400" /> LOCAL OFFLINE
+                        <ShieldCheck className="w-3 h-3 text-amber-400" /> LOCAL OFFLINE
                       </>
                     ) : (
                       <>
-                        <Wifi className="w-3 h-3 text-emerald-400" /> NUVEM GLOBAL
+                        <Wifi className="w-3 h-3 text-amber-400" /> NUVEM GLOBAL
                       </>
                     )}
                   </span>
@@ -181,7 +181,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
               onClick={() => setActiveTab('join')}
               className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                 activeTab === 'join'
-                  ? 'bg-emerald-600 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md shadow-amber-950/40'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
               }`}
             >
@@ -192,7 +192,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
               onClick={() => setActiveTab('create')}
               className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                 activeTab === 'create'
-                  ? 'bg-emerald-600 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md shadow-amber-950/40'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
               }`}
             >
@@ -216,7 +216,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                   <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">
                     Código da Sessão Ao Vivo
                   </span>
-                  <div className="text-3xl font-black text-emerald-400 font-mono tracking-wider">
+                  <div className="text-3xl font-black text-amber-400 font-mono tracking-wider drop-shadow-[0_0_12px_rgba(245,158,11,0.4)]">
                     {sessionState.pin}
                   </div>
                   <p className="text-xs text-zinc-400">
@@ -227,7 +227,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                       onClick={handleCopyLink}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200 border border-zinc-700 transition"
                     >
-                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copied ? <Check className="w-3.5 h-3.5 text-amber-400" /> : <Copy className="w-3.5 h-3.5" />}
                       {copied ? 'Link Copiado!' : 'Copiar Link da Sala'}
                     </button>
                   </div>
@@ -237,7 +237,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
               {/* Host vs Member Role Banner */}
               <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className={`w-4 h-4 ${isHost ? 'text-emerald-400' : 'text-blue-400'}`} />
+                  <ShieldCheck className={`w-4 h-4 ${isHost ? 'text-amber-400' : 'text-blue-400'}`} />
                   <span>
                     Seu Papel: <strong className="text-white">{isHost ? 'Líder / Mestre (Host)' : 'Músico Conectado'}</strong>
                   </span>
@@ -248,7 +248,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                       type="checkbox"
                       checked={sessionState.followScroll}
                       onChange={(e) => toggleFollowScroll(e.target.checked)}
-                      className="rounded border-zinc-700 text-emerald-500 focus:ring-emerald-400"
+                      className="rounded border-zinc-700 text-amber-500 focus:ring-amber-400"
                     />
                     <span className="text-zinc-300 font-medium">Guiar Rolagem (Follow Scroll)</span>
                   </label>
@@ -259,13 +259,13 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
               <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-zinc-300 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
                     Confiabilidade Offline no Palco
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowOfflineGuide(!showOfflineGuide)}
-                    className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 underline"
+                    className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline"
                   >
                     {showOfflineGuide ? 'Ocultar Dicas' : 'Como usar sem internet?'}
                   </button>
@@ -274,7 +274,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                 <div className="flex items-center gap-2 text-[11px] text-zinc-400">
                   <span className="flex items-center gap-1">
                     {isNetworkOnline ? (
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                      <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
                     ) : (
                       <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
                     )}
@@ -292,7 +292,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
 
                 {showOfflineGuide && (
                   <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 space-y-2">
-                    <p className="font-bold text-emerald-400">
+                    <p className="font-bold text-amber-400">
                       ⚡ Para sincronizar a banda sem internet ou em locais sem sinal:
                     </p>
                     <ol className="list-decimal list-inside space-y-1 text-[11px] text-zinc-400">
@@ -308,10 +308,10 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
               <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-zinc-300 uppercase tracking-wider text-[11px] flex items-center gap-2">
-                    <Users className="w-3.5 h-3.5 text-emerald-400" />
+                    <Users className="w-3.5 h-3.5 text-amber-400" />
                     DISPOSITIVOS CONECTADOS:
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
                     {sessionState.members.length} {sessionState.members.length === 1 ? 'dispositivo' : 'dispositivos'}
                   </span>
                 </div>
@@ -332,7 +332,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           {/* Dot verde brilhante para indicar conexão ativa */}
-                          <span className={`w-2.5 h-2.5 rounded-full flex-none ${isLeader ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50 animate-pulse' : 'bg-emerald-500/80'}`} />
+                          <span className={`w-2.5 h-2.5 rounded-full flex-none ${isLeader ? 'bg-amber-400 shadow-sm shadow-amber-400/40 animate-pulse' : 'bg-amber-500/80'}`} />
                           
                           <div className="truncate">
                             <span className="font-bold text-white text-xs sm:text-sm tracking-tight block truncate">
@@ -341,7 +341,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                                 ({isLeader ? 'Líder / ' : ''}{member.instrument || 'Músico'})
                               </span>
                               {isCurrent && (
-                                <span className="ml-1.5 text-[10px] font-semibold text-emerald-400/90">(Você)</span>
+                                <span className="ml-1.5 text-[10px] font-semibold text-amber-400/90">(Você)</span>
                               )}
                             </span>
                           </div>
@@ -349,7 +349,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
 
                         <div className="flex items-center gap-2 flex-none ml-2">
                           {isLeader ? (
-                            <span className="text-[11px] font-black tracking-wider text-emerald-400 uppercase bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/20">
+                            <span className="text-[11px] font-black tracking-wider text-amber-400 uppercase bg-amber-500/10 px-2.5 py-0.5 rounded-lg border border-amber-500/20">
                               HOST
                             </span>
                           ) : (
@@ -373,7 +373,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
                   <button
                     onClick={() => sendBandAlert('REPETIR REFRÃO 🔁', 'repeat-chorus')}
-                    className="p-2 rounded-xl bg-zinc-950 hover:bg-emerald-500/20 border border-zinc-800 hover:border-emerald-500 text-xs font-bold transition text-left"
+                    className="p-2 rounded-xl bg-zinc-950 hover:bg-amber-500/20 border border-zinc-800 hover:border-amber-500 text-xs font-bold transition text-left"
                   >
                     🔁 Refrão
                   </button>
@@ -403,7 +403,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                     value={customAlertInput}
                     onChange={(e) => setCustomAlertInput(e.target.value)}
                     placeholder="Mensagem rápida (ex: Solo teclado, Modulação para E...)"
-                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
                   />
                   <button
                     type="submit"
@@ -418,7 +418,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
               <div className="pt-2 border-t border-zinc-800 flex items-center justify-between gap-3">
                 <button
                   onClick={onClose}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-950/40"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black shadow-lg shadow-amber-950/40 text-xs font-bold transition shadow-lg shadow-amber-950/40"
                 >
                   <Music className="w-4 h-4" />
                   Ir para o Palco
@@ -445,7 +445,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                   value={pinInput}
                   onChange={(e) => setPinInput(e.target.value.toUpperCase())}
                   placeholder="MTS-742"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-lg font-mono font-bold text-emerald-400 uppercase tracking-widest placeholder-zinc-600 focus:outline-none focus:border-emerald-500 text-center"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-lg font-mono font-bold text-amber-400 uppercase tracking-widest placeholder-zinc-600 focus:outline-none focus:border-amber-500 text-center"
                   required
                 />
               </div>
@@ -458,7 +458,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
                     placeholder="Digite seu nome"
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
                     required
                   />
                 </div>
@@ -467,7 +467,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                   <select
                     value={selectedInstrument}
                     onChange={(e) => setSelectedInstrument(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
                   >
                     {INSTRUMENT_OPTIONS.map((inst) => (
                       <option key={inst} value={inst}>{inst}</option>
@@ -478,7 +478,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-900/30 transition flex items-center justify-center gap-2 mt-4"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-bold text-sm shadow-lg shadow-amber-950/30 transition flex items-center justify-center gap-2 mt-4"
               >
                 <Radio className="w-4 h-4" />
                 Conectar ao Ensaio
@@ -496,7 +496,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                   value={roomNameInput}
                   onChange={(e) => setRoomNameInput(e.target.value)}
                   placeholder="Ex: Show de Sexta / Ensaio da Banda"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
                   required
                 />
               </div>
@@ -509,7 +509,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
                     placeholder="Nome do líder ou regente"
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
                     required
                   />
                 </div>
@@ -518,7 +518,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                   <select
                     value={selectedInstrument}
                     onChange={(e) => setSelectedInstrument(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
                   >
                     {INSTRUMENT_OPTIONS.map((inst) => (
                       <option key={inst} value={inst}>{inst}</option>
@@ -529,7 +529,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-900/30 transition flex items-center justify-center gap-2 mt-4"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-bold text-sm shadow-lg shadow-amber-950/30 transition flex items-center justify-center gap-2 mt-4"
               >
                 <Plus className="w-4 h-4" />
                 Criar Sala e Gerar Código PIN

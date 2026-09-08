@@ -176,7 +176,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-black text-white">Criar Minha Versão (Revisão Pessoal)</h2>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
                   Sem alterar a original
                 </span>
               </div>
@@ -212,7 +212,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ex: Tempo Perdido"
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-bold"
                   required
                 />
               </div>
@@ -225,7 +225,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
                   value={artist}
                   onChange={(e) => setArtist(e.target.value)}
                   placeholder="Ex: Legião Urbana"
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
             </div>
@@ -236,7 +236,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
                 <select
                   value={originalKey}
                   onChange={(e) => setOriginalKey(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-500"
                 >
                   {KEYS.map((k) => (
                     <option key={k} value={k}>{k}</option>
@@ -266,7 +266,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
                   max="240"
                   value={bpm}
                   onChange={(e) => setBpm(Number(e.target.value))}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
                 />
               </div>
 
@@ -275,7 +275,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
                 <select
                   value={timeSignature}
                   onChange={(e) => setTimeSignature(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
                 >
                   <option value="4/4">4/4</option>
                   <option value="3/4">3/4</option>
@@ -289,7 +289,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
                 <select
                   value={liturgicalMoment}
                   onChange={(e) => setLiturgicalMoment(e.target.value as MusicGenre)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
                   {MUSIC_GENRES.map((m) => (
                     <option key={m} value={m}>{m}</option>
@@ -312,11 +312,11 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
                 onClick={() => setPrivacy('private')}
                 className={`p-3 rounded-2xl border cursor-pointer transition flex items-start gap-2.5 ${
                   privacy === 'private'
-                    ? 'bg-emerald-500/15 border-emerald-500 text-white shadow-md'
+                    ? 'bg-amber-500/15 border-amber-500 text-white shadow-md'
                     : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
                 }`}
               >
-                <Lock className={`w-4 h-4 mt-0.5 flex-none ${privacy === 'private' ? 'text-emerald-400' : 'text-zinc-500'}`} />
+                <Lock className={`w-4 h-4 mt-0.5 flex-none ${privacy === 'private' ? 'text-amber-400' : 'text-zinc-500'}`} />
                 <div>
                   <span className="text-xs font-bold block text-white">Privada (Só Você)</span>
                   <span className="text-[10px] text-zinc-400 block leading-tight mt-0.5">
@@ -367,7 +367,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-emerald-400" />
+                <FileText className="w-4 h-4 text-amber-400" />
                 Editor de Letras e Cifras Alinhadas *
               </label>
 
@@ -375,7 +375,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
                 <button
                   type="button"
                   onClick={handleAutoFormat}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs text-emerald-400 border border-zinc-700 font-semibold transition"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs text-amber-400 border border-zinc-700 font-semibold transition"
                   title="Formatar marcadores de Refrão, Intro, Ponte, etc."
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -397,7 +397,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
                   onClick={() => setIsPreview(!isPreview)}
                   className={`flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-bold transition border ${
                     isPreview
-                      ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black border-amber-400'
                       : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700'
                   }`}
                 >
@@ -434,7 +434,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
 
                     if (isSec) {
                       return (
-                        <div key={idx} className="text-emerald-400 font-bold py-1">
+                        <div key={idx} className="text-amber-400 font-bold py-1">
                           {line}
                         </div>
                       );
@@ -462,7 +462,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
                 onChange={(e) => setContent(e.target.value)}
                 placeholder={`Cole ou edite as cifras aqui.\n\nExemplo:\n[Intro] G  Em  C  D\n\nG                  Em\nLetra da música com acordes alinhados`}
                 rows={12}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl p-4 font-mono text-xs sm:text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-500 leading-relaxed"
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl p-4 font-mono text-xs sm:text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500 leading-relaxed"
                 required
               />
             )}
@@ -471,7 +471,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
           {/* Footer Action Buttons */}
           <div className="pt-3 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-[11px] text-zinc-400 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span>Suas edições e o último tom tocado ficam salvos na sua conta.</span>
             </div>
 
@@ -497,7 +497,7 @@ export const ReviseSongModal: React.FC<ReviseSongModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleSave('update')}
-                className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 transition flex items-center gap-2"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-950/40 transition flex items-center gap-2"
                 title="Salva as alterações diretamente nesta música no catálogo"
               >
                 <Save className="w-4 h-4" />

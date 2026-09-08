@@ -48,7 +48,7 @@ export const AppLogo: React.FC<AppLogoProps> = ({
               textClassName || 'text-lg sm:text-xl'
             }`}
           >
-            Cadenc<span className="relative">ē</span>
+            Cadencē
           </span>
           {/* Subtly pulsed Live Stage Indicator */}
           <span

@@ -470,7 +470,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       columnsCount: columnMode === '2-col' ? '2' : '1',
       fontSize: fontScale === 'sm' ? 'sm' : fontScale === 'lg' || fontScale === 'xl' || fontScale === '2xl' ? 'lg' : 'base'
     });
-    const docTitle = `Cifra_${song.title.replace(/\s+/g, '_')}_${shapeKey}_Cifrae`;
+    const docTitle = `Cifra_${song.title.replace(/\s+/g, '_')}_${shapeKey}_Cadence`;
     printHtmlDocument(html, docTitle);
   };
 
@@ -479,7 +479,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     'dark-stage': {
       bg: 'bg-zinc-950 text-zinc-100',
       cardBg: 'bg-zinc-900/90 border-zinc-800',
-      chordColor: 'text-emerald-400 font-bold',
+      chordColor: 'text-amber-400 font-bold drop-shadow-[0_0_6px_rgba(245,158,11,0.25)]',
       lyricColor: 'text-zinc-100',
       sectionColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
       hudBg: 'bg-zinc-900/95 border-zinc-700/80 text-white backdrop-blur-md'
@@ -489,7 +489,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       cardBg: 'bg-zinc-950 border-zinc-900',
       chordColor: 'text-amber-400 font-bold',
       lyricColor: 'text-white',
-      sectionColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+      sectionColor: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
       hudBg: 'bg-black/95 border-zinc-800 text-white backdrop-blur-md'
     },
     'sepia': {
@@ -639,7 +639,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 <h1 className="text-sm sm:text-lg font-bold text-white truncate max-w-[120px] xs:max-w-[150px] sm:max-w-md">
                   {song.title}
                 </h1>
-                <span className="hidden sm:inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 truncate max-w-[100px]">
+                <span className="hidden sm:inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 truncate max-w-[100px]">
                   {song.liturgicalMoment}
                 </span>
                 {song.isCustom && (
@@ -657,7 +657,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
             {/* Stage Fullscreen Clean Trigger (Prioritized on Mobile & Desktop) */}
             <button
               onClick={() => setIsCleanStage(true)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-900/30 transition flex-none"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-xs font-bold shadow-lg shadow-amber-950/30 transition flex-none"
               title="Entrar no Modo Palco Limpo (Full Screen)"
             >
               <Tv className="w-4 h-4" />
@@ -673,14 +673,14 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                     ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 shadow-amber-950/40'
                     : transportMode === 'local_cache'
                     ? 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700'
-                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse hover:bg-emerald-500/30'
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse hover:bg-amber-500/30'
                 }`}
                 title="Status da Sala Ao Vivo"
               >
                 {transportMode === 'p2p_local' ? (
                   <Zap className="w-3.5 h-3.5 text-amber-400" />
                 ) : (
-                  <Radio className="w-3.5 h-3.5 text-emerald-400" />
+                  <Radio className="w-3.5 h-3.5 text-amber-400" />
                 )}
                 <span className="hidden sm:inline">SALA: {sessionState?.pin}</span>
                 <span className="sm:hidden text-[11px] font-mono">{sessionState?.pin}</span>
@@ -717,12 +717,12 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                   onClick={() => setIsSetlistDropdownOpen(prev => !prev)}
                   className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
                     isSetlistDropdownOpen
-                      ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-extrabold'
-                      : 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 border-zinc-700 hover:border-emerald-500/40'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 border-amber-400 font-extrabold'
+                      : 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 border-zinc-700 hover:border-amber-500/40'
                   }`}
                   title="Adicionar esta música a um Repertório"
                 >
-                  <ListPlus className="w-4 h-4 text-emerald-400" />
+                  <ListPlus className="w-4 h-4 text-amber-400" />
                   <span className="hidden md:inline">Repertório</span>
                 </button>
 
@@ -730,7 +730,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 {isSetlistDropdownOpen && (
                   <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 text-left">
                     <div className="px-2 py-1 border-b border-zinc-800 mb-1.5 flex items-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-zinc-400">
-                      <ListMusic className="w-3.5 h-3.5 text-emerald-400" />
+                      <ListMusic className="w-3.5 h-3.5 text-amber-400" />
                       <span>Escolha o Repertório:</span>
                     </div>
 
@@ -750,18 +750,18 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                               }}
                               className={`w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold truncate transition flex items-center justify-between group ${
                                 isAlreadyIn
-                                  ? 'bg-emerald-500/10 text-emerald-300 opacity-80 cursor-default'
+                                  ? 'bg-amber-500/10 text-amber-300 opacity-80 cursor-default'
                                   : 'hover:bg-zinc-800 text-zinc-200'
                               }`}
                             >
                               <span className="truncate pr-2">{sl.title}</span>
                               {isAlreadyIn ? (
-                                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 flex-none">
+                                <span className="flex items-center gap-1 text-[10px] font-bold text-amber-400 flex-none">
                                   <Check className="w-3.5 h-3.5" />
                                   Adicionada
                                 </span>
                               ) : (
-                                <Plus className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-400 flex-none" />
+                                <Plus className="w-3.5 h-3.5 text-zinc-400 group-hover:text-amber-400 flex-none" />
                               )}
                             </button>
                           );
@@ -805,12 +805,12 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               onClick={handlePrintSong}
               className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition shadow-sm border ${
                 isPro
-                  ? 'bg-zinc-800/90 hover:bg-zinc-700 text-white border-zinc-700 hover:border-emerald-500/50'
-                  : 'bg-zinc-800/80 text-zinc-400 hover:text-white border-zinc-700 hover:border-emerald-500/40'
+                  ? 'bg-zinc-800/90 hover:bg-zinc-700 text-white border-zinc-700 hover:border-amber-500/50'
+                  : 'bg-zinc-800/80 text-zinc-400 hover:text-white border-zinc-700 hover:border-amber-500/40'
               }`}
               title={isPro ? "Imprimir ou Salvar esta Cifra em PDF A4" : "Exportar em PDF (Exclusivo Pro)"}
             >
-              <FileText className={`w-3.5 h-3.5 ${isPro ? 'text-emerald-400' : 'text-zinc-400'}`} />
+              <FileText className={`w-3.5 h-3.5 ${isPro ? 'text-amber-400' : 'text-zinc-400'}`} />
               <span className="hidden sm:inline">PDF</span>
               {!isPro && <Lock className="w-3 h-3 text-amber-400 ml-0.5" />}
             </button>
@@ -820,7 +820,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
 
       {/* Setlist Feedback Notification Toast */}
       {setlistFeedback && (
-        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-emerald-500 text-zinc-950 font-black text-xs sm:text-sm shadow-2xl shadow-emerald-900/50 flex items-center gap-2 animate-in fade-in slide-in-from-top-3">
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black text-xs sm:text-sm shadow-2xl shadow-amber-950/30 flex items-center gap-2 animate-in fade-in slide-in-from-top-3">
           <Check className="w-4 h-4 stroke-[3]" />
           <span>Música adicionada ao repertório "{setlistFeedback}"!</span>
         </div>
@@ -848,7 +848,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               }`}
               title={isScrolling ? 'Pausar Rolagem Automática' : 'Iniciar Rolagem Automática'}
             >
-              {isScrolling ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+              {isScrolling ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 text-amber-400" />}
               <span>{isScrolling ? 'Pausar' : 'Auto-Rolagem'}</span>
             </button>
 
@@ -885,7 +885,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                       ? 'bg-zinc-800 text-zinc-300 border-zinc-700'
                       : song.privacy === 'unlisted'
                       ? 'bg-blue-950/60 text-blue-300 border-blue-500/40'
-                      : 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
+                      : 'bg-amber-950/60 text-amber-300 border-amber-500/40'
                   }`}>
                     {song.privacy === 'private' ? '🔒 Privada' : song.privacy === 'unlisted' ? '🔗 Não Listada' : '🌍 Pública'}
                   </span>
@@ -900,7 +900,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 {wakeLockActive && (
                   <>
                     <span>•</span>
-                    <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    <span className="text-amber-400 font-semibold flex items-center gap-1">
                       💡 Tela Sempre Ligada
                     </span>
                   </>
@@ -918,8 +918,8 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                   }}
                   className={`px-4 py-2 rounded-2xl border flex items-center gap-2 text-xs font-black transition shadow-lg ${
                     isPlayingPreview
-                      ? 'bg-emerald-500 text-zinc-950 border-emerald-400 animate-pulse'
-                      : 'bg-zinc-900/90 text-zinc-200 border-zinc-700 hover:border-emerald-500 hover:text-white'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 border-amber-400 animate-pulse'
+                      : 'bg-zinc-900/90 text-zinc-200 border-zinc-700 hover:border-amber-500 hover:text-white'
                   }`}
                   title="Ouvir 30 segundos da gravação original"
                 >
@@ -930,7 +930,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
 
               <div className="px-4 py-2 rounded-2xl bg-zinc-900/90 border border-zinc-700/80 text-center shadow-lg">
                 <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">Tom Real</span>
-                <span className="text-2xl font-black text-emerald-400 font-mono">{currentKey}</span>
+                <span className="text-2xl font-black text-amber-400 font-mono">{currentKey}</span>
               </div>
 
               {activeCapo > 0 && (
@@ -1025,8 +1025,8 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                   onClick={() => setIsInstrumentPopoverOpen(prev => !prev)}
                   className={`px-4 py-2 rounded-2xl border transition-all text-center shadow-lg flex items-center gap-2.5 ${
                     isTransposingInstrument || activeInstrument !== 'Violão / Guitarra'
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 hover:bg-emerald-500/30'
-                      : 'bg-zinc-900/90 text-zinc-400 border-zinc-700 hover:border-emerald-500/60 hover:text-white'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 hover:bg-amber-500/30'
+                      : 'bg-zinc-900/90 text-zinc-400 border-zinc-700 hover:border-amber-500/60 hover:text-white'
                   }`}
                   title="Adaptação inteligente de cifras por instrumento"
                 >
@@ -1038,7 +1038,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                       </span>
                       {!isPro && <Lock className="w-2.5 h-2.5 text-amber-400" />}
                     </div>
-                    <span className="text-xs font-black text-emerald-300 truncate max-w-[120px] block">
+                    <span className="text-xs font-black text-amber-300 truncate max-w-[120px] block">
                       {activeInstrument.split('/')[0].trim()}
                     </span>
                   </div>
@@ -1084,7 +1084,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                             }}
                             className={`w-full p-2 rounded-2xl border text-left transition flex items-center justify-between gap-2 ${
                               isSelected
-                                ? 'bg-emerald-500/20 border-emerald-500/60 text-white'
+                                ? 'bg-amber-500/20 border-amber-500/60 text-white'
                                 : 'bg-zinc-950/70 border-zinc-800 text-zinc-300 hover:bg-zinc-800/80 hover:text-white'
                             }`}
                           >
@@ -1105,7 +1105,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                               {isLocked ? (
                                 <Lock className="w-3.5 h-3.5 text-amber-400" />
                               ) : isSelected ? (
-                                <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                                <div className="w-2 h-2 rounded-full bg-amber-400" />
                               ) : null}
                             </div>
                           </button>
@@ -1114,7 +1114,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                     </div>
 
                     {isTransposingInstrument && (
-                      <div className="pt-2 border-t border-zinc-800 text-[11px] text-emerald-300 bg-emerald-950/40 p-2 rounded-xl border border-emerald-500/30">
+                      <div className="pt-2 border-t border-zinc-800 text-[11px] text-amber-300 bg-amber-950/30 p-2 rounded-xl border border-amber-500/30">
                         <span>Transposição aplicada ao seu instrumento: </span>
                         <strong>{instrumentOffset > 0 ? `+${instrumentOffset}` : instrumentOffset} semitons</strong>
                         <div className="text-[10px] text-zinc-400 mt-0.5">
@@ -1162,7 +1162,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 -
               </button>
               <div className="px-2 text-center min-w-[50px]">
-                <span className="text-base font-black text-emerald-400 font-mono">{currentKey}</span>
+                <span className="text-base font-black text-amber-400 font-mono">{currentKey}</span>
                 {activeShift !== 0 && (
                   <span className="text-[10px] text-zinc-400 block font-mono">
                     {activeShift > 0 ? `+${activeShift}` : activeShift}
@@ -1230,7 +1230,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition shadow-md ${
                 isScrolling
                   ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 animate-pulse'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                  : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black'
               }`}
             >
               {isScrolling ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -1247,7 +1247,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                 <Minus className="w-3 h-3" />
               </button>
 
-              <span className="text-xs font-mono font-black text-emerald-400 px-1.5 min-w-[38px] text-center">
+              <span className="text-xs font-mono font-black text-amber-400 px-1.5 min-w-[38px] text-center">
                 {scrollSpeed.toFixed(1)}x
               </span>
 
@@ -1274,7 +1274,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                   onClick={() => handleSetSpeedPreset(preset.value)}
                   className={`px-2 py-1 rounded-lg text-xs font-bold transition ${
                     scrollSpeed === preset.value
-                      ? 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-sm'
                       : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                   }`}
                 >
@@ -1297,7 +1297,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                     onClick={() => setFontScale(scale)}
                     className={`px-2 py-1 rounded-xl text-xs font-extrabold transition ${
                       fontScale === scale
-                        ? 'bg-emerald-500 text-zinc-950 font-black'
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black'
                         : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                     }`}
                   >
@@ -1312,7 +1312,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               onClick={() => setColumnMode(prev => prev === '1-col' ? '2-col' : '1-col')}
               className={`p-2 rounded-xl border transition ${
                 columnMode === '2-col'
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                   : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'
               }`}
               title={columnMode === '2-col' ? 'Mudar para 1 Coluna' : 'Mudar para 2 Colunas (Tablets / Monitores)'}
@@ -1323,7 +1323,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
             {/* Quick Modo Palco Button in Footer */}
             <button
               onClick={() => setIsCleanStage(true)}
-              className="p-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 transition"
+              className="p-2 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 transition"
               title="Entrar no Modo Palco Limpo (Tela Cheia)"
             >
               <Tv className="w-4 h-4" />
@@ -1333,7 +1333,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
             <select
               value={theme}
               onChange={(e) => setTheme(e.target.value as StageTheme)}
-              className="bg-zinc-900 border border-zinc-700 text-xs font-bold rounded-xl px-2.5 py-2 text-zinc-200 focus:outline-none focus:border-emerald-500"
+              className="bg-zinc-900 border border-zinc-700 text-xs font-bold rounded-xl px-2.5 py-2 text-zinc-200 focus:outline-none focus:border-amber-500"
             >
               <option value="dark-stage">Dark Stage</option>
               <option value="oled">OLED Black</option>
@@ -1362,7 +1362,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
               <span>Repertório: <strong className="text-white">{activeSetlist.title}</strong>{' '}</span>
               {setlistIndex && `(${setlistIndex.current} de ${setlistIndex.total})`}
               {isInRoom && !isHost && (
-                <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30 inline-block">
+                <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30 inline-block">
                   Sincronizado com o Líder
                 </span>
               )}
@@ -1385,12 +1385,12 @@ export const StageViewer: React.FC<StageViewerProps> = ({
         {/* Leader Quick Band Cues Bar */}
         {isInRoom && isHost && (
           <div className="mt-2 pt-2 border-t border-zinc-800/60 flex items-center gap-2 overflow-x-auto max-w-6xl mx-auto text-xs py-1">
-            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex-none">
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex-none">
               Comandos Banda:
             </span>
             <button
               onClick={() => sendBandAlert('REPETIR REFRÃO 🔁', 'repeat-chorus')}
-              className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-emerald-500/20 text-zinc-200 border border-zinc-700 hover:border-emerald-500 text-xs font-bold transition flex-none"
+              className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-amber-500/20 text-zinc-200 border border-zinc-700 hover:border-amber-500 text-xs font-bold transition flex-none"
             >
               🔁 Repetir Refrão
             </button>
@@ -1464,7 +1464,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       {/* Version Saved Notification Toast */}
       {versionSavedFeedback && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4">
-          <div className="px-5 py-3 rounded-2xl bg-emerald-500 text-zinc-950 font-black shadow-2xl flex items-center gap-2 text-xs sm:text-sm">
+          <div className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-2xl flex items-center gap-2 text-xs sm:text-sm">
             <Check className="w-5 h-5" />
             <span>{feedbackMessage}</span>
           </div>

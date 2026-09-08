@@ -90,7 +90,7 @@ export const GenreFolderModal: React.FC<GenreFolderModalProps> = ({
       >
         <div className="flex items-center justify-between p-5 border-b border-zinc-800 bg-zinc-950/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
               <Folder className="w-5 h-5" />
             </div>
             <div>
@@ -124,7 +124,7 @@ export const GenreFolderModal: React.FC<GenreFolderModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Pop Rock, Barzinho, Clássicos, Acústico..."
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition"
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition"
               required
             />
           </div>
@@ -138,7 +138,7 @@ export const GenreFolderModal: React.FC<GenreFolderModalProps> = ({
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               placeholder="Ex: Músicas para o início do show e animação"
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition"
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition"
             />
           </div>
 
@@ -154,7 +154,7 @@ export const GenreFolderModal: React.FC<GenreFolderModalProps> = ({
                   onClick={() => setColor(item.value)}
                   className={`h-10 rounded-xl bg-gradient-to-br ${item.value} border transition-all flex items-center justify-center relative ${
                     color === item.value
-                      ? 'border-white scale-105 ring-2 ring-emerald-400'
+                      ? 'border-white scale-105 ring-2 ring-amber-400'
                       : 'border-white/10 hover:scale-102 hover:border-white/40'
                   }`}
                   title={item.label}
@@ -213,7 +213,7 @@ export const GenreFolderModal: React.FC<GenreFolderModalProps> = ({
 
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 transition flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-950/40 transition flex items-center gap-1.5"
               >
                 <Check className="w-4 h-4" />
                 <span>{isEditing ? 'Salvar Alterações' : 'Criar Pasta'}</span>

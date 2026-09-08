@@ -71,7 +71,7 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
     setIsGenerating(true);
     try {
       const html = getPdfHtml();
-      const docTitle = `Repertorio_${setlist.title.replace(/\s+/g, '_')}_Cifrae`;
+      const docTitle = `Repertorio_${setlist.title.replace(/\s+/g, '_')}_Cadence`;
       await printHtmlDocument(html, docTitle);
     } catch (err) {
       console.error('Error generating PDF print:', err);
@@ -120,7 +120,7 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800 flex-none bg-zinc-950/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
               <FileText className="w-5 h-5" />
             </div>
             <div>
@@ -152,7 +152,7 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
               <h4 className="text-sm font-black text-white">{setlist.title}</h4>
               <p className="text-xs text-zinc-400">{setlist.targetEvent || 'Geral'} • {setlistSongs.length} músicas</p>
             </div>
-            <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-xl border border-emerald-500/30">
+            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/30 px-2.5 py-1 rounded-xl border border-amber-500/30">
               Formato A4 Pronto
             </span>
           </div>
@@ -165,11 +165,11 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
                 onClick={() => setExportMode('full_book')}
                 className={`p-3.5 rounded-2xl border cursor-pointer transition flex items-start gap-3 ${
                   exportMode === 'full_book'
-                    ? 'bg-emerald-500/15 border-emerald-500 text-white shadow-md ring-1 ring-emerald-500/30'
+                    ? 'bg-amber-500/15 border-amber-500 text-white shadow-md ring-1 ring-amber-500/30'
                     : 'bg-zinc-950/50 border-zinc-800 text-zinc-400 hover:border-zinc-700'
                 }`}
               >
-                <FileText className={`w-5 h-5 mt-0.5 flex-none ${exportMode === 'full_book' ? 'text-emerald-400' : 'text-zinc-500'}`} />
+                <FileText className={`w-5 h-5 mt-0.5 flex-none ${exportMode === 'full_book' ? 'text-amber-400' : 'text-zinc-500'}`} />
                 <div>
                   <span className="text-xs font-bold block text-white">Caderno de Cifras Completo</span>
                   <span className="text-[11px] text-zinc-400 block leading-tight mt-0.5">
@@ -182,11 +182,11 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
                 onClick={() => setExportMode('summary_sheet')}
                 className={`p-3.5 rounded-2xl border cursor-pointer transition flex items-start gap-3 ${
                   exportMode === 'summary_sheet'
-                    ? 'bg-emerald-500/15 border-emerald-500 text-white shadow-md ring-1 ring-emerald-500/30'
+                    ? 'bg-amber-500/15 border-amber-500 text-white shadow-md ring-1 ring-amber-500/30'
                     : 'bg-zinc-950/50 border-zinc-800 text-zinc-400 hover:border-zinc-700'
                 }`}
               >
-                <ListOrdered className={`w-5 h-5 mt-0.5 flex-none ${exportMode === 'summary_sheet' ? 'text-emerald-400' : 'text-zinc-500'}`} />
+                <ListOrdered className={`w-5 h-5 mt-0.5 flex-none ${exportMode === 'summary_sheet' ? 'text-amber-400' : 'text-zinc-500'}`} />
                 <div>
                   <span className="text-xs font-bold block text-white">Folha de Palco Resumida</span>
                   <span className="text-[11px] text-zinc-400 block leading-tight mt-0.5">
@@ -201,7 +201,7 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
           {exportMode === 'full_book' && (
             <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-3">
               <div className="flex items-center gap-2 text-xs font-bold text-zinc-300">
-                <Settings2 className="w-4 h-4 text-emerald-400" />
+                <Settings2 className="w-4 h-4 text-amber-400" />
                 <span>Ajustes de Impressão e Diagramação (A4):</span>
               </div>
 
@@ -238,7 +238,7 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
                     onClick={() => setIncludeNotes(!includeNotes)}
                     className={`w-full py-1.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                       includeNotes
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                         : 'bg-zinc-900 text-zinc-500 border-zinc-700'
                     }`}
                   >
@@ -250,10 +250,10 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
           )}
 
           {/* Quick Share to WhatsApp */}
-          <div className="p-3.5 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 flex items-center justify-between gap-3">
+          <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-500/30 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <Share2 className="w-4 h-4 text-emerald-400 flex-none" />
-              <span className="text-xs text-emerald-200">
+              <Share2 className="w-4 h-4 text-amber-400 flex-none" />
+              <span className="text-xs text-amber-200">
                 Deseja enviar a lista de músicas direto para o WhatsApp da banda?
               </span>
             </div>
@@ -261,7 +261,7 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
             <button
               type="button"
               onClick={handleCopyWhatsapp}
-              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition flex items-center gap-1.5 shadow-md flex-none cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-black text-xs transition flex items-center gap-1.5 shadow-md flex-none cursor-pointer"
             >
               {copiedWhatsapp ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copiedWhatsapp ? 'Copiado!' : 'Copiar p/ WhatsApp'}</span>
@@ -295,7 +295,7 @@ export const ExportSetlistPdfModal: React.FC<ExportSetlistPdfModalProps> = ({
             type="button"
             disabled={isGenerating}
             onClick={handlePrint}
-            className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-950 transition flex items-center gap-2 cursor-pointer"
+            className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-950/40 transition flex items-center gap-2 cursor-pointer"
           >
             {isGenerating ? (
               <>

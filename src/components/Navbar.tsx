@@ -66,10 +66,10 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="flex-1 max-w-md hidden sm:block">
         <button
           onClick={onOpenSearch}
-          className="w-full flex items-center justify-between px-4 py-2 rounded-2xl bg-zinc-900/90 border border-zinc-800 hover:border-emerald-500/60 text-zinc-400 hover:text-white transition shadow-inner text-xs sm:text-sm"
+          className="w-full flex items-center justify-between px-4 py-2 rounded-2xl bg-zinc-900/90 border border-zinc-800 hover:border-amber-500/50 hover:shadow-[0_0_15px_rgba(245,158,11,0.15)] text-zinc-400 hover:text-white transition shadow-inner text-xs sm:text-sm"
         >
           <div className="flex items-center gap-2.5">
-            <Search className="w-4 h-4 text-emerald-400" />
+            <Search className="w-4 h-4 text-amber-400" />
             <span className="truncate">Buscar músicas locais ou pesquisar online...</span>
           </div>
           <kbd className="px-2 py-0.5 rounded-lg bg-zinc-800 text-[10px] font-mono text-zinc-400 border border-zinc-700">
@@ -91,10 +91,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Upload Song Button */}
         <button
           onClick={onOpenUploadModal}
-          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-emerald-400 border border-zinc-800 hover:border-emerald-500/50 text-xs font-bold transition shadow-sm"
+          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-amber-300 border border-zinc-800 hover:border-amber-500/40 text-xs font-bold transition shadow-sm"
           title="Fazer Upload de Cifra Própria"
         >
-          <Upload className="w-3.5 h-3.5 text-emerald-400" />
+          <Upload className="w-3.5 h-3.5 text-amber-400" />
           <span>Subir Cifra</span>
         </button>
 
@@ -128,9 +128,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         ) : (
           <button
             onClick={onOpenPricing}
-            className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] font-extrabold hover:bg-emerald-500/20 transition"
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/40 text-[11px] font-extrabold hover:bg-amber-500/25 transition shadow-[0_0_10px_rgba(245,158,11,0.2)]"
           >
-            <Crown className="w-3 h-3 text-emerald-400 fill-current" />
+            <Crown className="w-3 h-3 text-amber-400 fill-current" />
             <span>PRO</span>
           </button>
         )}
@@ -144,7 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 shadow-amber-950/60'
                 : transportMode === 'local_cache'
                 ? 'bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700'
-                : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 shadow-emerald-950/60'
+                : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 shadow-amber-950/60 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
             }`}
           >
             <span
@@ -153,7 +153,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ? 'bg-amber-400 animate-pulse'
                   : transportMode === 'local_cache'
                   ? 'bg-zinc-400'
-                  : 'bg-emerald-400 animate-ping'
+                  : 'bg-amber-400 animate-pulse shadow-[0_0_8px_#F59E0B]'
               }`}
             />
             <span className="font-mono">SALA: {sessionState.pin}</span>
@@ -163,10 +163,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             ) : transportMode === 'local_cache' ? (
               <span className="hidden md:flex items-center gap-1 text-[10px] text-zinc-400 font-medium">
-                <ShieldCheck className="w-3 h-3 text-emerald-400" /> Local
+                <ShieldCheck className="w-3 h-3 text-amber-400" /> Local
               </span>
             ) : (
-              <span className="hidden md:inline text-[10px] text-emerald-400/80">
+              <span className="hidden md:inline text-[10px] text-amber-300/90">
                 ({sessionState.members.length} online)
               </span>
             )}
@@ -181,9 +181,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
             <button
               onClick={onOpenLiveRoomModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-zinc-900 hover:bg-emerald-600 hover:text-white text-zinc-300 border border-zinc-800 hover:border-emerald-500 text-xs font-bold transition shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-zinc-900 hover:bg-amber-500 hover:text-zinc-950 text-zinc-300 border border-zinc-800 hover:border-amber-400 text-xs font-bold transition shadow-sm hover:shadow-[0_0_15px_rgba(245,158,11,0.25)] group"
             >
-              <Radio className="w-3.5 h-3.5 text-emerald-400" />
+              <Radio className="w-3.5 h-3.5 text-amber-400 group-hover:text-zinc-950 transition-colors" />
               <span className="hidden sm:inline">Conectar Ensaio</span>
             </button>
           </div>
@@ -193,7 +193,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {userProfile ? (
           <div
             onClick={onOpenProfile}
-            className={`relative w-8 h-8 rounded-full ${userProfile.avatarColor} text-zinc-950 font-black text-xs flex items-center justify-center cursor-pointer shadow-md ml-1 ring-2 ${isPro ? 'ring-emerald-400' : 'ring-zinc-800'}`}
+            className={`relative w-8 h-8 rounded-full ${userProfile.avatarColor} text-zinc-950 font-black text-xs flex items-center justify-center cursor-pointer shadow-md ml-1 ring-2 ${isPro ? 'ring-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'ring-zinc-800'}`}
             title={`${userProfile.displayName} (${userProfile.instrument})`}
           >
             {userProfile.displayName?.charAt(0).toUpperCase() || 'M'}

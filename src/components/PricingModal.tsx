@@ -119,12 +119,12 @@ export const PricingModal: React.FC<PricingModalProps> = ({
           <div className="flex items-center gap-3.5">
             <AppLogo size={46} variant="circle" />
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black uppercase tracking-wider mb-1">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black uppercase tracking-wider mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 Planos e Assinaturas
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-white">
-                Desbloqueie o Poder Total do Cifra<span className="text-emerald-400">ê</span>
+                Desbloqueie o Poder Total do Cadencē
               </h2>
               {featureReason && (
                 <p className="text-xs text-amber-400 font-semibold mt-0.5">
@@ -168,7 +168,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 onClick={() => setBillingCycle('annual')}
                 className={`px-5 py-2 rounded-xl text-xs font-extrabold transition flex items-center gap-2 ${
                   billingCycle === 'annual'
-                    ? 'bg-emerald-500 text-zinc-950 shadow-md'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md'
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -200,27 +200,27 @@ export const PricingModal: React.FC<PricingModalProps> = ({
 
                 <ul className="space-y-2.5 text-xs text-zinc-300 pt-3 border-t border-zinc-800/80">
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span><strong>Até 10 músicas</strong> no catálogo pessoal</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span><strong>Até 3 pastas de estilos</strong> personalizáveis</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span>Transposição de tom cromática</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span>Rolagem automática no palco</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span>Entrar em salas ao vivo (Membro)</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span>Até 3 repertórios salvos</span>
                   </li>
                   <li className="flex items-center gap-2.5 text-zinc-500">
@@ -261,14 +261,14 @@ export const PricingModal: React.FC<PricingModalProps> = ({
             </div>
 
             {/* 2. Pro Card (MAIS ESCOLHIDO) */}
-            <div className="p-6 rounded-3xl bg-gradient-to-b from-emerald-950/70 via-zinc-900 to-zinc-950 border-2 border-emerald-500 flex flex-col justify-between space-y-5 relative shadow-2xl">
-              <div className="absolute -top-3.5 right-6 px-3.5 py-1 rounded-full bg-emerald-500 text-zinc-950 font-black text-[10px] uppercase tracking-wider shadow-lg">
+            <div className="p-6 rounded-3xl bg-gradient-to-b from-[#18140E]/70 via-zinc-900 to-zinc-950 border-2 border-amber-500 flex flex-col justify-between space-y-5 relative shadow-2xl">
+              <div className="absolute -top-3.5 right-6 px-3.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black font-black text-[10px] uppercase tracking-wider shadow-lg">
                 👑 Mais Escolhido
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <span className="text-xs font-black text-emerald-400 uppercase tracking-wider block">
+                  <span className="text-xs font-black text-amber-400 uppercase tracking-wider block">
                     Plano Pro (Palco Conectado)
                   </span>
                   <div className="text-3xl font-black text-white mt-1">
@@ -290,55 +290,55 @@ export const PricingModal: React.FC<PricingModalProps> = ({
 
                 <ul className="space-y-2.5 text-xs text-zinc-200 pt-3 border-t border-zinc-800">
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <strong className="text-white">Músicas Ilimitadas no Catálogo Pessoal</strong>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <strong className="text-white">Pastas e Estilos Musicais Ilimitados na Nuvem</strong>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <strong className="text-white">Criar Salas Ao Vivo (PIN e QR Code)</strong>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <strong className="text-white">Até 25 músicos conectados simultaneamente</strong>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span>Transposição global síncrona para toda a banda</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span>Follow Scroll mestre para toda a banda</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span>Comandos e Alertas de Palco Instantâneos</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span>Repertórios e Setlists Ilimitados na nuvem</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span>Upload de cifras próprias em PDF/TXT</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <strong className="text-white">Criar Minhas Versões (Editar acordes, letras e arranjos)</strong>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <strong className="text-white">Adaptação de Cifras & Diagramas por Instrumento (Teclado, Ukulele, Cavaco, Sax Eb, Trompete Bb)</strong>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <strong className="text-white">Exportação de Repertórios em PDF e Impressão de Palco A4</strong>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 flex-none" />
+                    <Check className="w-4 h-4 text-amber-400 flex-none" />
                     <span>Metrônomo inteligente e Tom de Referência</span>
                   </li>
                 </ul>
@@ -348,7 +348,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 <button
                   onClick={handleSubscribe}
                   disabled={isProcessing}
-                  className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-xl shadow-emerald-900/40 transition flex items-center justify-center gap-2 transform active:scale-95"
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-black text-xs uppercase tracking-wider shadow-xl shadow-amber-950/40 transition flex items-center justify-center gap-2 transform active:scale-95"
                 >
                   <CreditCard className="w-4 h-4" />
                   {isProcessing ? 'Abrindo Checkout Seguro...' : 'Ir para o Pagamento (Stripe)'}
@@ -370,7 +370,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 value={coupon}
                 onChange={(e) => setCoupon(e.target.value)}
                 placeholder="Ex: SHOW2026"
-                className="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white uppercase placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                className="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white uppercase placeholder-zinc-500 focus:outline-none focus:border-amber-500"
               />
               <button
                 type="submit"
@@ -382,7 +382,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
           </div>
 
           {couponApplied && (
-            <div className="max-w-3xl mx-auto p-3 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold text-center">
+            <div className="max-w-3xl mx-auto p-3 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold text-center">
               ✅ Cupom SHOW2026 aplicado! 20% de desconto adicional na primeira anuidade.
             </div>
           )}
