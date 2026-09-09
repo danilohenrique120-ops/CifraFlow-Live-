@@ -290,6 +290,7 @@ const MainAppContent: React.FC = () => {
     if (typeof window === 'undefined') return false;
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('landing') === 'true') return true;
+    if (urlParams.get('app') === 'true') return false;
     // Se o visitante acessou via link de compartilhamento de repertório ou sala ao vivo, entra direto sem bloquear na landing
     if (urlParams.get('repertorio') || urlParams.get('setlist') || urlParams.get('sala') || urlParams.get('room')) {
       return false;
@@ -769,8 +770,8 @@ const MainAppContent: React.FC = () => {
 
   // 🔒 OPÇÃO B: Bloqueio Total Obrigatório para visitante online sem login
   if (!userProfile && !isLoading) {
-    if (!isNetworkOnline) {
-      // Offline no palco: nunca travar o músico com tela de login! Libera acesso direto às músicas salvas
+    if (!isNetworkOnline || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('guest') === 'true')) {
+      // Offline no palco ou visitante de demonstração: nunca travar o músico com tela de login! Libera acesso direto às músicas salvas
       loginAsOfflineGuest();
       return null;
     }

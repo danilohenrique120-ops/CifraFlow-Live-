@@ -105,13 +105,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         {/* Top: Brand & Navigation */}
         <div className="space-y-5 overflow-y-auto pr-1 scrollbar-none">
-          <div className="flex items-center justify-between pb-2 border-b border-zinc-850">
-            <div className="flex items-center gap-2.5">
-              <AppLogo size={30} variant="squircle" showText={true} />
-            </div>
+          {/* Mobile-only close button header */}
+          <div className="lg:hidden flex items-center justify-end pb-2 border-b border-zinc-850">
             <button
               onClick={onCloseMobile}
-              className="lg:hidden p-1.5 rounded-lg text-zinc-400 hover:text-white"
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
