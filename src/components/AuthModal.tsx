@@ -13,7 +13,10 @@ import {
   ShieldCheck,
   Radio,
   ArrowRight,
-  Crown
+  Crown,
+  KeyRound,
+  CheckCircle2,
+  ArrowLeft
 } from 'lucide-react';
 
 import { INSTRUMENT_OPTIONS } from '../types';
@@ -25,19 +28,42 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandatory = false }) => {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, loginAsOfflineGuest } = useAuth();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, loginAsOfflineGuest } = useAuth();
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [instrument, setInstrument] = useState('Violão / Guitarra');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [resetSentSuccess, setResetSentSuccess] = useState(false);
 
   if (!isOpen) return null;
 
+  const isSignUp = mode === 'signup';
+  const isForgot = mode === 'forgot';
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMsg(null);
+    setResetSentSuccess(false);
+
+    try {
+      await resetPassword(email);
+      setIsLoading(false);
+      setResetSentSuccess(true);
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMsg(err?.message || 'Erro ao enviar e-mail de recuperação.');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isForgot) {
+      return handleResetPassword(e);
+    }
     setIsLoading(true);
     setErrorMsg(null);
 
@@ -109,7 +135,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
                 Cadencē
               </h3>
               <p className="text-[11px] text-zinc-400">
-                {isSignUp ? 'Crie sua conta para começar' : 'Acesse sua conta para entrar no app'}
+                {isForgot
+                  ? 'Recupere o acesso à sua conta'
+                  : isSignUp
+                  ? 'Crie sua conta para começar'
+                  : 'Acesse sua conta para entrar no app'}
               </p>
             </div>
           </div>
@@ -130,40 +160,67 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
           </div>
         )}
 
-        {/* 1-Click Google Sign In */}
-        <button
-          onClick={handleGoogleLogin}
-          disabled={isLoading}
-          className="w-full py-3 rounded-2xl bg-white hover:bg-zinc-100 text-zinc-900 font-extrabold text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-3"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.99 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-            />
-          </svg>
-          Continuar com Google
-        </button>
+        {resetSentSuccess && (
+          <div className="p-4 rounded-2xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-medium space-y-2 animate-in fade-in">
+            <div className="flex items-center gap-2 font-black text-emerald-400">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-none" />
+              <span>E-mail de recuperação enviado com sucesso!</span>
+            </div>
+            <p className="text-zinc-300 leading-relaxed">
+              Enviamos um link de redefinição de senha para <strong className="text-white">{email}</strong>. Verifique sua caixa de entrada e a pasta de spam.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setResetSentSuccess(false);
+                setMode('signin');
+              }}
+              className="mt-2 text-xs font-bold text-amber-400 hover:text-amber-300 underline flex items-center gap-1"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              Voltar para a tela de Login
+            </button>
+          </div>
+        )}
 
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-zinc-800" />
-          <span className="text-[10px] uppercase font-bold text-zinc-500">ou com e-mail</span>
-          <div className="flex-1 h-px bg-zinc-800" />
-        </div>
+        {/* 1-Click Google Sign In (hidden in forgot mode) */}
+        {!isForgot && (
+          <>
+            <button
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="w-full py-3 rounded-2xl bg-white hover:bg-zinc-100 text-zinc-900 font-extrabold text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-3"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.99 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                />
+              </svg>
+              Continuar com Google
+            </button>
 
-        {/* Email/Password Form */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-zinc-800" />
+              <span className="text-[10px] uppercase font-bold text-zinc-500">ou com e-mail</span>
+              <div className="flex-1 h-px bg-zinc-800" />
+            </div>
+          </>
+        )}
+
+        {/* Email/Password or Password Recovery Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
           {isSignUp && (
             <div>
@@ -197,20 +254,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-bold text-zinc-300 block mb-1">Sua Senha</label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
-                required
-              />
+          {!isForgot && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-zinc-300">Sua Senha</label>
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setErrorMsg(null);
+                      setResetSentSuccess(false);
+                      setMode('forgot');
+                    }}
+                    className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold hover:underline"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+                  required
+                />
+              </div>
             </div>
-          </div>
+          )}
+
+          {isForgot && (
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Digite o e-mail cadastrado na sua conta. Você receberá um link oficial com segurança para criar uma nova senha instantaneamente.
+            </p>
+          )}
 
           {isSignUp && (
             <div>
@@ -241,10 +321,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-amber-950/40 transition flex items-center justify-center gap-2 mt-4"
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black shadow-lg shadow-amber-950/40 font-black text-xs sm:text-sm uppercase tracking-wider transition flex items-center justify-center gap-2 mt-4 active:scale-95"
           >
             {isLoading ? (
               'Processando...'
+            ) : isForgot ? (
+              <>
+                <KeyRound className="w-4 h-4" />
+                Enviar Link de Recuperação
+              </>
             ) : isSignUp ? (
               <>
                 <UserPlus className="w-4 h-4" />
@@ -259,29 +344,47 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
           </button>
         </form>
 
-        {/* Acesso Offline no Palco */}
-        <div className="pt-2 border-t border-zinc-800">
-          <button
-            type="button"
-            onClick={() => {
-              loginAsOfflineGuest();
-              onClose();
-            }}
-            className="w-full py-2.5 px-4 rounded-2xl bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-bold transition flex items-center justify-center gap-2 border border-zinc-700 shadow-sm"
-          >
-            <ShieldCheck className="w-4 h-4 text-amber-400" />
-            <span>Continuar no Modo Offline (Tocar no Palco)</span>
-          </button>
-        </div>
+        {/* Acesso Offline no Palco (somente quando não estiver no modo recuperar senha) */}
+        {!isForgot && (
+          <div className="pt-2 border-t border-zinc-800">
+            <button
+              type="button"
+              onClick={() => {
+                loginAsOfflineGuest();
+                onClose();
+              }}
+              className="w-full py-2.5 px-4 rounded-2xl bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-bold transition flex items-center justify-center gap-2 border border-zinc-700 shadow-sm"
+            >
+              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              <span>Continuar no Modo Offline (Tocar no Palco)</span>
+            </button>
+          </div>
+        )}
 
-        {/* Toggle Login/SignUp */}
+        {/* Toggle Login/SignUp/Forgot */}
         <div className="pt-2 text-center text-xs text-zinc-400">
-          {isSignUp ? (
+          {isForgot ? (
+            <button
+              type="button"
+              onClick={() => {
+                setErrorMsg(null);
+                setResetSentSuccess(false);
+                setMode('signin');
+              }}
+              className="text-amber-400 font-bold hover:underline inline-flex items-center gap-1.5"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Lembrou a senha? Voltar para o Login
+            </button>
+          ) : isSignUp ? (
             <span>
               Já tem uma conta?{' '}
               <button
                 type="button"
-                onClick={() => setIsSignUp(false)}
+                onClick={() => {
+                  setErrorMsg(null);
+                  setMode('signin');
+                }}
                 className="text-amber-400 font-bold hover:underline"
               >
                 Faça login
@@ -292,7 +395,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isMandato
               Não tem conta?{' '}
               <button
                 type="button"
-                onClick={() => setIsSignUp(true)}
+                onClick={() => {
+                  setErrorMsg(null);
+                  setMode('signup');
+                }}
                 className="text-amber-400 font-bold hover:underline"
               >
                 Cadastre-se gratuitamente

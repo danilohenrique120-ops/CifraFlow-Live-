@@ -6,7 +6,9 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail,
+  sendEmailVerification
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, googleProvider, db, isFirebaseConfigured } from '../firebase';
@@ -21,6 +23,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, name: string, instrument?: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   signOutUser: () => Promise<void>;
   loginAsOfflineGuest: (name?: string, instrument?: string) => void;
   updateUserInstrument: (instrument: string) => Promise<void>;
@@ -453,6 +456,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserProfile(newProfile);
   };
 
+  const resetPassword = async (email: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      throw new Error('Por favor, informe seu e-mail para receber as instruções de recuperação.');
+    }
+
+    if (!isFirebaseConfigured) {
+      // Demo fallback
+      return;
+    }
+
+    await sendPasswordResetEmail(auth, cleanEmail);
+  };
+
   const loginAsOfflineGuest = (name = 'Músico Convidado', instrument = 'Violão') => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('cifraflow_user_profile') : null;
     if (saved) {
@@ -514,6 +531,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
+        resetPassword,
         signOutUser,
         loginAsOfflineGuest,
         updateUserInstrument,

@@ -371,7 +371,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
 
   const handleAdjustSpeed = (delta: number) => {
     setScrollSpeed((prev) => {
-      const next = Math.max(0.3, Math.min(6.0, Number((prev + delta).toFixed(1))));
+      const next = Math.max(0.2, Math.min(6.0, Number((prev + delta).toFixed(1))));
       scrollSpeedRef.current = next;
       return next;
     });
@@ -382,37 +382,54 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     scrollSpeedRef.current = speed;
   };
 
-  // High performance auto-scroll loop with instant speed reaction
+  // Ultra-fluid 60/120fps auto-scroll engine with sub-pixel floating point accumulator
   const lastAutoScrollBroadcastRef = useRef<number>(0);
+  const scrollPosRef = useRef<number>(0);
+
   useEffect(() => {
     if (!isScrolling) {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
       return;
     }
 
+    if (scrollContainerRef.current) {
+      scrollPosRef.current = scrollContainerRef.current.scrollTop;
+    }
+
     let lastTime = performance.now();
     const scrollStep = (currentTime: number) => {
-      const delta = (currentTime - lastTime) / 1000;
+      // Delta in seconds, clamped to avoid sudden jumps if the tab was suspended
+      const delta = Math.min((currentTime - lastTime) / 1000, 0.1);
       lastTime = currentTime;
 
-      if (scrollContainerRef.current) {
-        const container = scrollContainerRef.current;
+      const container = scrollContainerRef.current;
+      if (container) {
         const maxScroll = container.scrollHeight - container.clientHeight;
 
-        if (container.scrollTop < maxScroll) {
-          // Dynamic pixel movement using active scrollSpeedRef
-          // Base speed: 32 pixels/sec * speed multiplier
-          const pxToScroll = 32 * scrollSpeedRef.current * delta;
-          container.scrollTop += pxToScroll;
+        if (scrollPosRef.current < maxScroll) {
+          // If the user manually scrolled or dragged during autoscroll, sync our accumulator
+          if (Math.abs(container.scrollTop - scrollPosRef.current) > 4) {
+            scrollPosRef.current = container.scrollTop;
+          }
 
-          // Broadcast scroll to band if leader (throttled to 200ms to keep connection lightweight and fast)
+          // Non-linear speed curve: (speed^1.25) * 36px/sec
+          // This gives precise fine-tuning at low speeds (0.3x, 0.5x, 0.8x) and punchy speed at high (2x, 3x, 5x)
+          const basePxPerSecond = 36;
+          const curveMultiplier = Math.pow(scrollSpeedRef.current, 1.25);
+          const pxToScroll = basePxPerSecond * curveMultiplier * delta;
+
+          scrollPosRef.current = Math.min(maxScroll, scrollPosRef.current + pxToScroll);
+          container.scrollTop = scrollPosRef.current;
+
+          // Broadcast scroll to band if leader (throttled to 150ms for low latency and smooth followers)
           if (isInRoom && isHost && sessionState?.followScroll && maxScroll > 0) {
-            const now = performance.now();
-            if (now - lastAutoScrollBroadcastRef.current > 200) {
+            const now = currentTime;
+            if (now - lastAutoScrollBroadcastRef.current > 150) {
               lastAutoScrollBroadcastRef.current = now;
-              const percentage = Math.min(100, Math.round((container.scrollTop / maxScroll) * 100));
+              const percentage = Math.min(100, Math.round((scrollPosRef.current / maxScroll) * 100));
               broadcastScroll(percentage);
             }
           }
@@ -424,22 +441,38 @@ export const StageViewer: React.FC<StageViewerProps> = ({
       }
     };
 
-
     animationFrameRef.current = requestAnimationFrame(scrollStep);
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
   }, [isScrolling, isInRoom, isHost, sessionState?.followScroll, broadcastScroll]);
 
-  // Keyboard shortcut listener (Space = toggle scroll, Alt+Up/Down = transpose)
+  // Keyboard shortcut & Bluetooth Pedal listener (Space = toggle scroll, PageUp/Down = pedal nudge, Alt+Up/Down = transpose)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.code === 'Space') {
         e.preventDefault();
         setIsScrolling(prev => !prev);
+      } else if (e.code === 'PageDown') {
+        // Bluetooth Pedal Next Page / Scroll down
+        e.preventDefault();
+        if (scrollContainerRef.current) {
+          const nudge = scrollContainerRef.current.clientHeight * 0.7;
+          scrollContainerRef.current.scrollBy({ top: nudge, behavior: 'smooth' });
+          scrollPosRef.current = scrollContainerRef.current.scrollTop + nudge;
+        }
+      } else if (e.code === 'PageUp') {
+        // Bluetooth Pedal Prev Page / Scroll up
+        e.preventDefault();
+        if (scrollContainerRef.current) {
+          const nudge = scrollContainerRef.current.clientHeight * 0.7;
+          scrollContainerRef.current.scrollBy({ top: -nudge, behavior: 'smooth' });
+          scrollPosRef.current = Math.max(0, scrollContainerRef.current.scrollTop - nudge);
+        }
       } else if (e.code === 'ArrowUp' && e.altKey) {
         e.preventDefault();
         handleSemitoneChange(1);
@@ -831,7 +864,7 @@ export const StageViewer: React.FC<StageViewerProps> = ({
         ref={scrollContainerRef}
         onScroll={handleManualScroll}
         onClick={() => setIsScrolling(prev => !prev)}
-        className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 cursor-pointer select-text relative scroll-smooth"
+        className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 cursor-pointer select-text relative [will-change:scroll-position]"
       >
         {/* Floating Quick Restore Button when in Clean Stage Mode */}
         {isCleanStage && (
@@ -1263,11 +1296,11 @@ export const StageViewer: React.FC<StageViewerProps> = ({
             {/* Speed Presets */}
             <div className="hidden sm:flex items-center gap-1 pl-2 border-l border-zinc-700/80">
               {[
-                { label: '0.5x', value: 0.5 },
-                { label: '1.0x', value: 1.0 },
-                { label: '1.8x', value: 1.8 },
-                { label: '3.0x', value: 3.0 },
-                { label: '5.0x', value: 5.0 }
+                { label: '0.4x (Lento)', value: 0.4 },
+                { label: '0.8x', value: 0.8 },
+                { label: '1.2x (Padrão)', value: 1.2 },
+                { label: '2.0x (Rápido)', value: 2.0 },
+                { label: '3.5x', value: 3.5 }
               ].map((preset) => (
                 <button
                   key={preset.value}

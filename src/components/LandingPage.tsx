@@ -562,49 +562,104 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </p>
         </div>
 
+        {/* Billing Cycle Toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="flex items-center bg-[#0A0A0C] p-1.5 rounded-2xl border border-white/10">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-5 py-2 rounded-xl text-xs font-extrabold transition ${
+                billingCycle === 'monthly'
+                  ? 'bg-zinc-800 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              Mensal
+            </button>
+            <button
+              onClick={() => setBillingCycle('annual')}
+              className={`px-5 py-2 rounded-xl text-xs font-extrabold transition flex items-center gap-2 ${
+                billingCycle === 'annual'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 font-black shadow-md'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              <span>Anual</span>
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
+                billingCycle === 'annual' ? 'bg-zinc-950 text-amber-300' : 'bg-amber-400/20 text-amber-300'
+              }`}>
+                Economize R$ 101,80
+              </span>
+            </button>
+          </div>
+        </div>
+
         {/* Pricing Card */}
-        <div className="max-w-md mx-auto rounded-3xl bg-[#0A0A0C] border border-amber-400/40 p-8 space-y-6 shadow-2xl relative">
+        <div className="max-w-md mx-auto rounded-3xl bg-[#0A0A0C] border-2 border-amber-400/50 p-8 space-y-6 shadow-2xl relative">
           <div className="flex items-center justify-between">
-            <span className="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-black uppercase tracking-wider">
-              Plano Pro Band
+            <span className="px-3.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 text-xs font-black uppercase tracking-wider shadow-lg">
+              👑 Plano Pro (Palco Conectado)
             </span>
-            <span className="text-xs text-zinc-400">Apenas R$ 0,65 por dia</span>
+            <span className="text-xs text-zinc-400">
+              {billingCycle === 'annual' ? 'Apenas R$ 0,54 por dia' : 'Cancele quando quiser'}
+            </span>
           </div>
 
           <div>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">R$ 19,90</span>
-              <span className="text-sm text-zinc-400">/ mês</span>
+              {billingCycle === 'annual' ? (
+                <>
+                  <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">R$ 197</span>
+                  <span className="text-sm text-zinc-400">/ ano</span>
+                  <span className="text-xs text-amber-400 font-mono font-bold">(R$ 16,41/mês)</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">R$ 24,90</span>
+                  <span className="text-sm text-zinc-400">/ mês</span>
+                </>
+              )}
             </div>
-            <p className="text-xs text-zinc-400 mt-1">Cobrança anual simplificada • Cancele quando quiser</p>
+            <p className="text-xs text-zinc-400 mt-1">
+              {billingCycle === 'annual'
+                ? 'Pagamento único anual de R$ 197 • Desconto de 34%'
+                : 'Assinatura mensal flexível • Sem fidelidade'}
+            </p>
           </div>
 
           <ul className="space-y-3 text-xs text-zinc-300 border-t border-b border-white/5 py-5">
             <li className="flex items-center gap-2.5">
               <Check className="w-4 h-4 text-amber-400 flex-none" />
-              Salas ao vivo ilimitadas para até 25 músicos conectados
+              <span><strong className="text-white">Músicas e Repertórios Ilimitados</strong> na nuvem</span>
             </li>
             <li className="flex items-center gap-2.5">
               <Check className="w-4 h-4 text-amber-400 flex-none" />
-              Repertórios e setlists ilimitados sincronizados na nuvem
+              <span><strong className="text-white">Criar Salas Ao Vivo</strong> (PIN, Link Direto e QR Code)</span>
             </li>
             <li className="flex items-center gap-2.5">
               <Check className="w-4 h-4 text-amber-400 flex-none" />
-              Compartilhamento por link direto, QR Code e PIN
+              <span><strong className="text-white">Até 25 músicos conectados</strong> simultaneamente</span>
             </li>
             <li className="flex items-center gap-2.5">
               <Check className="w-4 h-4 text-amber-400 flex-none" />
-              Transposição para Sax, Trompete, Teclado e Afinações
+              <span>Transposição global síncrona para toda a banda</span>
             </li>
             <li className="flex items-center gap-2.5">
               <Check className="w-4 h-4 text-amber-400 flex-none" />
-              Garantia incondicional de 7 dias com estorno de 100%
+              <span>Follow Scroll mestre e Alertas de Palco instantâneos</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-amber-400 flex-none" />
+              <span>Upload de cifras em PDF/TXT e edição de versões próprias</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-amber-400 flex-none" />
+              <span>Garantia incondicional de 7 dias com estorno de 100% via Stripe</span>
             </li>
           </ul>
 
           <button
             onClick={() => onOpenPricing('Desbloqueie agora o Cadencē Pro com salas ilimitadas para sua banda!')}
-            className="w-full py-4 rounded-full bg-[#F5F5F7] hover:bg-white text-[#050505] font-black text-sm shadow-xl shadow-amber-500/10 transition flex items-center justify-center gap-2 active:scale-95"
+            className="w-full py-4 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 text-zinc-950 font-black text-sm shadow-xl shadow-amber-500/20 transition flex items-center justify-center gap-2 active:scale-95"
           >
             <Crown className="w-4 h-4 fill-current" />
             <span>Garantir Acesso Pro Agora</span>
