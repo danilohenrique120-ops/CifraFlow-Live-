@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLiveRoom } from '../context/LiveRoomContext';
 import { LiveMember } from '../types';
+import { WebRTCVideoMesh } from '../services/webrtcVideo';
 import {
   Video,
   VideoOff,
@@ -9,18 +10,132 @@ import {
   RefreshCw,
   Minimize2,
   Maximize2,
-  ChevronDown,
-  ChevronUp,
   X,
   Users,
-  AlertCircle,
-  Radio,
-  Sparkles
+  AlertCircle
 } from 'lucide-react';
 
 interface BandVideoRoomProps {
   onClose?: () => void;
 }
+
+interface RemoteVideoCardProps {
+  member: LiveMember;
+  stream?: MediaStream;
+}
+
+const RemoteVideoCard: React.FC<RemoteVideoCardProps> = ({ member, stream }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [hasStreamVideo, setHasStreamVideo] = useState(false);
+  const [remoteAudioLevel, setRemoteAudioLevel] = useState(0);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(() => {});
+
+      const checkTracks = () => {
+        const videoTracks = stream.getVideoTracks();
+        setHasStreamVideo(videoTracks.length > 0 && videoTracks[0].enabled);
+      };
+
+      checkTracks();
+      stream.addEventListener('addtrack', checkTracks);
+      stream.addEventListener('removetrack', checkTracks);
+
+      // Analyze remote audio for speaking detection
+      let audioCtx: AudioContext | null = null;
+      let animId: number | null = null;
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx && stream.getAudioTracks().length > 0) {
+          audioCtx = new AudioCtx();
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 64;
+          const source = audioCtx.createMediaStreamSource(stream);
+          source.connect(analyser);
+
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          const checkVol = () => {
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+            setRemoteAudioLevel(sum / dataArray.length);
+            animId = requestAnimationFrame(checkVol);
+          };
+          checkVol();
+        }
+      } catch (e) {}
+
+      return () => {
+        stream.removeEventListener('addtrack', checkTracks);
+        stream.removeEventListener('removetrack', checkTracks);
+        if (animId) cancelAnimationFrame(animId);
+        if (audioCtx && audioCtx.state !== 'closed') audioCtx.close().catch(() => {});
+      };
+    } else {
+      setHasStreamVideo(false);
+    }
+  }, [stream]);
+
+  const isSpeaking = !member.isMuted && remoteAudioLevel > 18;
+  const isVideoVisible = Boolean(member.isCameraOn !== false && stream && hasStreamVideo);
+
+  return (
+    <div className={`relative flex-none w-36 sm:w-44 h-24 sm:h-28 rounded-2xl overflow-hidden bg-zinc-900 border-2 transition-all shadow-md flex flex-col items-center justify-center ${
+      isSpeaking ? 'border-emerald-400 ring-2 ring-emerald-400/40' : 'border-zinc-800'
+    }`}>
+      {/* 1. Live Remote Video Player (Unmuted so musicians can hear each other) */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        className={`w-full h-full object-cover ${isVideoVisible ? 'block' : 'hidden'}`}
+      />
+
+      {/* 2. Fallback Avatar Card when camera is off or stream is establishing */}
+      {!isVideoVisible && (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-zinc-900 to-zinc-950 text-zinc-300">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base shadow-lg ${member.avatarColor || 'bg-zinc-700'}`}>
+            {member.name ? member.name.substring(0, 2).toUpperCase() : 'M'}
+          </div>
+          <span className="text-[10px] text-zinc-400 mt-1 font-medium truncate max-w-[120px]">
+            {member.instrument || 'Músico'}
+          </span>
+          <span className="text-[9px] text-zinc-500 font-semibold">
+            {member.isCameraOn ? 'Conectando vídeo...' : 'Câmera desligada'}
+          </span>
+        </div>
+      )}
+
+      {/* 3. Bottom Information Bar */}
+      <div className="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-zinc-950/95 via-zinc-950/70 to-transparent flex items-center justify-between text-[11px]">
+        <span className="font-bold text-white truncate max-w-[85px]">
+          {member.name}
+        </span>
+        <div className="flex items-center gap-1">
+          {member.isMuted ? (
+            <MicOff className="w-3 h-3 text-rose-400" />
+          ) : (
+            <Mic className="w-3 h-3 text-emerald-400" />
+          )}
+          {member.isCameraOn !== false ? (
+            <Video className="w-3 h-3 text-amber-400" />
+          ) : (
+            <VideoOff className="w-3 h-3 text-zinc-500" />
+          )}
+        </div>
+      </div>
+
+      {/* 4. Host Badge */}
+      {member.isHost && (
+        <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-amber-500 text-zinc-950 font-black text-[9px] uppercase tracking-wider shadow">
+          Líder
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
   const {
@@ -32,6 +147,7 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
   } = useLiveRoom();
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
   const [isCameraOn, setIsCameraOn] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
@@ -44,6 +160,48 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
+  const meshRef = useRef<WebRTCVideoMesh | null>(null);
+
+  // Initialize WebRTC Mesh for Peer-to-Peer video streaming
+  useEffect(() => {
+    if (!sessionState?.pin || !currentMember?.id) return;
+
+    const mesh = new WebRTCVideoMesh(
+      sessionState.pin,
+      currentMember.id,
+      (peerId, stream) => {
+        setRemoteStreams(prev => ({ ...prev, [peerId]: stream }));
+      },
+      (peerId) => {
+        setRemoteStreams(prev => {
+          const copy = { ...prev };
+          delete copy[peerId];
+          return copy;
+        });
+      }
+    );
+
+    meshRef.current = mesh;
+
+    return () => {
+      mesh.destroy();
+      meshRef.current = null;
+    };
+  }, [sessionState?.pin, currentMember?.id]);
+
+  // Feed local stream to WebRTC mesh whenever localStream updates
+  useEffect(() => {
+    if (meshRef.current) {
+      meshRef.current.setLocalStream(localStream);
+    }
+  }, [localStream]);
+
+  // Keep peer connections aligned with sessionState.members
+  useEffect(() => {
+    if (meshRef.current && sessionState?.members) {
+      meshRef.current.syncMembers(sessionState.members.map(m => m.id));
+    }
+  }, [sessionState?.members]);
 
   // Initialize Media Stream (Webcam + Mic)
   const startMedia = useCallback(async (facing: 'user' | 'environment') => {
@@ -66,7 +224,11 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
           width: { ideal: 480 },
           height: { ideal: 360 }
         },
-        audio: true
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       });
 
       setLocalStream(stream);
@@ -78,7 +240,7 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
         localVideoRef.current.srcObject = stream;
       }
 
-      // Audio analysis for speaking indicator
+      // Audio analysis for local speaking indicator
       try {
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         if (AudioCtx) {
@@ -113,7 +275,7 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setPermissionError('Permissão de câmera ou microfone negada no navegador.');
       } else if (err.name === 'NotFoundError') {
-        setPermissionError('Nenhuma câmera ou microfone encontrado.');
+        setPermissionError('Nenhuma câmera ou microfone encontrado neste aparelho.');
       } else {
         setPermissionError('Não foi possível iniciar o vídeo/áudio neste dispositivo.');
       }
@@ -138,7 +300,7 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
     };
   }, []);
 
-  // Sync stream to video ref whenever localStream changes
+  // Sync stream to local video ref
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
@@ -167,7 +329,7 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
     if (!localStream) return;
     const audioTracks = localStream.getAudioTracks();
     if (audioTracks.length > 0) {
-      const nextMuted = audioTracks[0].enabled; // if enabled, we are about to mute
+      const nextMuted = audioTracks[0].enabled;
       audioTracks.forEach(t => { t.enabled = !nextMuted; });
       setIsMuted(nextMuted);
       updateMemberMediaStatus(isCameraOn, nextMuted);
@@ -337,21 +499,21 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
                 ref={localVideoRef}
                 autoPlay
                 playsInline
-                muted // Always mute local video so user doesn't hear own echo
+                muted // Always mute local video to avoid echo
                 className="w-full h-full object-cover mirror"
                 style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900/90 text-zinc-400">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base ${currentMember?.avatarColor || 'bg-amber-500'}`}>
-                  {currentMember?.name?.substring(0, 2).toUpperCase() || 'EU'}
+                  {currentMember?.name ? currentMember.name.substring(0, 2).toUpperCase() : 'EU'}
                 </div>
                 <span className="text-[10px] mt-1 text-zinc-500 font-semibold">Câmera desligada</span>
               </div>
             )}
 
             {/* Bottom info badge */}
-            <div className="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-zinc-950/90 via-zinc-950/60 to-transparent flex items-center justify-between text-[11px]">
+            <div className="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-zinc-950/95 via-zinc-950/70 to-transparent flex items-center justify-between text-[11px]">
               <span className="font-bold text-white truncate max-w-[80px]">
                 {currentMember?.name || 'Você'} (Você)
               </span>
@@ -372,58 +534,18 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
             )}
           </div>
 
-          {/* 2. Other Band Members Cards */}
-          {otherMembers.map((member) => {
-            const memberCameraOn = member.isCameraOn ?? false;
-            const memberMuted = member.isMuted ?? false;
-
-            return (
-              <div
-                key={member.id}
-                className="relative flex-none w-36 sm:w-44 h-24 sm:h-28 rounded-2xl overflow-hidden bg-zinc-900 border-2 border-zinc-800 shadow-md flex flex-col items-center justify-center"
-              >
-                {/* Fallback to Avatar presentation */}
-                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-zinc-900 to-zinc-950 text-zinc-300">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base shadow-lg ${member.avatarColor || 'bg-zinc-700'}`}>
-                    {member.name.substring(0, 2).toUpperCase()}
-                  </div>
-                  <span className="text-[10px] text-zinc-400 mt-1 font-medium truncate max-w-[120px]">
-                    {member.instrument || 'Músico'}
-                  </span>
-                </div>
-
-                {/* Bottom info badge */}
-                <div className="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-zinc-950/90 via-zinc-950/60 to-transparent flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-white truncate max-w-[85px]">
-                    {member.name}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    {memberMuted ? (
-                      <MicOff className="w-3 h-3 text-rose-400" />
-                    ) : (
-                      <Mic className="w-3 h-3 text-emerald-400" />
-                    )}
-                    {memberCameraOn ? (
-                      <Video className="w-3 h-3 text-amber-400" />
-                    ) : (
-                      <VideoOff className="w-3 h-3 text-zinc-500" />
-                    )}
-                  </div>
-                </div>
-
-                {/* Host or Pro Badge */}
-                {member.isHost && (
-                  <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-amber-500 text-zinc-950 font-black text-[9px] uppercase tracking-wider shadow">
-                    Líder
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {/* 2. Other Band Members Cards (With Live WebRTC Video Streams) */}
+          {otherMembers.map((member) => (
+            <RemoteVideoCard
+              key={member.id}
+              member={member}
+              stream={remoteStreams[member.id]}
+            />
+          ))}
 
           {/* If no other members are in the room yet */}
           {otherMembers.length === 0 && (
-            <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-zinc-900/60 border border-dashed border-zinc-800 text-zinc-500 text-xs flex-1 min-w-[200px] justify-center">
+            <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-zinc-900/60 border border-dashed border-zinc-800 text-zinc-500 text-xs flex-1 min-w-[220px] justify-center">
               <Users className="w-4 h-4 text-zinc-600" />
               <span>Aguardando outros músicos entrarem na sala com o código...</span>
             </div>

@@ -424,6 +424,18 @@ export class LiveSyncEngine {
           lastUpdated: Date.now()
         };
 
+        if (fullMessage.type === 'MEMBER_JOIN') {
+          const existing: any[] = current.members || [];
+          const exists = existing.some((m: any) => m.id === fullMessage.payload.id);
+          merged.members = exists
+            ? existing.map((m: any) => (m.id === fullMessage.payload.id ? { ...m, ...fullMessage.payload } : m))
+            : [...existing, fullMessage.payload];
+        }
+        if (fullMessage.type === 'MEMBER_LEAVE') {
+          const existing: any[] = current.members || [];
+          merged.members = existing.filter((m: any) => m.id !== fullMessage.payload.id);
+        }
+
         localStorage.setItem(`${STORAGE_PREFIX}${this.roomId}`, JSON.stringify(merged));
         localDB.saveLiveRoomState(merged);
       } catch (e) {}
@@ -462,47 +474,47 @@ export class LiveSyncEngine {
           }
           await setDoc(roomDocRef, sanitizeForFirestore(updateData), { merge: true });
         } else if (fullMessage.type === 'KEY_CHANGE') {
-          await setDoc(roomDocRef, {
+          await setDoc(roomDocRef, sanitizeForFirestore({
             currentKey: fullMessage.payload.key,
             semitoneShift: fullMessage.payload.semitones,
             lastUpdated: Date.now()
-          }, { merge: true });
+          }), { merge: true });
         } else if (fullMessage.type === 'CAPO_CHANGE') {
-          await setDoc(roomDocRef, {
+          await setDoc(roomDocRef, sanitizeForFirestore({
             currentCapo: fullMessage.payload.capo,
             lastUpdated: Date.now()
-          }, { merge: true });
+          }), { merge: true });
         } else if (fullMessage.type === 'BAND_ALERT') {
           this.lastAlertId = fullMessage.payload?.id || null;
-          await setDoc(roomDocRef, {
+          await setDoc(roomDocRef, sanitizeForFirestore({
             currentAlert: fullMessage.payload,
             lastUpdated: Date.now()
-          }, { merge: true });
+          }), { merge: true });
         } else if (fullMessage.type === 'DISMISS_ALERT') {
           this.lastAlertId = null;
-          await setDoc(roomDocRef, {
+          await setDoc(roomDocRef, sanitizeForFirestore({
             currentAlert: null,
             lastUpdated: Date.now()
-          }, { merge: true });
+          }), { merge: true });
         } else if (fullMessage.type === 'SCROLL_SYNC') {
           const now = Date.now();
           this.pendingScrollPercentage = fullMessage.payload.scrollPercentage;
 
           if (now - this.lastScrollSyncTime >= 200) {
             this.lastScrollSyncTime = now;
-            setDoc(roomDocRef, {
+            setDoc(roomDocRef, sanitizeForFirestore({
               scrollPercentage: fullMessage.payload.scrollPercentage,
               lastUpdated: now
-            }, { merge: true }).catch(() => {});
+            }), { merge: true }).catch(() => {});
           } else if (!this.scrollTimer) {
             this.scrollTimer = setTimeout(() => {
               this.scrollTimer = null;
               if (this.pendingScrollPercentage !== null && !this.isDestroyed) {
                 this.lastScrollSyncTime = Date.now();
-                setDoc(roomDocRef, {
+                setDoc(roomDocRef, sanitizeForFirestore({
                   scrollPercentage: this.pendingScrollPercentage,
                   lastUpdated: Date.now()
-                }, { merge: true }).catch(() => {});
+                }), { merge: true }).catch(() => {});
               }
             }, 200 - (now - this.lastScrollSyncTime));
           }
@@ -512,29 +524,29 @@ export class LiveSyncEngine {
             const existing = (docSnap.data() as LiveSessionState).members || [];
             const exists = existing.some((m) => m.id === fullMessage.payload.id);
             const updatedMembers = exists
-              ? existing.map((m) => (m.id === fullMessage.payload.id ? fullMessage.payload : m))
+              ? existing.map((m) => (m.id === fullMessage.payload.id ? { ...m, ...fullMessage.payload } : m))
               : [...existing, fullMessage.payload];
 
-            await setDoc(roomDocRef, {
+            await setDoc(roomDocRef, sanitizeForFirestore({
               members: updatedMembers,
               lastUpdated: Date.now()
-            }, { merge: true });
+            }), { merge: true });
           }
         } else if (fullMessage.type === 'MEMBER_LEAVE') {
           const docSnap = await getDoc(roomDocRef);
           if (docSnap.exists()) {
             const existing = (docSnap.data() as LiveSessionState).members || [];
             const updatedMembers = existing.filter((m) => m.id !== fullMessage.payload.id);
-            await setDoc(roomDocRef, {
+            await setDoc(roomDocRef, sanitizeForFirestore({
               members: updatedMembers,
               lastUpdated: Date.now()
-            }, { merge: true });
+            }), { merge: true });
           }
         } else if (fullMessage.type === 'STATE_UPDATE') {
-          await setDoc(roomDocRef, {
+          await setDoc(roomDocRef, sanitizeForFirestore({
             ...fullMessage.payload,
             lastUpdated: Date.now()
-          }, { merge: true });
+          }), { merge: true });
         }
       } catch (err: any) {
         console.warn('Firestore offline fallback:', err.message);

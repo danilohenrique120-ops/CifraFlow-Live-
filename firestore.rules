@@ -37,9 +37,14 @@ service cloud.firestore {
     // Regras para salas ao vivo (Live Rooms)
     match /rooms/{roomId} {
       allow read: if true; // Qualquer membro da banda com o código PIN pode ler a sala
-      allow create: if isProUser(); // Apenas assinantes Pro podem criar salas de ensaio como Líder
-      allow update: if isAuthenticated() && (resource.data.hostId == request.auth.uid || isProUser());
+      allow create: if isAuthenticated() || isProUser(); // Usuários podem criar salas
+      allow update: if true; // Qualquer integrante da sala pode sincronizar tom, músicas, rolagem e status de mídia
       allow delete: if isAuthenticated() && resource.data.hostId == request.auth.uid;
+
+      // Subcoleção para sinalização WebRTC de áudio e vídeo entre os músicos
+      match /signals/{signalId} {
+        allow read, write: if true;
+      }
     }
 
     // Regras para repertórios compartilhados (links públicos / códigos PIN)

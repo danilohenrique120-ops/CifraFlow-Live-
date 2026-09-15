@@ -578,29 +578,42 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [currentMember]);
 
   const updateMemberMediaStatus = useCallback((isCameraOn: boolean, isMuted: boolean) => {
+    let updatedMember: LiveMember | null = null;
     setCurrentMember(prev => {
       if (!prev) return null;
-      const updated = { ...prev, isCameraOn, isMuted };
-      if (engineRef.current) {
-        engineRef.current.broadcast({
-          type: 'MEMBER_JOIN',
-          senderId: updated.id,
-          senderName: updated.name,
-          payload: updated
-        });
-      }
-      return updated;
+      updatedMember = { ...prev, isCameraOn, isMuted };
+      return updatedMember;
     });
 
     setSessionState(prev => {
       if (!prev) return null;
-      const newMembers = prev.members.map(m => {
-        if (m.id === currentMember?.id) {
-          return { ...m, isCameraOn, isMuted };
+      const myId = updatedMember?.id || currentMember?.id;
+      if (!myId) return prev;
+
+      const exists = prev.members.some(m => m.id === myId);
+      const newMembers = exists
+        ? prev.members.map(m => (m.id === myId ? { ...m, isCameraOn, isMuted } : m))
+        : [...prev.members, { ...(currentMember || prev.members[0]), id: myId, isCameraOn, isMuted }];
+
+      const updatedState: LiveSessionState = {
+        ...prev,
+        members: newMembers,
+        lastUpdated: Date.now()
+      };
+
+      if (engineRef.current) {
+        const payloadMember = updatedMember || newMembers.find(m => m.id === myId);
+        if (payloadMember) {
+          engineRef.current.broadcast({
+            type: 'MEMBER_JOIN',
+            senderId: payloadMember.id,
+            senderName: payloadMember.name,
+            payload: payloadMember
+          });
         }
-        return m;
-      });
-      return { ...prev, members: newMembers, lastUpdated: Date.now() };
+      }
+
+      return updatedState;
     });
   }, [currentMember]);
 
