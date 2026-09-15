@@ -22,6 +22,8 @@ import {
   RotateCcw
 } from 'lucide-react';
 
+import { TermsModal } from './TermsModal';
+
 interface LandingPageProps {
   onEnterApp: () => void;
   onOpenPricing: (reason?: string) => void;
@@ -73,6 +75,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [billingCycle, setBillingCycle] = useState<'annual' | 'monthly'>('annual');
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [termsModalTab, setTermsModalTab] = useState<'terms' | 'privacy'>('terms');
 
   // Simulator Play / Autoscroll engine
   useEffect(() => {
@@ -719,10 +723,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <div className="pt-12 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 font-mono">
             <span>&copy; {new Date().getFullYear()} Cadencē • Projetado para quem vive de música.</span>
+            <div className="flex items-center gap-4 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setTermsModalTab('terms');
+                  setIsTermsModalOpen(true);
+                }}
+                className="hover:text-amber-400 transition underline underline-offset-4"
+              >
+                Termos de Uso & Safe Harbor
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setTermsModalTab('privacy');
+                  setIsTermsModalOpen(true);
+                }}
+                className="hover:text-amber-400 transition underline underline-offset-4"
+              >
+                Privacidade & LGPD
+              </button>
+            </div>
             <span>O palco é seu. O fluxo também.</span>
           </div>
         </div>
       </footer>
+
+      {/* Modal de Termos de Uso e Privacidade */}
+      <TermsModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+        initialTab={termsModalTab}
+      />
 
     </div>
   );

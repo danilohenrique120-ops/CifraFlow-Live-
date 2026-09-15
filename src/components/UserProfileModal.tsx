@@ -239,14 +239,31 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           )}
         </div>
 
-        {/* Logout */}
-        <div className="pt-2 border-t border-zinc-800 flex justify-end">
+        {/* Legal & Logout */}
+        <div className="pt-3 border-t border-zinc-800 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-3 text-zinc-500 text-[11px]">
+            <a
+              href="/?landing=true"
+              onClick={(e) => {
+                e.preventDefault();
+                onClose();
+                const url = new URL(window.location.href);
+                url.searchParams.set('landing', 'true');
+                window.history.pushState({}, '', url.toString());
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="hover:text-zinc-300 underline underline-offset-2"
+            >
+              Termos de Uso & Privacidade
+            </a>
+          </div>
+
           <button
             onClick={() => {
               signOutUser();
               onClose();
             }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-rose-400 hover:bg-rose-500/20 text-xs font-bold transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-rose-400 hover:bg-rose-500/20 text-xs font-bold transition"
           >
             <LogOut className="w-4 h-4" />
             Sair da Conta

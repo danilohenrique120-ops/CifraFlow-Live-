@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Song, MusicGenre, CategoryTag } from '../types';
 import { detectCapoInText } from '../utils/chordEngine';
+import { parseChordPro, cleanImportedWebText } from '../utils/chordProParser';
 import {
   X,
   Upload,
@@ -11,7 +12,9 @@ import {
   Check,
   Plus,
   Sliders,
-  FolderOpen
+  FolderOpen,
+  Link2,
+  FileCode2
 } from 'lucide-react';
 
 interface UploadSongModalProps {
@@ -106,6 +109,8 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
     if (!file) return;
 
     setFileName(file.name);
+    const isChordProFile = file.name.endsWith('.pro') || file.name.endsWith('.chordpro') || file.name.endsWith('.chopro');
+
     // Auto-fill title from filename if title is empty
     if (!title) {
       const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
@@ -116,10 +121,21 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
     reader.onload = (event) => {
       const text = event.target?.result as string;
       if (text) {
-        setContent(text);
-        const detectedCapo = detectCapoInText(text);
-        if (detectedCapo) {
-          setCapo(detectedCapo);
+        if (isChordProFile || text.includes('{title:') || text.includes('{t:') || text.includes('{soc}')) {
+          const parsed = parseChordPro(text);
+          setContent(parsed.formattedContent);
+          if (parsed.title) setTitle(parsed.title);
+          if (parsed.artist) setArtist(parsed.artist);
+          if (parsed.key) setOriginalKey(parsed.key);
+          if (parsed.capo !== undefined) setCapo(parsed.capo);
+          if (parsed.bpm) setBpm(parsed.bpm);
+          if (parsed.timeSignature) setTimeSignature(parsed.timeSignature);
+        } else {
+          setContent(cleanImportedWebText(text));
+          const detectedCapo = detectCapoInText(text);
+          if (detectedCapo) {
+            setCapo(detectedCapo);
+          }
         }
       }
     };
@@ -223,16 +239,19 @@ export const UploadSongModal: React.FC<UploadSongModalProps> = ({
           <div className="relative border-2 border-dashed border-zinc-700/80 hover:border-amber-500/60 rounded-2xl p-4 bg-zinc-950/40 text-center transition cursor-pointer group">
             <input
               type="file"
-              accept=".txt,.cifra,.chordpro"
+              accept=".txt,.cifra,.chordpro,.pro,.chopro"
               onChange={handleFileUpload}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
             <div className="flex flex-col items-center gap-1.5 pointer-events-none">
-              <FolderOpen className="w-6 h-6 text-amber-400 group-hover:scale-110 transition-transform" />
+              <div className="flex items-center gap-2">
+                <FolderOpen className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
+                <FileCode2 className="w-4 h-4 text-emerald-400" />
+              </div>
               <p className="text-xs font-bold text-zinc-200">
-                {fileName ? `Arquivo carregado: ${fileName}` : 'Clique para carregar arquivo TXT/Cifra ou arraste aqui'}
+                {fileName ? `Arquivo carregado: ${fileName}` : 'Carregue arquivo TXT, Cifra ou Padrão ChordPro (.pro, .chordpro)'}
               </p>
-              <p className="text-[10px] text-zinc-500">Auto-detectamos título, andamento, tom e capotraste</p>
+              <p className="text-[10px] text-zinc-500">Auto-detectamos título, artista, andamento, tom e capotraste</p>
             </div>
           </div>
 
