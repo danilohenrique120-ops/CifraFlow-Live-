@@ -19,6 +19,7 @@ export type SyncEventType =
   | 'BAND_ALERT'
   | 'DISMISS_ALERT'
   | 'MEMBER_JOIN'
+  | 'MEMBER_UPDATE'
   | 'MEMBER_LEAVE'
   | 'SETLIST_CHANGE';
 
@@ -424,7 +425,7 @@ export class LiveSyncEngine {
           lastUpdated: Date.now()
         };
 
-        if (fullMessage.type === 'MEMBER_JOIN') {
+        if (fullMessage.type === 'MEMBER_JOIN' || fullMessage.type === 'MEMBER_UPDATE') {
           const existing: any[] = current.members || [];
           const exists = existing.some((m: any) => m.id === fullMessage.payload.id);
           merged.members = exists
@@ -518,7 +519,7 @@ export class LiveSyncEngine {
               }
             }, 200 - (now - this.lastScrollSyncTime));
           }
-        } else if (fullMessage.type === 'MEMBER_JOIN') {
+        } else if (fullMessage.type === 'MEMBER_JOIN' || fullMessage.type === 'MEMBER_UPDATE') {
           const docSnap = await getDoc(roomDocRef);
           if (docSnap.exists()) {
             const existing = (docSnap.data() as LiveSessionState).members || [];

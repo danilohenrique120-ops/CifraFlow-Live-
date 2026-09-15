@@ -48,8 +48,8 @@ export class WebRTCVideoMesh {
   public setLocalStream(stream: MediaStream | null) {
     this.localStream = stream;
 
-    // Update tracks in existing peer connections using replaceTrack (instant & seamless)
-    this.peerConnections.forEach((pc) => {
+    // Update tracks in existing peer connections using replaceTrack or renegotiate
+    this.peerConnections.forEach((pc, peerId) => {
       const senders = pc.getSenders();
       if (!stream) {
         senders.forEach(sender => {
@@ -58,6 +58,7 @@ export class WebRTCVideoMesh {
         return;
       }
 
+      let needsRenegotiation = false;
       stream.getTracks().forEach((track) => {
         const existingSender = senders.find(s => s.track && s.track.kind === track.kind);
         if (existingSender) {
@@ -65,11 +66,16 @@ export class WebRTCVideoMesh {
         } else {
           try {
             pc.addTrack(track, stream);
+            needsRenegotiation = true;
           } catch (e) {
             console.warn('Could not add track to existing connection:', e);
           }
         }
       });
+
+      if (needsRenegotiation && pc.signalingState === 'stable') {
+        this.initiateOffer(peerId, pc);
+      }
     });
   }
 

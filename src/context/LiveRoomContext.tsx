@@ -46,23 +46,37 @@ const AVATAR_COLORS = [
   'bg-indigo-500'
 ];
 
+const getSessionConnectionId = (): string => {
+  if (typeof window === 'undefined') return 'mem_' + Math.random().toString(36).substring(2, 9);
+  let id = sessionStorage.getItem('cifraflow_session_id');
+  if (!id) {
+    id = 'mem_' + Math.random().toString(36).substring(2, 9);
+    sessionStorage.setItem('cifraflow_session_id', id);
+  }
+  return id;
+};
+
 export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userProfile } = useAuth();
 
   const [currentMember, setCurrentMember] = useState<LiveMember | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const saved = localStorage.getItem('cifraflow_member');
+    const sessionId = getSessionConnectionId();
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('cifraflow_member_prefs') : null;
+    let parsed: any = null;
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try { parsed = JSON.parse(saved); } catch (e) {}
     }
+
     return {
-      id: userProfile?.uid || 'usr_' + Math.random().toString(36).substring(2, 9),
-      name: userProfile?.displayName || 'Músico ' + Math.floor(100 + Math.random() * 900),
+      id: sessionId,
+      name: parsed?.name || userProfile?.displayName || 'Músico ' + Math.floor(100 + Math.random() * 900),
       role: 'member',
-      instrument: userProfile?.instrument || 'Violão',
+      instrument: parsed?.instrument || userProfile?.instrument || 'Violão',
       joinedAt: Date.now(),
       isHost: false,
-      avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
+      avatarColor: parsed?.avatarColor || AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
+      isCameraOn: false,
+      isMuted: false
     };
   });
 
@@ -73,6 +87,11 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isNetworkOnline, setIsNetworkOnline] = useState<boolean>(networkStatus.getStatus());
   const [p2pPeersCount, setP2pPeersCount] = useState<number>(0);
   const engineRef = useRef<LiveSyncEngine | null>(null);
+  const currentMemberRef = useRef<LiveMember | null>(currentMember);
+
+  useEffect(() => {
+    currentMemberRef.current = currentMember;
+  }, [currentMember]);
 
   // Monitorar conectividade de rede global
   useEffect(() => {
@@ -92,19 +111,15 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return unsub;
   }, [engine]);
 
-  // Keep member details in sync with AuthProfile
+  // Keep member details in sync with AuthProfile without overwriting session ID
   useEffect(() => {
     if (userProfile) {
       setCurrentMember(prev => {
-        const id = userProfile.uid || prev?.id || 'usr_' + Math.random().toString(36).substring(2, 9);
+        if (!prev) return null;
         return {
-          id,
-          name: userProfile.displayName || prev?.name || 'Músico',
-          role: prev?.role || 'member',
-          instrument: userProfile.instrument || prev?.instrument || 'Violão',
-          joinedAt: prev?.joinedAt || Date.now(),
-          isHost: prev?.isHost || false,
-          avatarColor: prev?.avatarColor || AVATAR_COLORS[0]
+          ...prev,
+          name: prev.name === 'Líder da Banda' ? prev.name : (userProfile.displayName || prev.name),
+          instrument: userProfile.instrument || prev.instrument
         };
       });
     }
@@ -198,15 +213,29 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
-    if (msg.type === 'MEMBER_JOIN') {
+    if (msg.type === 'MEMBER_JOIN' || msg.type === 'MEMBER_UPDATE') {
+      const incoming = msg.payload as LiveMember;
+      if (!incoming || !incoming.id) return;
+
       setSessionState(prev => {
         if (!prev) return null;
-        const exists = prev.members.some(m => m.id === msg.payload.id);
+        const exists = prev.members.some(m => m.id === incoming.id);
         const newMembers = exists
-          ? prev.members.map(m => m.id === msg.payload.id ? msg.payload : m)
-          : [...prev.members, msg.payload];
+          ? prev.members.map(m => m.id === incoming.id ? { ...m, ...incoming } : m)
+          : [...prev.members, incoming];
         return { ...prev, members: newMembers, lastUpdated: Date.now() };
       });
+
+      // If newcomer joined via MEMBER_JOIN and it's not myself, reply with my current member state
+      // so newcomer immediately receives my data and camera status!
+      if (msg.type === 'MEMBER_JOIN' && currentMemberRef.current && incoming.id !== currentMemberRef.current.id) {
+        engineRef.current?.broadcast({
+          type: 'MEMBER_UPDATE',
+          senderId: currentMemberRef.current.id,
+          senderName: currentMemberRef.current.name,
+          payload: currentMemberRef.current
+        });
+      }
       return;
     }
 
@@ -223,11 +252,28 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     if (msg.type === 'STATE_UPDATE') {
-      setSessionState(prev => ({
-        ...(prev || {}),
-        ...msg.payload,
-        lastUpdated: Date.now()
-      }));
+      setSessionState(prev => {
+        if (!prev) return msg.payload;
+
+        let mergedMembers = prev.members || [];
+        if (msg.payload.members && Array.isArray(msg.payload.members)) {
+          const map = new Map<string, LiveMember>();
+          mergedMembers.forEach(m => map.set(m.id, m));
+          (msg.payload.members as LiveMember[]).forEach(m => {
+            const existing = map.get(m.id);
+            map.set(m.id, existing ? { ...existing, ...m } : m);
+          });
+          mergedMembers = Array.from(map.values());
+        }
+
+        return {
+          ...prev,
+          ...msg.payload,
+          members: mergedMembers,
+          lastUpdated: Date.now()
+        };
+      });
+      return;
     }
   }, []);
 
@@ -237,30 +283,31 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     const pin = generateRoomPin('MTS');
-    const hostId = userProfile?.uid || currentMember?.id || 'usr_' + Math.random().toString(36).substring(2, 9);
+    const sessionId = getSessionConnectionId();
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(`cifraflow_host_${pin}`, 'true');
+    }
+
     const member: LiveMember = {
-      id: hostId,
+      id: sessionId,
       name: memberName || userProfile?.displayName || currentMember?.name || 'Líder da Banda',
       role: 'leader',
       instrument: instrument || userProfile?.instrument || currentMember?.instrument || 'Violão',
       joinedAt: Date.now(),
       isHost: true,
-      avatarColor: currentMember?.avatarColor || 'bg-emerald-500'
+      avatarColor: currentMember?.avatarColor || 'bg-emerald-500',
+      isCameraOn: false,
+      isMuted: false
     };
 
     setCurrentMember(member);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('cifraflow_member', JSON.stringify(member));
-      } catch (e) {}
-    }
 
     const startSong = initialSong || null;
     const initialState: LiveSessionState = {
       roomId: pin,
       pin,
       roomName,
-      hostId: hostId,
+      hostId: sessionId,
       currentSongId: startSong?.id || '',
       currentSong: startSong,
       currentKey: startSong?.currentKey || startSong?.originalKey || 'C',
@@ -303,36 +350,34 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const newEngine = new LiveSyncEngine(cleanPin);
     const cloudState = await newEngine.fetchCloudRoomState();
 
-    const memberId = userProfile?.uid || currentMember?.id || 'usr_' + Math.random().toString(36).substring(2, 9);
-    const isUserTheHost = Boolean(
-      cloudState && (
-        cloudState.hostId === memberId ||
-        (userProfile?.uid && cloudState.hostId === userProfile.uid) ||
-        currentMember?.isHost === true
-      )
-    );
+    const sessionId = getSessionConnectionId();
+    const isThisTabTheCreator = typeof window !== 'undefined' && sessionStorage.getItem(`cifraflow_host_${cleanPin}`) === 'true';
+
     const member: LiveMember = {
-      id: memberId,
-      name: memberName || userProfile?.displayName || currentMember?.name || (isUserTheHost ? 'Líder da Banda' : 'Músico Conectado'),
-      role: isUserTheHost ? 'leader' : 'member',
+      id: sessionId,
+      name: memberName || (isThisTabTheCreator ? 'Líder da Banda' : (userProfile?.displayName ? `${userProfile.displayName} (Membro)` : (currentMember?.name && currentMember.name !== 'Líder da Banda' ? currentMember.name : 'Músico Conectado'))),
+      role: isThisTabTheCreator ? 'leader' : 'member',
       instrument: instrument || userProfile?.instrument || currentMember?.instrument || 'Violão',
       joinedAt: Date.now(),
-      isHost: isUserTheHost,
-      avatarColor: currentMember?.avatarColor || AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
+      isHost: isThisTabTheCreator,
+      avatarColor: currentMember?.avatarColor || AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
+      isCameraOn: false,
+      isMuted: false
     };
 
     setCurrentMember(member);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('cifraflow_member', JSON.stringify(member));
-      } catch (e) {}
-    }
+
+    const existingMembers = cloudState?.members || [];
+    const mergedMembers = [
+      ...existingMembers.filter(m => m.id !== sessionId),
+      member
+    ];
 
     const mergedState: LiveSessionState = {
       roomId: cleanPin,
       pin: cleanPin,
       roomName: cloudState?.roomName || `Sala ${cleanPin}`,
-      hostId: cloudState?.hostId || 'host_leader',
+      hostId: cloudState?.hostId || (isThisTabTheCreator ? sessionId : 'host_leader'),
       currentSongId: cloudState?.currentSongId || '',
       currentSong: cloudState?.currentSong || null,
       currentKey: cloudState?.currentKey || 'C',
@@ -342,7 +387,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       followScroll: cloudState?.followScroll ?? true,
       scrollPercentage: cloudState?.scrollPercentage || 0,
       currentAlert: null,
-      members: cloudState?.members ? [...cloudState.members.filter(m => m.id !== member.id), member] : [member],
+      members: mergedMembers,
       lastUpdated: Date.now()
     };
 
@@ -636,8 +681,7 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     sessionState && (
       currentMember?.isHost === true ||
       currentMember?.role === 'leader' ||
-      (currentMember && sessionState.hostId === currentMember.id) ||
-      (userProfile?.uid && sessionState.hostId === userProfile.uid)
+      (currentMember && sessionState.hostId === currentMember.id)
     )
   );
 

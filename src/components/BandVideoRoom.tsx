@@ -36,7 +36,8 @@ const RemoteVideoCard: React.FC<RemoteVideoCardProps> = ({ member, stream }) => 
 
       const checkTracks = () => {
         const videoTracks = stream.getVideoTracks();
-        setHasStreamVideo(videoTracks.length > 0 && videoTracks[0].enabled);
+        const hasVideo = videoTracks.length > 0 && videoTracks[0].enabled;
+        setHasStreamVideo(hasVideo);
       };
 
       checkTracks();
@@ -90,6 +91,8 @@ const RemoteVideoCard: React.FC<RemoteVideoCardProps> = ({ member, stream }) => 
         ref={videoRef}
         autoPlay
         playsInline
+        onLoadedMetadata={() => setHasStreamVideo(true)}
+        onCanPlay={() => setHasStreamVideo(true)}
         className={`w-full h-full object-cover ${isVideoVisible ? 'block' : 'hidden'}`}
       />
 
