@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadencē - Carrossel 2: Repertório de 4 Horas (1080x1350)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #030303;
+      color: #F5F5F7;
+    }
+    .slide-card {
+      width: 540px;
+      height: 675px; /* Proporção 4:5 (1080 x 1350 na escala de exportação 2x) */
+      position: relative;
+      flex-shrink: 0;
+      background-color: #08080A;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .amber-gradient-text {
+      background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 50%, #D97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+</head>
+<body class="p-6 md:p-12">
+
+  <!-- Header -->
+  <div class="max-w-6xl mx-auto mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/10">
+    <div>
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center font-black text-black text-xl shadow-lg shadow-amber-500/20">
+          C
+        </div>
+        <div>
+          <h1 class="text-2xl font-black tracking-tight">Cadencē • Carrossel 02: Guia de Repertório</h1>
+          <p class="text-xs text-zinc-400">Como organizar 4h de show sem papel (1080x1350 • PNG de Alta Resolução)</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <button onclick="downloadAllSlides()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-sm transition flex items-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95 cursor-pointer">
+        <i data-lucide="download"></i>
+        <span>Baixar Todos os 5 Slides</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Slides Container Grid -->
+  <div class="max-w-6xl mx-auto">
+    <div class="flex gap-8 overflow-x-auto pb-10 pt-2 px-2">
+      
+      <!-- ==================== SLIDE 1 (CAPA) ==================== -->
+      <div class="flex flex-col gap-3">
+        <div class="flex justify-between items-center px-1">
+          <span class="text-xs font-mono font-bold text-amber-400">SLIDE 1 • CAPA</span>
+          <button onclick="downloadSlide('slide-1', '01-guia-repertorio-capa.png')" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1 font-semibold cursor-pointer">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar PNG
+          </button>
+        </div>
+        
+        <div id="slide-1" class="slide-card p-10 justify-between">
+          <div class="absolute -top-24 -right-24 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+          <div class="flex items-center justify-between z-10">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-amber-500 flex items-center justify-center font-black text-black text-xs">C</div>
+              <span class="text-xs font-bold tracking-wider text-zinc-400 uppercase">Guia de Palco</span>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-zinc-400">SALVE ESSE GUIA 📌</span>
+          </div>
+
+          <div class="z-10 my-auto">
+            <div class="inline-block px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-bold mb-4">
+              🎸 PRODUTIVIDADE MUSICAL
+            </div>
+            <h2 class="text-4xl font-black leading-[1.15] tracking-tight text-white mb-4">
+              Como organizar <br>
+              <span class="amber-gradient-text">4 horas de show</span> <br>
+              sem se perder no palco.
+            </h2>
+            <p class="text-sm text-zinc-400 leading-relaxed max-w-sm">
+              O passo a passo para gerenciar 80+ músicas, pedidos de última hora e nunca mais usar pastas de papel.
+            </p>
+          </div>
+
+          <div class="pt-6 border-t border-white/10 flex items-center justify-between z-10">
+            <span class="text-xs text-zinc-500 font-medium">@cadence.app</span>
+            <div class="flex items-center gap-1.5 text-xs text-amber-400 font-bold">
+              <span>Arraste pro lado</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== SLIDE 2 (PASSO 1) ==================== -->
+      <div class="flex flex-col gap-3">
+        <div class="flex justify-between items-center px-1">
+          <span class="text-xs font-mono font-bold text-zinc-400">SLIDE 2 • PASSO 1</span>
+          <button onclick="downloadSlide('slide-2', '02-passo-1-blocos.png')" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1 font-semibold cursor-pointer">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar PNG
+          </button>
+        </div>
+
+        <div id="slide-2" class="slide-card p-10 justify-between">
+          <div class="flex items-center justify-between z-10">
+            <span class="text-xs font-bold tracking-wider text-amber-400 uppercase">PASSO 01 / ESTRUTURA</span>
+            <span class="text-[10px] font-mono text-zinc-500">2 de 5</span>
+          </div>
+
+          <div class="z-10 my-auto">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-6">
+              <i data-lucide="layers" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-2xl font-black text-white tracking-tight mb-3">
+              Divida o show em 4 Blocos de Energia
+            </h3>
+            <p class="text-sm text-zinc-400 leading-relaxed mb-5">
+              Nunca monte uma lista contínua aleatória. Crie blocos temáticos no seu setlist:
+            </p>
+
+            <div class="space-y-2 text-xs">
+              <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-3">
+                <span class="px-2 py-0.5 rounded bg-zinc-800 text-amber-300 font-mono font-bold">1</span>
+                <span class="text-zinc-300"><strong>Abertura (Músicas 1 a 15):</strong> Aquecimento, som limpo e atenção do público.</span>
+              </div>
+              <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-3">
+                <span class="px-2 py-0.5 rounded bg-zinc-800 text-amber-300 font-mono font-bold">2</span>
+                <span class="text-zinc-300"><strong>Pista em Alta (16 a 45):</strong> O pico do evento. Medleys sem intervalo.</span>
+              </div>
+              <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-3">
+                <span class="px-2 py-0.5 rounded bg-zinc-800 text-amber-300 font-mono font-bold">3</span>
+                <span class="text-zinc-300"><strong>Saideira & Clímax (46 a 65):</strong> Os maiores clássicos e pedidos da galera.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-6 border-t border-white/10 flex items-center justify-between z-10">
+            <span class="text-xs text-zinc-500">@cadence.app</span>
+            <span class="text-xs text-zinc-400 font-semibold">Continua ➔</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== SLIDE 3 (PASSO 2) ==================== -->
+      <div class="flex flex-col gap-3">
+        <div class="flex justify-between items-center px-1">
+          <span class="text-xs font-mono font-bold text-zinc-400">SLIDE 3 • PASSO 2</span>
+          <button onclick="downloadSlide('slide-3', '03-passo-2-tons.png')" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1 font-semibold cursor-pointer">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar PNG
+          </button>
+        </div>
+
+        <div id="slide-3" class="slide-card p-10 justify-between">
+          <div class="flex items-center justify-between z-10">
+            <span class="text-xs font-bold tracking-wider text-amber-400 uppercase">PASSO 02 / HARMONIA</span>
+            <span class="text-[10px] font-mono text-zinc-500">3 de 5</span>
+          </div>
+
+          <div class="z-10 my-auto">
+            <div class="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-6">
+              <i data-lucide="music-2" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-2xl font-black text-white tracking-tight mb-3">
+              Padronize o tom de cada cantor previamente
+            </h3>
+            <p class="text-sm text-zinc-400 leading-relaxed mb-6">
+              O maior destruidor de ritmo é a dúvida: <em>"Essa a gente toca no tom original ou no tom da Maria?"</em>
+            </p>
+
+            <div class="p-4 rounded-xl bg-white/[0.03] border border-white/10 text-xs space-y-3">
+              <div class="flex items-center gap-2 text-emerald-400 font-bold">
+                <i data-lucide="check" class="w-4 h-4"></i> Como fazer certo:
+              </div>
+              <p class="text-zinc-300 leading-relaxed">
+                No <strong>Cadencē</strong>, você salva a cifra já transposta para o tom exato da voz do cantor. No dia do show, ninguém precisa adivinhar nem recalcular acordes.
+              </p>
+            </div>
+          </div>
+
+          <div class="pt-6 border-t border-white/10 flex items-center justify-between z-10">
+            <span class="text-xs text-zinc-500">@cadence.app</span>
+            <span class="text-xs text-zinc-400 font-semibold">Continua ➔</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== SLIDE 4 (PASSO 3) ==================== -->
+      <div class="flex flex-col gap-3">
+        <div class="flex justify-between items-center px-1">
+          <span class="text-xs font-mono font-bold text-zinc-400">SLIDE 4 • PASSO 3</span>
+          <button onclick="downloadSlide('slide-4', '04-passo-3-tempo-real.png')" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1 font-semibold cursor-pointer">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar PNG
+          </button>
+        </div>
+
+        <div id="slide-4" class="slide-card p-10 justify-between">
+          <div class="flex items-center justify-between z-10">
+            <span class="text-xs font-bold tracking-wider text-amber-400 uppercase">PASSO 03 / SINCRONISMO</span>
+            <span class="text-[10px] font-mono text-zinc-500">4 de 5</span>
+          </div>
+
+          <div class="z-10 my-auto">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-6">
+              <i data-lucide="radio" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-2xl font-black text-white tracking-tight mb-3">
+              Mantenha todos na mesma tela (Live Sync)
+            </h3>
+            <p class="text-sm text-zinc-400 leading-relaxed mb-6">
+              Em 4 horas de show, alguém vai se perder na ordem das músicas. Se o líder pula uma faixa por causa de um pedido, o caos começa.
+            </p>
+
+            <div class="p-4 rounded-xl bg-white/[0.03] border border-white/10 text-xs space-y-3">
+              <div class="flex items-center gap-2 text-amber-300 font-bold">
+                <i data-lucide="zap" class="w-4 h-4"></i> A solução definitiva:
+              </div>
+              <p class="text-zinc-300 leading-relaxed">
+                Com o <strong>Live Sync do Cadencē</strong>, o líder seleciona a próxima música e as telas do guitarrista, baixista e tecladista viram juntas no mesmo instante.
+              </p>
+            </div>
+          </div>
+
+          <div class="pt-6 border-t border-white/10 flex items-center justify-between z-10">
+            <span class="text-xs text-zinc-500">@cadence.app</span>
+            <span class="text-xs text-zinc-400 font-semibold">O App ➔</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== SLIDE 5 (CTA FINAL) ==================== -->
+      <div class="flex flex-col gap-3">
+        <div class="flex justify-between items-center px-1">
+          <span class="text-xs font-mono font-bold text-amber-400">SLIDE 5 • CTA FINAL</span>
+          <button onclick="downloadSlide('slide-5', '05-guia-repertorio-cta.png')" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1 font-semibold cursor-pointer">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar PNG
+          </button>
+        </div>
+
+        <div id="slide-5" class="slide-card p-10 justify-between bg-gradient-to-b from-[#0A0A0E] via-[#050507] to-black">
+          <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+          <div class="flex items-center justify-between z-10">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-amber-500 flex items-center justify-center font-black text-black text-xs">C</div>
+              <span class="text-xs font-bold tracking-wider text-amber-400 uppercase">Seu Próximo Show</span>
+            </div>
+          </div>
+
+          <div class="z-10 text-center my-auto space-y-4">
+            <div class="inline-flex p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 mb-2">
+              <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+            </div>
+            
+            <h3 class="text-3xl font-black text-white leading-tight">
+              Seu repertório no bolso.<br>
+              <span class="amber-gradient-text">Sem papel. Sem travar.</span>
+            </h3>
+
+            <p class="text-xs text-zinc-400 max-w-xs mx-auto leading-relaxed">
+              Crie seu primeiro setlist no Cadencē e experimente a sensação de tocar 100% no fluxo.
+            </p>
+
+            <div class="pt-4">
+              <div class="inline-block px-5 py-2.5 rounded-full bg-[#F5F5F7] text-black font-extrabold text-xs shadow-xl shadow-amber-500/10">
+                Teste grátis no link da bio
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-6 border-t border-white/10 flex items-center justify-between z-10 text-[11px] text-zinc-400">
+            <div class="flex items-center gap-1.5 text-amber-400 font-bold">
+              <i data-lucide="bookmark" class="w-4 h-4"></i> Salve para o próximo show
+            </div>
+            <div class="flex items-center gap-1.5 font-bold">
+              <i data-lucide="send" class="w-4 h-4"></i> Compartilhe com a banda
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function downloadSlide(elementId, filename) {
+      const node = document.getElementById(elementId);
+      htmlToImage.toPng(node, {
+        pixelRatio: 2,
+        cacheBust: true,
+      })
+      .then(function (dataUrl) {
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch(function (error) {
+        console.error('Erro ao gerar imagem:', error);
+        alert('Erro ao gerar imagem.');
+      });
+    }
+
+    async function downloadAllSlides() {
+      const slides = [
+        { id: 'slide-1', name: '01-guia-repertorio-capa.png' },
+        { id: 'slide-2', name: '02-passo-1-blocos.png' },
+        { id: 'slide-3', name: '03-passo-2-tons.png' },
+        { id: 'slide-4', name: '04-passo-3-tempo-real.png' },
+        { id: 'slide-5', name: '05-guia-repertorio-cta.png' },
+      ];
+
+      for (let i = 0; i < slides.length; i++) {
+        downloadSlide(slides[i].id, slides[i].name);
+        await new Promise(r => setTimeout(r, 600));
+      }
+    }
+  </script>
+</body>
+</html>

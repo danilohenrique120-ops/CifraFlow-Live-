@@ -25,6 +25,8 @@ interface LiveRoomContextType {
   dismissAlert: () => void;
   setActiveSetlist: (setlistId: string | null) => void;
   updateMemberName: (name: string, instrument: string) => void;
+  toggleVideoRehearsal: (active?: boolean) => void;
+  updateMemberMediaStatus: (isCameraOn: boolean, isMuted: boolean) => void;
   recentAlert: BandAlert | null;
   createP2POffer: () => Promise<string>;
   acceptP2POffer: (offer: string) => Promise<string>;
@@ -553,6 +555,55 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   }, []);
 
+  const toggleVideoRehearsal = useCallback((active?: boolean) => {
+    setSessionState(prev => {
+      if (!prev) return null;
+      const nextVal = active !== undefined ? active : !prev.isVideoRehearsalActive;
+      const updated: LiveSessionState = {
+        ...prev,
+        isVideoRehearsalActive: nextVal,
+        lastUpdated: Date.now()
+      };
+      if (engineRef.current) {
+        engineRef.current.broadcast({
+          type: 'STATE_UPDATE',
+          senderId: currentMember?.id || 'unknown',
+          senderName: currentMember?.name || 'Músico',
+          payload: { isVideoRehearsalActive: nextVal }
+        });
+        engineRef.current.saveState(updated).catch(console.error);
+      }
+      return updated;
+    });
+  }, [currentMember]);
+
+  const updateMemberMediaStatus = useCallback((isCameraOn: boolean, isMuted: boolean) => {
+    setCurrentMember(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, isCameraOn, isMuted };
+      if (engineRef.current) {
+        engineRef.current.broadcast({
+          type: 'MEMBER_JOIN',
+          senderId: updated.id,
+          senderName: updated.name,
+          payload: updated
+        });
+      }
+      return updated;
+    });
+
+    setSessionState(prev => {
+      if (!prev) return null;
+      const newMembers = prev.members.map(m => {
+        if (m.id === currentMember?.id) {
+          return { ...m, isCameraOn, isMuted };
+        }
+        return m;
+      });
+      return { ...prev, members: newMembers, lastUpdated: Date.now() };
+    });
+  }, [currentMember]);
+
   const createP2POffer = useCallback(async (): Promise<string> => {
     if (!engineRef.current) throw new Error('Sala ao vivo não inicializada.');
     return engineRef.current.createP2POffer();
@@ -600,6 +651,8 @@ export const LiveRoomProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         dismissAlert,
         setActiveSetlist,
         updateMemberName,
+        toggleVideoRehearsal,
+        updateMemberMediaStatus,
         recentAlert,
         createP2POffer,
         acceptP2POffer,

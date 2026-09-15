@@ -21,7 +21,12 @@ import {
   Music,
   Share2,
   Wifi,
-  WifiOff
+  Wifi,
+  WifiOff,
+  Video,
+  VideoOff,
+  Mic,
+  MicOff
 } from 'lucide-react';
 
 interface LiveRoomModalProps {
@@ -63,6 +68,7 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
     toggleFollowScroll,
     sendBandAlert,
     updateMemberName,
+    toggleVideoRehearsal,
     createP2POffer,
     acceptP2POffer,
     acceptP2PAnswer
@@ -255,6 +261,35 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                 )}
               </div>
 
+              {/* 🎥 Online Rehearsal Video Card */}
+              <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex-none">
+                    <Video className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white block">Ensaio Online com Câmera</span>
+                    <span className="text-[11px] text-zinc-400 block truncate">
+                      {sessionState.isVideoRehearsalActive
+                        ? 'Câmeras ativas na tela do palco'
+                        : 'Músicos se veem na tela enquanto tocam a cifra'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleVideoRehearsal()}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-none ${
+                    sessionState.isVideoRehearsalActive
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50 hover:bg-rose-500/30'
+                      : 'bg-amber-500 text-zinc-950 font-black hover:bg-amber-400 shadow-md shadow-amber-950/30'
+                  }`}
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>{sessionState.isVideoRehearsalActive ? 'Desativar Câmeras' : 'Ativar Câmeras'}</span>
+                </button>
+              </div>
+
               {/* Bulletproof Offline & Local Network Stage Card */}
               <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2">
                 <div className="flex items-center justify-between">
@@ -348,6 +383,22 @@ export const LiveRoomModal: React.FC<LiveRoomModalProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2 flex-none ml-2">
+                          {/* Media Indicators */}
+                          {member.isCameraOn && (
+                            <span className="text-amber-400" title="Câmera Ligada">
+                              <Video className="w-3.5 h-3.5" />
+                            </span>
+                          )}
+                          {member.isMuted ? (
+                            <span className="text-rose-400" title="Microfone Mutado">
+                              <MicOff className="w-3.5 h-3.5" />
+                            </span>
+                          ) : member.isCameraOn ? (
+                            <span className="text-emerald-400" title="Microfone Aberto">
+                              <Mic className="w-3.5 h-3.5" />
+                            </span>
+                          ) : null}
+
                           {isLeader ? (
                             <span className="text-[11px] font-black tracking-wider text-amber-400 uppercase bg-amber-500/10 px-2.5 py-0.5 rounded-lg border border-amber-500/20">
                               HOST

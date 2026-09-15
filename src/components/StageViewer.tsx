@@ -6,6 +6,7 @@ import { useLiveRoom } from '../context/LiveRoomContext';
 import { useAuth } from '../context/AuthContext';
 import { ChordModal } from './ChordTooltip';
 import { ReviseSongModal } from './ReviseSongModal';
+import { BandVideoRoom } from './BandVideoRoom';
 import {
   Play,
   Pause,
@@ -40,7 +41,9 @@ import {
   ListMusic,
   FileText,
   Printer,
-  ShieldCheck
+  ShieldCheck,
+  Video,
+  VideoOff
 } from 'lucide-react';
 
 interface StageViewerProps {
@@ -91,8 +94,12 @@ export const StageViewer: React.FC<StageViewerProps> = ({
     recentAlert,
     transportMode,
     isNetworkOnline,
-    p2pPeersCount
+    p2pPeersCount,
+    toggleVideoRehearsal
   } = useLiveRoom();
+
+  const [isLocalVideoActive, setIsLocalVideoActive] = useState(false);
+  const isVideoRehearsalOpen = Boolean(isInRoom && (sessionState?.isVideoRehearsalActive || isLocalVideoActive));
 
   const isLeaderHost = Boolean(
     isHost ||
@@ -699,30 +706,50 @@ export const StageViewer: React.FC<StageViewerProps> = ({
 
             {/* Live Room Status Indicator */}
             {isInRoom ? (
-              <button
-                onClick={onOpenLiveRoomModal}
-                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border text-xs font-bold transition flex-none ${
-                  transportMode === 'p2p_local'
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 shadow-amber-950/40'
-                    : transportMode === 'local_cache'
-                    ? 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700'
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse hover:bg-amber-500/30'
-                }`}
-                title="Status da Sala Ao Vivo"
-              >
-                {transportMode === 'p2p_local' ? (
-                  <Zap className="w-3.5 h-3.5 text-amber-400" />
-                ) : (
-                  <Radio className="w-3.5 h-3.5 text-amber-400" />
-                )}
-                <span className="hidden sm:inline">SALA: {sessionState?.pin}</span>
-                <span className="sm:hidden text-[11px] font-mono">{sessionState?.pin}</span>
-                {transportMode === 'p2p_local' && (
-                  <span className="hidden md:inline text-[9px] font-black uppercase text-amber-300 bg-amber-500/30 px-1.5 py-0.5 rounded">
-                    P2P
-                  </span>
-                )}
-              </button>
+              <>
+                <button
+                  onClick={onOpenLiveRoomModal}
+                  className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border text-xs font-bold transition flex-none ${
+                    transportMode === 'p2p_local'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 shadow-amber-950/40'
+                      : transportMode === 'local_cache'
+                      ? 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700'
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse hover:bg-amber-500/30'
+                  }`}
+                  title="Status da Sala Ao Vivo"
+                >
+                  {transportMode === 'p2p_local' ? (
+                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  ) : (
+                    <Radio className="w-3.5 h-3.5 text-amber-400" />
+                  )}
+                  <span className="hidden sm:inline">SALA: {sessionState?.pin}</span>
+                  <span className="sm:hidden text-[11px] font-mono">{sessionState?.pin}</span>
+                  {transportMode === 'p2p_local' && (
+                    <span className="hidden md:inline text-[9px] font-black uppercase text-amber-300 bg-amber-500/30 px-1.5 py-0.5 rounded">
+                      P2P
+                    </span>
+                  )}
+                </button>
+
+                {/* 🎥 Ensaio com Vídeo (Câmera da Banda) Toggle */}
+                <button
+                  onClick={() => {
+                    const next = !isVideoRehearsalOpen;
+                    setIsLocalVideoActive(next);
+                    toggleVideoRehearsal(next);
+                  }}
+                  className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border text-xs font-bold transition flex-none ${
+                    isVideoRehearsalOpen
+                      ? 'bg-amber-500 text-zinc-950 border-amber-400 font-black shadow-md shadow-amber-950/30'
+                      : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:border-amber-500/50 hover:text-white'
+                  }`}
+                  title={isVideoRehearsalOpen ? 'Fechar Câmeras do Ensaio' : 'Abrir Câmera e Microfone para Ensaio Online'}
+                >
+                  <Video className={`w-3.5 h-3.5 ${isVideoRehearsalOpen ? 'text-zinc-950' : 'text-amber-400'}`} />
+                  <span className="hidden sm:inline">{isVideoRehearsalOpen ? 'Ensaio Vídeo Ativo' : 'Câmera Banda'}</span>
+                </button>
+              </>
             ) : (
               <button
                 onClick={onOpenLiveRoomModal}
@@ -779,30 +806,25 @@ export const StageViewer: React.FC<StageViewerProps> = ({
                                 onAddToSetlist(song, sl.id);
                                 setIsSetlistDropdownOpen(false);
                                 setSetlistFeedback(sl.title);
-                                setTimeout(() => setSetlistFeedback(null), 3500);
+                                setTimeout(() => setSetlistFeedback(null), 3000);
                               }}
-                              className={`w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold truncate transition flex items-center justify-between group ${
+                              className={`w-full p-2 rounded-xl text-xs font-bold flex items-center justify-between transition ${
                                 isAlreadyIn
-                                  ? 'bg-amber-500/10 text-amber-300 opacity-80 cursor-default'
-                                  : 'hover:bg-zinc-800 text-zinc-200'
+                                  ? 'bg-zinc-800/50 text-zinc-500 cursor-not-allowed'
+                                  : 'hover:bg-zinc-800 text-zinc-200 hover:text-white'
                               }`}
                             >
-                              <span className="truncate pr-2">{sl.title}</span>
-                              {isAlreadyIn ? (
-                                <span className="flex items-center gap-1 text-[10px] font-bold text-amber-400 flex-none">
-                                  <Check className="w-3.5 h-3.5" />
-                                  Adicionada
-                                </span>
-                              ) : (
-                                <Plus className="w-3.5 h-3.5 text-zinc-400 group-hover:text-amber-400 flex-none" />
+                              <span className="truncate">{sl.title}</span>
+                              {isAlreadyIn && (
+                                <span className="text-[10px] text-amber-400 font-semibold">Adicionada</span>
                               )}
                             </button>
                           );
                         })
                       ) : (
-                        <p className="px-2 py-3 text-xs text-zinc-400 text-center">
-                          Nenhum repertório criado ainda. Crie um repertório na aba Repertórios!
-                        </p>
+                        <div className="p-3 text-center text-xs text-zinc-500">
+                          Nenhum repertório criado ainda.
+                        </div>
                       )}
                     </div>
                   </div>
@@ -849,6 +871,16 @@ export const StageViewer: React.FC<StageViewerProps> = ({
             </button>
           </div>
         </header>
+      )}
+
+      {/* 🎥 Ensaio Online com Câmera (Vídeo da Banda) */}
+      {isInRoom && isVideoRehearsalOpen && (
+        <BandVideoRoom
+          onClose={() => {
+            setIsLocalVideoActive(false);
+            toggleVideoRehearsal(false);
+          }}
+        />
       )}
 
       {/* Setlist Feedback Notification Toast */}

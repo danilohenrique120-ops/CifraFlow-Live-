@@ -137,6 +137,8 @@ export interface LiveMember {
   isHost: boolean;
   avatarColor: string;
   isPro?: boolean;
+  isCameraOn?: boolean;
+  isMuted?: boolean;
 }
 
 export type BandAlert = {
@@ -161,6 +163,7 @@ export interface LiveSessionState {
   followScroll: boolean;
   scrollPercentage: number;
   currentAlert: BandAlert | null;
+  isVideoRehearsalActive?: boolean;
   members: LiveMember[];
   lastUpdated: number;
 }

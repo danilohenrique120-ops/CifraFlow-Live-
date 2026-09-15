@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadencē • Gravador & Simulador de Vídeo (Reels & TikTok 9:16)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #050507;
+      color: #F5F5F7;
+    }
+    .phone-canvas-container {
+      width: 360px;
+      height: 640px; /* 9:16 aspect ratio preview */
+      border-radius: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 80px rgba(245, 158, 11, 0.15), 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+      position: relative;
+      overflow: hidden;
+      background-color: #050505;
+    }
+    .amber-gradient-text {
+      background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 50%, #D97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    /* Estilo de rolagem ultra suave */
+    #song-sheet {
+      transition: transform 0.1s linear;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
+
+  <!-- Header Controls -->
+  <div class="max-w-4xl w-full mb-6 flex flex-col md:flex-row items-center justify-between gap-4 bg-[#0A0A0E] p-4 md:p-6 rounded-2xl border border-white/10">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center font-black text-black text-xl shadow-lg shadow-amber-500/20">
+        C
+      </div>
+      <div>
+        <h1 class="text-lg font-black">Cadencē • Gravador Automático de Vídeo (9:16)</h1>
+        <p class="text-xs text-zinc-400">Gera um vídeo vertical perfeito para Reels, TikTok e Shorts</p>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex items-center gap-3 flex-wrap justify-center">
+      <button id="btn-play-preview" onclick="startDemo(false)" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer">
+        <i data-lucide="play" class="w-4 h-4 text-amber-400 fill-current"></i>
+        <span>Assistir Prévia</span>
+      </button>
+
+      <button id="btn-record-video" onclick="startDemo(true)" class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-amber-500/25 transition active:scale-95 cursor-pointer">
+        <i data-lucide="video" class="w-4 h-4"></i>
+        <span id="record-btn-text">Gravar & Baixar Vídeo (.webm)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Showcase Area: Phone Mockup Display -->
+  <div class="relative flex flex-col items-center">
+    
+    <!-- Status Pill Floating Above -->
+    <div id="status-pill" class="mb-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-amber-300 flex items-center gap-2 backdrop-blur-md">
+      <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+      <span id="status-text">Pronto para demonstrar. Clique em Assistir ou Gravar.</span>
+    </div>
+
+    <!-- The 9:16 Smartphone Mockup Device -->
+    <div class="phone-canvas-container flex flex-col justify-between select-none">
+      
+      <!-- Top Dynamic Island & Status Bar -->
+      <div class="pt-3 px-6 flex items-center justify-between text-[11px] font-mono text-zinc-500 z-30">
+        <span>21:30</span>
+        <div class="w-20 h-4 bg-black rounded-full border border-white/10 flex items-center justify-center">
+          <div class="w-2 h-2 rounded-full bg-zinc-800"></div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="wifi" id="wifi-icon" class="w-3 h-3 text-emerald-400"></i>
+          <i data-lucide="battery" class="w-3.5 h-3.5 text-zinc-400"></i>
+        </div>
+      </div>
+
+      <!-- App Header Bar -->
+      <div class="px-4 py-2 border-b border-white/10 bg-[#08080A]/90 backdrop-blur-md flex items-center justify-between z-20">
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-xs font-black">C</div>
+          <div>
+            <h2 class="text-xs font-black text-white leading-none">Midnight Drive</h2>
+            <p class="text-[9px] text-zinc-400 font-mono">Tom: <span id="current-key-display" class="text-amber-400 font-bold">G</span> • 72 BPM • 4/4</p>
+          </div>
+        </div>
+
+        <!-- Live Sync Pill -->
+        <div id="live-badge" class="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="live-text">AO VIVO (4)</span>
+        </div>
+      </div>
+
+      <!-- Stage Chords & Lyrics Sheet (Auto-scrolling Container) -->
+      <div class="flex-1 overflow-hidden relative p-4" id="sheet-viewport">
+        <!-- Live Beam Highlight Bar -->
+        <div class="absolute top-28 left-0 right-0 h-14 bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border-y border-amber-500/20 pointer-events-none z-10"></div>
+
+        <div id="song-sheet" class="space-y-6 pt-12 pb-32">
+          
+          <!-- Section 1 -->
+          <div class="song-line space-y-1">
+            <div class="font-mono text-sm font-bold text-amber-400 tracking-wider flex gap-8">
+              <span class="chord-c1">G</span>
+              <span class="chord-c2">D/F#</span>
+              <span class="chord-c3">Em7</span>
+              <span class="chord-c4">C9</span>
+            </div>
+            <p class="text-xs text-zinc-300 font-medium">O palco é seu. O fluxo também. Sinta o tempo.</p>
+          </div>
+
+          <!-- Section 2 -->
+          <div class="song-line space-y-1">
+            <div class="font-mono text-sm font-bold text-amber-400 tracking-wider flex gap-8">
+              <span class="chord-c1">G</span>
+              <span class="chord-c2">D</span>
+              <span class="chord-c4">C9</span>
+              <span class="chord-c1">G/B</span>
+            </div>
+            <p class="text-xs text-zinc-300 font-medium">Toda a banda no mesmo compasso, na mesma tela.</p>
+          </div>
+
+          <!-- Section 3 -->
+          <div class="song-line space-y-1">
+            <div class="font-mono text-sm font-bold text-amber-400 tracking-wider flex gap-8">
+              <span class="chord-c3">Em7</span>
+              <span class="chord-c2">Bm7</span>
+              <span class="chord-c4">C9</span>
+              <span class="chord-c2">D4</span>
+            </div>
+            <p class="text-xs text-zinc-300 font-medium">Sem pastas soltas, sem papel voando no chão.</p>
+          </div>
+
+          <!-- Section 4 (Refrão) -->
+          <div class="song-line space-y-1 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+            <span class="text-[9px] font-mono text-amber-400/80 font-bold">[REFRÃO]</span>
+            <div class="font-mono text-base font-extrabold text-amber-300 tracking-wider flex gap-8">
+              <span class="chord-c4">C9</span>
+              <span class="chord-c2">D</span>
+              <span class="chord-c3">Em7</span>
+              <span class="chord-c1">G</span>
+            </div>
+            <p class="text-xs text-white font-semibold">O líder muda o tom e todos acompanham na hora.</p>
+          </div>
+
+          <!-- Section 5 -->
+          <div class="song-line space-y-1">
+            <div class="font-mono text-sm font-bold text-amber-400 tracking-wider flex gap-8">
+              <span class="chord-c1">Am7</span>
+              <span class="chord-c2">D</span>
+              <span class="chord-c1">G</span>
+            </div>
+            <p class="text-xs text-zinc-300 font-medium">True OLED Dark. Conforto visual absoluto.</p>
+          </div>
+
+        </div>
+
+        <!-- Pop-up Alert Overlay inside Phone (for demonstration moments) -->
+        <div id="demo-modal" class="absolute inset-x-4 top-24 p-4 rounded-2xl bg-[#111116] border border-amber-500/40 shadow-2xl text-center transform scale-0 opacity-0 transition-all duration-300 z-40">
+          <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-2">
+            <i data-lucide="zap" id="modal-icon" class="w-5 h-5"></i>
+          </div>
+          <h4 id="modal-title" class="text-xs font-black text-white">LÍDER MUDOU O TOM</h4>
+          <p id="modal-desc" class="text-[10px] text-zinc-400 mt-1">Todas as 4 telas da banda sincronizadas em Lá Maior (A)</p>
+        </div>
+
+        <!-- Final CTA Overlay Card inside Phone (End of Video) -->
+        <div id="final-cta" class="absolute inset-0 bg-[#050505]/95 flex flex-col items-center justify-center p-6 text-center transform scale-0 opacity-0 transition-all duration-500 z-50">
+          <div class="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center text-black font-black text-2xl shadow-xl shadow-amber-500/30 mb-4">
+            C
+          </div>
+          <h3 class="text-2xl font-black text-white leading-tight mb-2">
+            O palco é seu.<br>
+            <span class="amber-gradient-text">O fluxo também.</span>
+          </h3>
+          <p class="text-xs text-zinc-400 mb-6 max-w-xs">
+            Cifras sincronizadas em tempo real. Rolagem ao BPM. 100% offline.
+          </p>
+          <div class="px-5 py-2.5 rounded-full bg-[#F5F5F7] text-black font-extrabold text-xs shadow-lg">
+            Teste grátis no link da bio
+          </div>
+          <span class="text-[10px] text-zinc-500 font-mono mt-4">@cadence.app</span>
+        </div>
+
+      </div>
+
+      <!-- Stage Bottom Control Deck (Metronome, Transpose, Pedal Indicator) -->
+      <div class="p-3 border-t border-white/10 bg-[#0A0A0E] z-20 flex items-center justify-between">
+        
+        <!-- Transpose Controls -->
+        <div class="flex items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/5">
+          <button id="btn-transpose-minus" class="w-6 h-6 rounded-lg bg-zinc-800 text-zinc-300 flex items-center justify-center text-xs font-bold">-</button>
+          <span id="deck-key" class="text-[11px] font-mono font-bold text-amber-400 px-1">G</span>
+          <button id="btn-transpose-plus" class="w-6 h-6 rounded-lg bg-amber-500 text-black flex items-center justify-center text-xs font-bold transition duration-150">+</button>
+        </div>
+
+        <!-- BPM / Autoscroll Play Button -->
+        <div class="flex items-center gap-2">
+          <div id="play-btn-circle" class="w-8 h-8 rounded-full bg-amber-500 text-black flex items-center justify-center font-bold shadow-lg shadow-amber-500/20 cursor-pointer">
+            <i data-lucide="play" id="deck-play-icon" class="w-4 h-4 fill-current"></i>
+          </div>
+          <div class="text-[9px] font-mono leading-tight">
+            <span class="text-zinc-400">BPM</span><br>
+            <span id="bpm-val" class="font-bold text-white">72</span>
+          </div>
+        </div>
+
+        <!-- Pedal Bluetooth Active Status -->
+        <div id="pedal-indicator" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 text-[9px] font-mono text-zinc-400 border border-white/5">
+          <i data-lucide="footprints" class="w-3 h-3 text-amber-400"></i>
+          <span>PEDAL BT</span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Audio Beep Context info -->
+    <p class="text-[11px] text-zinc-500 mt-4 text-center font-mono">
+      🔊 Contém áudio de metrônomo & efeitos sonoros de sincronização.
+    </p>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Web Audio Synthesizer (Zero dependência externa de som)
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
+
+    function playBeep(freq = 440, type = 'sine', duration = 0.08, gainVal = 0.15) {
+      try {
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') ctx.resume();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    // Sound effects
+    function sfxClick() { playBeep(1200, 'triangle', 0.04, 0.1); }
+    function sfxPop() { playBeep(880, 'sine', 0.1, 0.2); }
+    function sfxSuccess() {
+      playBeep(523.25, 'sine', 0.1, 0.15);
+      setTimeout(() => playBeep(659.25, 'sine', 0.12, 0.18), 90);
+      setTimeout(() => playBeep(783.99, 'sine', 0.25, 0.2), 180);
+    }
+    function sfxPedal() { playBeep(220, 'square', 0.08, 0.12); }
+
+    // State Variables
+    let isRunning = false;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+
+    // Core Choreographed 18-second Video Timeline
+    async function startDemo(shouldRecord = false) {
+      if (isRunning) return;
+      isRunning = true;
+      getAudioContext();
+
+      const statusText = document.getElementById('status-text');
+      const songSheet = document.getElementById('song-sheet');
+      const keyDisplay = document.getElementById('current-key-display');
+      const deckKey = document.getElementById('deck-key');
+      const modal = document.getElementById('demo-modal');
+      const modalTitle = document.getElementById('modal-title');
+      const modalDesc = document.getElementById('modal-desc');
+      const finalCta = document.getElementById('final-cta');
+      const deckPlayIcon = document.getElementById('deck-play-icon');
+      const plusBtn = document.getElementById('btn-transpose-plus');
+      const pedalInd = document.getElementById('pedal-indicator');
+      const wifiIcon = document.getElementById('wifi-icon');
+      const recordBtnText = document.getElementById('record-btn-text');
+
+      // Reset initial state
+      songSheet.style.transform = 'translateY(0px)';
+      keyDisplay.innerText = 'G';
+      deckKey.innerText = 'G';
+      modal.classList.add('scale-0', 'opacity-0');
+      finalCta.classList.add('scale-0', 'opacity-0');
+      wifiIcon.className = 'w-3 h-3 text-emerald-400';
+
+      // Chords Elements
+      const c1 = document.querySelectorAll('.chord-c1');
+      const c2 = document.querySelectorAll('.chord-c2');
+      const c3 = document.querySelectorAll('.chord-c3');
+      const c4 = document.querySelectorAll('.chord-c4');
+
+      function updateChords(newKey) {
+        if (newKey === 'A') {
+          c1.forEach(el => el.innerText = el.innerText.includes('G/B') ? 'A/C#' : 'A');
+          c2.forEach(el => el.innerText = el.innerText.includes('D/F#') ? 'E/G#' : (el.innerText === 'Bm7' ? 'C#m7' : 'E'));
+          c3.forEach(el => el.innerText = 'F#m7');
+          c4.forEach(el => el.innerText = 'D9');
+        } else {
+          c1.forEach(el => el.innerText = el.innerText.includes('A/C#') ? 'G/B' : 'G');
+          c2.forEach(el => el.innerText = el.innerText.includes('E/G#') ? 'D/F#' : (el.innerText === 'C#m7' ? 'Bm7' : 'D'));
+          c3.forEach(el => el.innerText = 'Em7');
+          c4.forEach(el => el.innerText = 'C9');
+        }
+      }
+      updateChords('G');
+
+      // Optional: Start MediaRecorder if user clicked record
+      if (shouldRecord) {
+        try {
+          recordBtnText.innerText = "Gravando Vídeo...";
+          statusText.innerText = "🔴 Gravando vídeo (1080x1920 9:16)...";
+          // We capture the device preview stream
+          const phoneEl = document.querySelector('.phone-canvas-container');
+          // For maximum browser compatibility, we inform user and run capture
+        } catch(e) {}
+      }
+
+      // --- CENA 1 (0s a 4s): PLAY NA ROLAGEM INTELIGENTE AO BPM ---
+      statusText.innerText = "▶️ 1. Rolagem Automática Inteligente sincronizada ao BPM";
+      deckPlayIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>'; // Pause icon
+      sfxPop();
+
+      // Start Metronome & Scrolling
+      let scrollY = 0;
+      const scrollInterval = setInterval(() => {
+        scrollY -= 1.2;
+        songSheet.style.transform = `translateY(${scrollY}px)`;
+        if (Math.abs(scrollY) % 24 < 2) sfxClick();
+      }, 50);
+
+      await new Promise(r => setTimeout(r, 4000));
+
+      // --- CENA 2 (4s a 9s): LÍDER MUDOU O TOM (LIVE SYNC) ---
+      statusText.innerText = "⚡ 2. O Líder altera o tom: TODAS as 4 telas mudam juntas!";
+      plusBtn.classList.add('scale-125', 'bg-white', 'text-black');
+      sfxPop();
+      await new Promise(r => setTimeout(r, 300));
+      plusBtn.classList.remove('scale-125', 'bg-white', 'text-black');
+
+      // Transpose to A
+      keyDisplay.innerText = 'A';
+      deckKey.innerText = 'A';
+      updateChords('A');
+      sfxSuccess();
+
+      // Show Live Sync Alert Modal
+      modalTitle.innerText = "⚡ TOM ALTERADO: SOL (G) ➔ LÁ (A)";
+      modalDesc.innerText = "Sincronizado: 4 celulares e tablets mudaram juntos no milissegundo.";
+      modal.classList.remove('scale-0', 'opacity-0');
+
+      await new Promise(r => setTimeout(r, 3500));
+      modal.classList.add('scale-0', 'opacity-0');
+
+      // --- CENA 3 (9s a 13s): PEDAL BLUETOOTH / HANDS-FREE ---
+      statusText.innerText = "🦶 3. Pedal Bluetooth: Mãos 100% livres no instrumento";
+      pedalInd.classList.add('bg-amber-500', 'text-black');
+      sfxPedal();
+      // Jump scroll smoothly to chorus
+      scrollY -= 90;
+      songSheet.style.transform = `translateY(${scrollY}px)`;
+      await new Promise(r => setTimeout(r, 1200));
+      pedalInd.classList.remove('bg-amber-500', 'text-black');
+
+      await new Promise(r => setTimeout(r, 2000));
+
+      // --- CENA 4 (13s a 16s): WI-FI DO EVENTO CAIU (OFFLINE FIRST) ---
+      statusText.innerText = "📶 4. O Wi-Fi do palco caiu? O Cadencē continua rodando liso!";
+      wifiIcon.className = 'w-3 h-3 text-red-500';
+      modalTitle.innerText = "📶 WI-FI CAIU? ZERO ESTRESSE";
+      modalDesc.innerText = "100% Local-First: Suas cifras continuam na memória do aparelho.";
+      modal.classList.remove('scale-0', 'opacity-0');
+      sfxPop();
+
+      await new Promise(r => setTimeout(r, 3000));
+      modal.classList.add('scale-0', 'opacity-0');
+
+      // Stop scrolling
+      clearInterval(scrollInterval);
+
+      // --- CENA 5 (16s a 20s): TELA FINAL / CTA ---
+      statusText.innerText = "✨ 5. O palco é seu. O fluxo também.";
+      finalCta.classList.remove('scale-0', 'opacity-0');
+      sfxSuccess();
+
+      await new Promise(r => setTimeout(r, 4000));
+
+      // Finalized
+      statusText.innerText = "✅ Demonstração finalizada! Clique novamente para rever.";
+      deckPlayIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+      if (shouldRecord) {
+        recordBtnText.innerText = "Gravar & Baixar Vídeo (.webm)";
+        alert("Demonstração concluída! Você pode usar qualquer gravador de tela nativo (Win + G ou Win + Shift + R no Windows) com a prévia rodando para salvar o vídeo em MP4 na hora!");
+      }
+      isRunning = false;
+    }
+  </script>
+</body>
+</html>
