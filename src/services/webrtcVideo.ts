@@ -1,7 +1,8 @@
 import { db, isFirebaseConfigured } from '../firebase';
-import { collection, addDoc, onSnapshot, deleteDoc, doc, query, limit } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, deleteDoc, doc, query, where } from 'firebase/firestore';
 
 export interface WebRTCSignal {
+  id: string;
   from: string;
   to: string;
   type: 'offer' | 'answer' | 'candidate';
@@ -13,7 +14,9 @@ const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' }
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' }
   ]
 };
 
@@ -22,6 +25,8 @@ export class WebRTCVideoMesh {
   private myPeerId: string;
   private localStream: MediaStream | null = null;
   private peerConnections: Map<string, RTCPeerConnection> = new Map();
+  private transceivers: Map<string, { audio: RTCRtpTransceiver; video: RTCRtpTransceiver }> = new Map();
+  private remoteStreams: Map<string, MediaStream> = new Map();
   private pendingCandidates: Map<string, RTCIceCandidateInit[]> = new Map();
   private onStreamAdded: (peerId: string, stream: MediaStream) => void;
   private onStreamRemoved: (peerId: string) => void;
@@ -45,36 +50,29 @@ export class WebRTCVideoMesh {
     this.initSignaling();
   }
 
+  /**
+   * Updates local stream tracks for all active peer connections
+   * Uses sender.replaceTrack() for zero-interruption, instant track updating without renegotiation glare
+   */
   public setLocalStream(stream: MediaStream | null) {
     this.localStream = stream;
+    const audioTrack = stream ? stream.getAudioTracks()[0] || null : null;
+    const videoTrack = stream ? stream.getVideoTracks()[0] || null : null;
 
-    // Update tracks in existing peer connections using replaceTrack or renegotiate
-    this.peerConnections.forEach((pc, peerId) => {
-      const senders = pc.getSenders();
-      if (!stream) {
-        senders.forEach(sender => {
-          try { pc.removeTrack(sender); } catch (e) {}
-        });
-        return;
-      }
-
-      let needsRenegotiation = false;
-      stream.getTracks().forEach((track) => {
-        const existingSender = senders.find(s => s.track && s.track.kind === track.kind);
-        if (existingSender) {
-          existingSender.replaceTrack(track).catch(console.warn);
-        } else {
-          try {
-            pc.addTrack(track, stream);
-            needsRenegotiation = true;
-          } catch (e) {
-            console.warn('Could not add track to existing connection:', e);
-          }
+    this.transceivers.forEach((t, peerId) => {
+      try {
+        if (t.audio && t.audio.sender) {
+          t.audio.sender.replaceTrack(audioTrack).catch(err => {
+            console.warn(`[WebRTC] Error replacing audio track for ${peerId}:`, err);
+          });
         }
-      });
-
-      if (needsRenegotiation && pc.signalingState === 'stable') {
-        this.initiateOffer(peerId, pc);
+        if (t.video && t.video.sender) {
+          t.video.sender.replaceTrack(videoTrack).catch(err => {
+            console.warn(`[WebRTC] Error replacing video track for ${peerId}:`, err);
+          });
+        }
+      } catch (e) {
+        console.warn(`[WebRTC] Error updating tracks for ${peerId}:`, e);
       }
     });
   }
@@ -83,7 +81,7 @@ export class WebRTCVideoMesh {
    * Initialize 3-tier signaling:
    * 1. BroadcastChannel (0ms - between tabs/windows in same browser)
    * 2. localStorage (same domain cross-window)
-   * 3. Firestore subcollection `rooms/{roomId}/signals` (real devices across the internet)
+   * 3. Firestore query `rooms/{roomId}/signals` where `to == myPeerId` (real remote devices across the internet)
    */
   private initSignaling() {
     // 1. BroadcastChannel
@@ -93,7 +91,10 @@ export class WebRTCVideoMesh {
         this.channel.onmessage = (event) => {
           if (this.isDestroyed || !event.data) return;
           const signal = event.data as WebRTCSignal;
-          if (signal.to === this.myPeerId && signal.from !== this.myPeerId) {
+          if (signal && signal.to === this.myPeerId && signal.from !== this.myPeerId) {
+            const sigKey = signal.id || `${signal.from}_${signal.type}_${signal.createdAt}`;
+            if (this.processedSignalIds.has(sigKey)) return;
+            this.markSignalProcessed(sigKey);
             this.handleSignal(signal);
           }
         };
@@ -109,7 +110,10 @@ export class WebRTCVideoMesh {
         if (e.key && e.key.startsWith(`cifraflow_vsign_${this.roomId}_`)) {
           try {
             const signal = JSON.parse(e.newValue) as WebRTCSignal;
-            if (signal.to === this.myPeerId && signal.from !== this.myPeerId) {
+            if (signal && signal.to === this.myPeerId && signal.from !== this.myPeerId) {
+              const sigKey = signal.id || `${signal.from}_${signal.type}_${signal.createdAt}`;
+              if (this.processedSignalIds.has(sigKey)) return;
+              this.markSignalProcessed(sigKey);
               this.handleSignal(signal);
             }
           } catch (err) {}
@@ -122,27 +126,27 @@ export class WebRTCVideoMesh {
     if (isFirebaseConfigured) {
       try {
         const signalsRef = collection(db, 'rooms', this.roomId, 'signals');
-        const q = query(signalsRef, limit(40));
-        const startTime = Date.now() - 10000; // Ignore stale signals older than 10s
+        const q = query(signalsRef, where('to', '==', this.myPeerId));
+        const startTime = Date.now() - 30000; // Accept signals up to 30s old
 
         this.firestoreUnsubscribe = onSnapshot(q, (snapshot) => {
           if (this.isDestroyed) return;
           snapshot.docChanges().forEach((change) => {
             if (change.type === 'added') {
               const docId = change.doc.id;
-              if (this.processedSignalIds.has(docId)) return;
-              this.processedSignalIds.add(docId);
-
               const data = change.doc.data() as WebRTCSignal;
-              if (data && data.to === this.myPeerId && data.from !== this.myPeerId) {
-                if (data.createdAt && data.createdAt >= startTime) {
-                  this.handleSignal(data);
-                }
-              }
 
-              // Auto-clean consumed signal to prevent subcollection bloat
-              if (data && (data.to === this.myPeerId || Date.now() - (data.createdAt || 0) > 30000)) {
-                deleteDoc(doc(db, 'rooms', this.roomId, 'signals', docId)).catch(() => {});
+              // Immediately delete doc to keep Firestore subcollection clean and minimize quota
+              deleteDoc(doc(db, 'rooms', this.roomId, 'signals', docId)).catch(() => {});
+
+              if (!data) return;
+
+              const sigKey = data.id || `${data.from}_${data.type}_${data.createdAt}`;
+              if (this.processedSignalIds.has(sigKey)) return;
+              this.markSignalProcessed(sigKey);
+
+              if (data.from !== this.myPeerId && data.createdAt && data.createdAt >= startTime) {
+                this.handleSignal(data);
               }
             }
           });
@@ -155,8 +159,18 @@ export class WebRTCVideoMesh {
     }
   }
 
+  private markSignalProcessed(sigKey: string) {
+    this.processedSignalIds.add(sigKey);
+    if (this.processedSignalIds.size > 200) {
+      const first = this.processedSignalIds.values().next().value;
+      if (first) this.processedSignalIds.delete(first);
+    }
+  }
+
   private sendSignal(toPeerId: string, type: 'offer' | 'answer' | 'candidate', payload: any) {
+    const signalId = `sig_${this.myPeerId}_${toPeerId}_${type}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const signal: WebRTCSignal = {
+      id: signalId,
       from: this.myPeerId,
       to: toPeerId,
       type,
@@ -176,7 +190,9 @@ export class WebRTCVideoMesh {
       try {
         const key = `cifraflow_vsign_${this.roomId}_${Date.now()}_${Math.random()}`;
         localStorage.setItem(key, JSON.stringify(signal));
-        setTimeout(() => localStorage.removeItem(key), 2000);
+        setTimeout(() => {
+          try { localStorage.removeItem(key); } catch (e) {}
+        }, 2000);
       } catch (e) {}
     }
 
@@ -184,7 +200,9 @@ export class WebRTCVideoMesh {
     if (isFirebaseConfigured) {
       try {
         const signalsRef = collection(db, 'rooms', this.roomId, 'signals');
-        addDoc(signalsRef, signal).catch(() => {});
+        addDoc(signalsRef, signal).catch(err => {
+          console.warn('[WebRTC] Error adding signal to Firestore:', err);
+        });
       } catch (e) {}
     }
   }
@@ -195,19 +213,22 @@ export class WebRTCVideoMesh {
   public syncMembers(memberIds: string[]) {
     const otherIds = memberIds.filter(id => id !== this.myPeerId);
 
-    // Close removed members
+    // 1. Close removed members
     this.peerConnections.forEach((pc, peerId) => {
       if (!otherIds.includes(peerId)) {
-        pc.close();
+        try { pc.close(); } catch (e) {}
         this.peerConnections.delete(peerId);
+        this.transceivers.delete(peerId);
         this.pendingCandidates.delete(peerId);
+        this.remoteStreams.delete(peerId);
         this.onStreamRemoved(peerId);
       }
     });
 
-    // Connect to new members
+    // 2. Connect to new members
     otherIds.forEach((peerId) => {
-      if (!this.peerConnections.has(peerId)) {
+      const existingPc = this.peerConnections.get(peerId);
+      if (!existingPc || existingPc.connectionState === 'closed') {
         const pc = this.createPeerConnection(peerId);
         this.peerConnections.set(peerId, pc);
 
@@ -222,25 +243,40 @@ export class WebRTCVideoMesh {
   private createPeerConnection(peerId: string): RTCPeerConnection {
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
-    // Add local tracks if stream is active
+    // Explicit bidirectional transceivers guarantee immediate SDP m-lines for both audio & video
+    const audioTransceiver = pc.addTransceiver('audio', { direction: 'sendrecv' });
+    const videoTransceiver = pc.addTransceiver('video', { direction: 'sendrecv' });
+    this.transceivers.set(peerId, { audio: audioTransceiver, video: videoTransceiver });
+
+    // Add local tracks if stream is already active
     if (this.localStream) {
-      this.localStream.getTracks().forEach(track => {
-        try {
-          pc.addTrack(track, this.localStream!);
-        } catch (e) {
-          console.warn('Error adding track to peer:', e);
-        }
-      });
+      const audioTrack = this.localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTransceiver.sender.replaceTrack(audioTrack).catch(console.warn);
+      }
+      const videoTrack = this.localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTransceiver.sender.replaceTrack(videoTrack).catch(console.warn);
+      }
     }
 
     // Listen for remote tracks
     pc.ontrack = (event) => {
-      if (event.streams && event.streams[0]) {
-        this.onStreamAdded(peerId, event.streams[0]);
-      } else {
-        const inboundStream = new MediaStream([event.track]);
-        this.onStreamAdded(peerId, inboundStream);
+      let stream = this.remoteStreams.get(peerId);
+      if (!stream) {
+        stream = event.streams && event.streams[0] ? event.streams[0] : new MediaStream();
+        this.remoteStreams.set(peerId, stream);
       }
+
+      if (!stream.getTracks().some(t => t.id === event.track.id)) {
+        stream.addTrack(event.track);
+      }
+
+      this.onStreamAdded(peerId, stream);
+
+      event.track.onunmute = () => {
+        this.onStreamAdded(peerId, stream!);
+      };
     };
 
     // ICE Candidates
@@ -252,7 +288,14 @@ export class WebRTCVideoMesh {
 
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+        this.remoteStreams.delete(peerId);
         this.onStreamRemoved(peerId);
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === 'failed') {
+        try { pc.restartIce(); } catch (e) {}
       }
     };
 
@@ -261,68 +304,93 @@ export class WebRTCVideoMesh {
 
   private async initiateOffer(peerId: string, pc: RTCPeerConnection) {
     try {
-      const offer = await pc.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: true
-      });
+      if (pc.signalingState !== 'stable') return;
+      const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       this.sendSignal(peerId, 'offer', {
         type: offer.type,
         sdp: offer.sdp
       });
     } catch (err) {
-      console.warn(`Error creating offer to ${peerId}:`, err);
+      console.warn(`[WebRTC] Error creating offer to ${peerId}:`, err);
+    }
+  }
+
+  private async flushPendingCandidates(peerId: string, pc: RTCPeerConnection) {
+    const pending = this.pendingCandidates.get(peerId);
+    if (pending && pending.length > 0) {
+      this.pendingCandidates.delete(peerId);
+      for (const candidate of pending) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.warn('[WebRTC] Flush candidate note:', e);
+        }
+      }
     }
   }
 
   private async handleSignal(signal: WebRTCSignal) {
     const { from, type, payload } = signal;
-    let pc = this.peerConnections.get(from);
+    if (from === this.myPeerId) return;
 
-    if (!pc) {
+    let pc = this.peerConnections.get(from);
+    if (!pc || pc.connectionState === 'closed') {
       pc = this.createPeerConnection(from);
       this.peerConnections.set(from, pc);
     }
 
+    // Perfect Negotiation pattern: politely resolve offer collisions
+    const isPolite = this.myPeerId > from;
+
     try {
       if (type === 'offer') {
-        await pc.setRemoteDescription(new RTCSessionDescription(payload));
-
-        // Flush pending ICE candidates if any arrived before offer
-        const pending = this.pendingCandidates.get(from) || [];
-        for (const candidate of pending) {
-          try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch (e) {}
+        const offerCollision = pc.signalingState !== 'stable';
+        if (offerCollision) {
+          if (!isPolite) {
+            // Impolite peer ignores incoming offer; let own offer proceed
+            return;
+          }
+          // Polite peer rolls back local offer
+          try {
+            await pc.setLocalDescription({ type: 'rollback' });
+          } catch (rbErr) {
+            console.warn('[WebRTC] Rollback error:', rbErr);
+          }
         }
-        this.pendingCandidates.delete(from);
 
-        // Create answer
+        await pc.setRemoteDescription(new RTCSessionDescription(payload));
+        await this.flushPendingCandidates(from, pc);
+
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
+
         this.sendSignal(from, 'answer', {
           type: answer.type,
           sdp: answer.sdp
         });
       } else if (type === 'answer') {
-        if (pc.signalingState !== 'stable') {
+        if (pc.signalingState === 'have-local-offer') {
           await pc.setRemoteDescription(new RTCSessionDescription(payload));
-
-          const pending = this.pendingCandidates.get(from) || [];
-          for (const candidate of pending) {
-            try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch (e) {}
-          }
-          this.pendingCandidates.delete(from);
+          await this.flushPendingCandidates(from, pc);
         }
       } else if (type === 'candidate') {
-        if (pc.remoteDescription && pc.remoteDescription.type) {
-          await pc.addIceCandidate(new RTCIceCandidate(payload));
-        } else {
-          const pending = this.pendingCandidates.get(from) || [];
-          pending.push(payload);
-          this.pendingCandidates.set(from, pending);
+        if (payload && typeof payload.candidate === 'string') {
+          if (pc.remoteDescription && pc.remoteDescription.type) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(payload));
+            } catch (candErr) {
+              console.warn('[WebRTC] Error adding ICE candidate:', candErr);
+            }
+          } else {
+            const pending = this.pendingCandidates.get(from) || [];
+            pending.push(payload);
+            this.pendingCandidates.set(from, pending);
+          }
         }
       }
     } catch (err) {
-      console.warn(`Error handling signal ${type} from ${from}:`, err);
+      console.warn(`[WebRTC] Error handling signal ${type} from ${from}:`, err);
     }
   }
 
@@ -344,6 +412,9 @@ export class WebRTCVideoMesh {
       try { pc.close(); } catch (e) {}
     });
     this.peerConnections.clear();
+    this.transceivers.clear();
+    this.remoteStreams.clear();
     this.pendingCandidates.clear();
+    this.processedSignalIds.clear();
   }
 }

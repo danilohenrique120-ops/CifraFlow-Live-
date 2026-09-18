@@ -28,55 +28,96 @@ const RemoteVideoCard: React.FC<RemoteVideoCardProps> = ({ member, stream }) => 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [hasStreamVideo, setHasStreamVideo] = useState(false);
   const [remoteAudioLevel, setRemoteAudioLevel] = useState(0);
+  const [needsAudioUnmute, setNeedsAudioUnmute] = useState(false);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play().catch(() => {});
-
-      const checkTracks = () => {
-        const videoTracks = stream.getVideoTracks();
-        const hasVideo = videoTracks.length > 0 && videoTracks[0].enabled;
-        setHasStreamVideo(hasVideo);
-      };
-
-      checkTracks();
-      stream.addEventListener('addtrack', checkTracks);
-      stream.addEventListener('removetrack', checkTracks);
-
-      // Analyze remote audio for speaking detection
-      let audioCtx: AudioContext | null = null;
-      let animId: number | null = null;
-      try {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioCtx && stream.getAudioTracks().length > 0) {
-          audioCtx = new AudioCtx();
-          const analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 64;
-          const source = audioCtx.createMediaStreamSource(stream);
-          source.connect(analyser);
-
-          const dataArray = new Uint8Array(analyser.frequencyBinCount);
-          const checkVol = () => {
-            analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-            setRemoteAudioLevel(sum / dataArray.length);
-            animId = requestAnimationFrame(checkVol);
-          };
-          checkVol();
-        }
-      } catch (e) {}
-
-      return () => {
-        stream.removeEventListener('addtrack', checkTracks);
-        stream.removeEventListener('removetrack', checkTracks);
-        if (animId) cancelAnimationFrame(animId);
-        if (audioCtx && audioCtx.state !== 'closed') audioCtx.close().catch(() => {});
-      };
-    } else {
+    const videoEl = videoRef.current;
+    if (!videoEl || !stream) {
       setHasStreamVideo(false);
+      return;
     }
+
+    videoEl.srcObject = stream;
+
+    const playVideo = async () => {
+      try {
+        await videoEl.play();
+        setNeedsAudioUnmute(false);
+      } catch (err: any) {
+        console.warn('Remote video unmuted autoplay blocked, retrying muted:', err);
+        // Autoplay policy prevented unmuted sound. Mute to allow video to play immediately!
+        videoEl.muted = true;
+        setNeedsAudioUnmute(true);
+        try {
+          await videoEl.play();
+        } catch (e) {
+          console.warn('Muted autoplay also failed:', e);
+        }
+      }
+    };
+
+    playVideo();
+
+    const checkTracks = () => {
+      const videoTracks = stream.getVideoTracks();
+      const hasActiveVideo = videoTracks.length > 0 && videoTracks.some(t => t.enabled && t.readyState === 'live');
+      if (hasActiveVideo) {
+        setHasStreamVideo(true);
+      }
+      if (videoEl.paused) {
+        playVideo();
+      }
+    };
+
+    checkTracks();
+    stream.addEventListener('addtrack', checkTracks);
+    stream.addEventListener('removetrack', checkTracks);
+
+    stream.getVideoTracks().forEach(track => {
+      track.onunmute = checkTracks;
+      track.onmute = checkTracks;
+      track.onended = checkTracks;
+    });
+
+    // Analyze remote audio for speaking detection
+    let audioCtx: AudioContext | null = null;
+    let animId: number | null = null;
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx && stream.getAudioTracks().length > 0) {
+        audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const checkVol = () => {
+          if (!audioCtx || audioCtx.state === 'closed') return;
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+          setRemoteAudioLevel(sum / dataArray.length);
+          animId = requestAnimationFrame(checkVol);
+        };
+        checkVol();
+      }
+    } catch (e) {}
+
+    return () => {
+      stream.removeEventListener('addtrack', checkTracks);
+      stream.removeEventListener('removetrack', checkTracks);
+      stream.getVideoTracks().forEach(track => {
+        track.onunmute = null;
+        track.onmute = null;
+        track.onended = null;
+      });
+      if (animId) cancelAnimationFrame(animId);
+      if (audioCtx && audioCtx.state !== 'closed') audioCtx.close().catch(() => {});
+    };
   }, [stream]);
 
   const isSpeaking = !member.isMuted && remoteAudioLevel > 18;
@@ -86,19 +127,19 @@ const RemoteVideoCard: React.FC<RemoteVideoCardProps> = ({ member, stream }) => 
     <div className={`relative flex-none w-36 sm:w-44 h-24 sm:h-28 rounded-2xl overflow-hidden bg-zinc-900 border-2 transition-all shadow-md flex flex-col items-center justify-center ${
       isSpeaking ? 'border-emerald-400 ring-2 ring-emerald-400/40' : 'border-zinc-800'
     }`}>
-      {/* 1. Live Remote Video Player (Unmuted so musicians can hear each other) */}
+      {/* 1. Live Remote Video Player (Always in DOM and rendered, so browser decodes frames immediately) */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
         onLoadedMetadata={() => setHasStreamVideo(true)}
-        onCanPlay={() => setHasStreamVideo(true)}
-        className={`w-full h-full object-cover ${isVideoVisible ? 'block' : 'hidden'}`}
+        onPlaying={() => setHasStreamVideo(true)}
+        className="w-full h-full object-cover absolute inset-0 z-0"
       />
 
       {/* 2. Fallback Avatar Card when camera is off or stream is establishing */}
       {!isVideoVisible && (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-zinc-900 to-zinc-950 text-zinc-300">
+        <div className="absolute inset-0 z-10 w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-zinc-900 to-zinc-950 text-zinc-300">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base shadow-lg ${member.avatarColor || 'bg-zinc-700'}`}>
             {member.name ? member.name.substring(0, 2).toUpperCase() : 'M'}
           </div>
@@ -106,13 +147,32 @@ const RemoteVideoCard: React.FC<RemoteVideoCardProps> = ({ member, stream }) => 
             {member.instrument || 'Músico'}
           </span>
           <span className="text-[9px] text-zinc-500 font-semibold">
-            {member.isCameraOn ? 'Conectando vídeo...' : 'Câmera desligada'}
+            {member.isCameraOn !== false ? 'Conectando vídeo...' : 'Câmera desligada'}
           </span>
         </div>
       )}
 
-      {/* 3. Bottom Information Bar */}
-      <div className="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-zinc-950/95 via-zinc-950/70 to-transparent flex items-center justify-between text-[11px]">
+      {/* 3. Unmute Button Overlay if browser blocked unmuted autoplay */}
+      {needsAudioUnmute && isVideoVisible && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (videoRef.current) {
+              videoRef.current.muted = false;
+              videoRef.current.play().catch(() => {});
+              setNeedsAudioUnmute(false);
+            }
+          }}
+          className="absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 rounded-md bg-amber-500/90 hover:bg-amber-400 text-zinc-950 text-[10px] font-bold flex items-center gap-1 shadow-lg animate-pulse"
+          title="Clique para ativar o áudio deste participante"
+        >
+          <MicOff className="w-2.5 h-2.5" />
+          <span>Ativar Som</span>
+        </button>
+      )}
+
+      {/* 4. Bottom Information Bar */}
+      <div className="absolute inset-x-0 bottom-0 z-20 p-1.5 bg-gradient-to-t from-zinc-950/95 via-zinc-950/70 to-transparent flex items-center justify-between text-[11px]">
         <span className="font-bold text-white truncate max-w-[85px]">
           {member.name}
         </span>
@@ -130,9 +190,9 @@ const RemoteVideoCard: React.FC<RemoteVideoCardProps> = ({ member, stream }) => 
         </div>
       </div>
 
-      {/* 4. Host Badge */}
+      {/* 5. Host Badge */}
       {member.isHost && (
-        <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-amber-500 text-zinc-950 font-black text-[9px] uppercase tracking-wider shadow">
+        <div className="absolute top-1.5 left-1.5 z-20 px-1.5 py-0.5 rounded bg-amber-500 text-zinc-950 font-black text-[9px] uppercase tracking-wider shadow">
           Líder
         </div>
       )}
@@ -160,6 +220,7 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
   const [audioLevel, setAudioLevel] = useState<number>(0);
 
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -183,6 +244,16 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
         });
       }
     );
+
+    // Pass local stream immediately if already acquired
+    if (localStreamRef.current) {
+      mesh.setLocalStream(localStreamRef.current);
+    }
+
+    // Sync active members immediately if available
+    if (sessionState.members) {
+      mesh.syncMembers(sessionState.members.map(m => m.id));
+    }
 
     meshRef.current = mesh;
 
@@ -212,8 +283,8 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
     setPermissionError(null);
 
     // Stop existing tracks if any
-    if (localStream) {
-      localStream.getTracks().forEach(t => t.stop());
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => t.stop());
     }
 
     try {
@@ -234,6 +305,7 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
         }
       });
 
+      localStreamRef.current = stream;
       setLocalStream(stream);
       setIsCameraOn(true);
       setIsMuted(false);
@@ -241,6 +313,7 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
 
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
+        localVideoRef.current.play().catch(() => {});
       }
 
       // Audio analysis for local speaking indicator
@@ -287,7 +360,7 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
     } finally {
       setIsConnecting(false);
     }
-  }, [localStream, updateMemberMediaStatus, isMuted]);
+  }, [updateMemberMediaStatus, isMuted]);
 
   useEffect(() => {
     startMedia(facingMode);
@@ -297,8 +370,8 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close().catch(() => {});
       }
-      if (localStream) {
-        localStream.getTracks().forEach(t => t.stop());
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(t => t.stop());
       }
     };
   }, []);
@@ -307,8 +380,9 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.play().catch(() => {});
     }
-  }, [localStream]);
+  }, [localStream, isCameraOn]);
 
   // Toggle Camera
   const handleToggleCamera = useCallback(() => {
@@ -497,26 +571,30 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
           <div className={`relative flex-none w-36 sm:w-44 h-24 sm:h-28 rounded-2xl overflow-hidden bg-zinc-900 border-2 transition-all shadow-md ${
             isSpeaking ? 'border-emerald-400 ring-2 ring-emerald-400/40' : 'border-zinc-800'
           }`}>
-            {isCameraOn && !permissionError ? (
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted // Always mute local video to avoid echo
-                className="w-full h-full object-cover mirror"
-                style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900/90 text-zinc-400">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted // Always mute local video to avoid echo
+              className={`w-full h-full object-cover mirror absolute inset-0 z-0 transition-opacity duration-200 ${
+                isCameraOn && !permissionError ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+              style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+            />
+
+            {(!isCameraOn || permissionError) && (
+              <div className="absolute inset-0 z-10 w-full h-full flex flex-col items-center justify-center bg-zinc-900/90 text-zinc-400">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base ${currentMember?.avatarColor || 'bg-amber-500'}`}>
                   {currentMember?.name ? currentMember.name.substring(0, 2).toUpperCase() : 'EU'}
                 </div>
-                <span className="text-[10px] mt-1 text-zinc-500 font-semibold">Câmera desligada</span>
+                <span className="text-[10px] mt-1 text-zinc-500 font-semibold">
+                  {permissionError ? 'Permissão negada' : 'Câmera desligada'}
+                </span>
               </div>
             )}
 
             {/* Bottom info badge */}
-            <div className="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-zinc-950/95 via-zinc-950/70 to-transparent flex items-center justify-between text-[11px]">
+            <div className="absolute inset-x-0 bottom-0 z-20 p-1.5 bg-gradient-to-t from-zinc-950/95 via-zinc-950/70 to-transparent flex items-center justify-between text-[11px]">
               <span className="font-bold text-white truncate max-w-[80px]">
                 {currentMember?.name || 'Você'} (Você)
               </span>
@@ -531,7 +609,7 @@ export const BandVideoRoom: React.FC<BandVideoRoomProps> = ({ onClose }) => {
 
             {/* Host Badge */}
             {isHost && (
-              <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-amber-500 text-zinc-950 font-black text-[9px] uppercase tracking-wider shadow">
+              <div className="absolute top-1.5 left-1.5 z-20 px-1.5 py-0.5 rounded bg-amber-500 text-zinc-950 font-black text-[9px] uppercase tracking-wider shadow">
                 Líder
               </div>
             )}
